@@ -7,6 +7,8 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import '../../global.css';
+import { StatusBar } from 'expo-status-bar';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -26,20 +28,35 @@ export default function TabLayout() {
           default: {},
         }),
       }}>
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
+      /> */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        }}
       />
       <Tabs.Screen
-        name="explore"
+        name="Sample"
         options={{
-          title: 'Explore',
+          title: 'Sample',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
     </Tabs>
+
   );
 }
+// import { Slot, Redirect } from 'expo-router'
+// import { useAuth } from '@/context/AuthContext'
+
+// export default function AppLayout() {
+//   const { session } = useAuth()
+//   return !session ? <Redirect href="(auth)/register" /> : <Slot />
+// }
