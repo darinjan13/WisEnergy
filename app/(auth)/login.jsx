@@ -1,9 +1,23 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebase/firebaseConfig";
 
 const LoginForm = () => {
 
+    const router = useRouter();
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                router.replace("/(tabs)"); // Redirect to home if already logged in
+            }
+        });
+
+        return unsubscribe;
+    }, []);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -34,8 +48,24 @@ const LoginForm = () => {
         return isValid;
     };
 
-    const handleSubmit = () => {
-        if (validateForm()) {
+    const handleSubmit = async () => {
+        // if (validateForm()) {
+        // }
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            console.log("User logged in:", user.email);
+            Alert.alert("Success", "You are now logged in!");
+            router.replace("/(tabs)"); // Redirect to home page
+        } catch (error) {
+            let errorMessage = "An error occurred. Please try again.";
+            if (error.code === "auth/user-not-found") {
+                errorMessage = "No user found with this email.";
+            } else if (error.code === "auth/wrong-password") {
+                errorMessage = "Incorrect password.";
+            }
+            console.error("Login failed:", error.message);
+            Alert.alert("Login Failed", errorMessage);
         }
     };
 
@@ -93,6 +123,9 @@ const LoginForm = () => {
             {/* Login Button */}
             <TouchableOpacity onPress={handleSubmit} className="bg-blue-600 py-3 rounded-md mb-6">
                 <Text className="text-white text-center font-semibold">Login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/(auth)/register")} className="bg-gray-300 py-3 rounded-md">
+                <Text className="text-blue-600 text-center font-semibold">Register</Text>
             </TouchableOpacity>
         </View>
     );

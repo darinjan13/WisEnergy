@@ -1,24 +1,52 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { LineChart } from "react-native-chart-kit";
+import { CartesianChart, Line } from "victory-native";
+// import "@/assets/fonts/SpaceMono-Regular.ttf";
+import { useFont, Skia } from "@shopify/react-native-skia";
+import Svg from "react-native-svg";
 
 const screenWidth = Dimensions.get("window").width;
 
 const ConsumptionDetail = ({ onBack }) => {
     const [timeFrame, setTimeFrame] = useState("hourly");
 
+    const font = useFont(require("@/assets/fonts/SpaceMono-Regular.ttf"), 12);
+
+    if (!font) {
+        return (
+            <TouchableOpacity className="flex-row items-center mb-4" onPress={onBack}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
+                <Text className="text-lg ml-2 text-gray-800">Back to Dashboard</Text>
+            </TouchableOpacity>
+        ) // Prevent errors by waiting for font to load
+    }
+
     const timeFrameData = {
-        hourly: {
-            labels: [
-                "1 AM", "2 AM", "3 AM", "4 AM", "5 AM", "6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM", "12 PM",
-                "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM", "7 PM", "8 PM", "9 PM", "10 PM", "11 PM", "12 MN"
-            ],
-            data: [1.2, 1.8, 2.4, 3.2, 2.8, 2.5, 2.3, 2.7, 3.0, 3.5, 4.0, 5,
-                4.2, 4.0, 3.8, 3.6, 3.3, 3.0, 2.7, 2.5, 2.3, 2.0, 1.8, 1.5]
-        },
-        daily: { labels: ["Mon", "Tue", "Wed", "Thu", "Fri"], data: [16.5, 17.2, 18.7, 19.4, 20.1] },
-        weekly: { labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"], data: [112.5, 118.3, 124.7, 130.2, 135.6] },
+        hourly: [
+            { time: "1 AM", consumption: 1.2 }, { time: "2 AM", consumption: 1.8 },
+            { time: "3 AM", consumption: 2.4 }, { time: "4 AM", consumption: 3.2 },
+            { time: "5 AM", consumption: 2.8 }, { time: "6 AM", consumption: 2.5 },
+            { time: "7 AM", consumption: 2.3 }, { time: "8 AM", consumption: 2.7 },
+            { time: "9 AM", consumption: 3.0 }, { time: "10 AM", consumption: 3.5 },
+            { time: "11 AM", consumption: 4.0 }, { time: "12 PM", consumption: 5.0 },
+            { time: "1 PM", consumption: 4.2 }, { time: "2 PM", consumption: 4.0 },
+            { time: "3 PM", consumption: 3.8 }, { time: "4 PM", consumption: 3.6 },
+            { time: "5 PM", consumption: 3.3 }, { time: "6 PM", consumption: 3.0 },
+            { time: "7 PM", consumption: 2.7 }, { time: "8 PM", consumption: 2.5 },
+            { time: "9 PM", consumption: 2.3 }, { time: "10 PM", consumption: 2.0 },
+            { time: "11 PM", consumption: 1.8 }, { time: "12 AM", consumption: 1.5 }
+        ],
+        daily: [
+            { time: "Mon", consumption: 16.5 }, { time: "Tue", consumption: 17.2 },
+            { time: "Wed", consumption: 18.7 }, { time: "Thu", consumption: 19.4 },
+            { time: "Fri", consumption: 20.1 }
+        ],
+        weekly: [
+            { time: "Week 1", consumption: 112.5 }, { time: "Week 2", consumption: 118.3 },
+            { time: "Week 3", consumption: 124.7 }, { time: "Week 4", consumption: 130.2 },
+            { time: "Week 5", consumption: 135.6 }
+        ],
     };
 
     return (
@@ -55,35 +83,58 @@ const ConsumptionDetail = ({ onBack }) => {
                 ))}
             </View>
 
-            {/* Line Chart */}
+            {/* Line Chart using Victory Native */}
             <View className="bg-white p-4 rounded-lg shadow-md mb-5 w-full">
                 <Text className="text-lg font-medium text-gray-900 mb-2">
                     {timeFrame.charAt(0).toUpperCase() + timeFrame.slice(1)} Consumption
                 </Text>
-                <ScrollView horizontal={true} className="w-full">
-                    <View className="flex-1 overflow-hidden rounded-xl">
-                        <LineChart
-                            data={{
-                                labels: timeFrameData[timeFrame].labels,
-                                datasets: [{ data: timeFrameData[timeFrame].data }],
-                            }}
-                            width={screenWidth * 1.5} // Adjust width for better scrolling
-                            height={220}
-                            yAxisSuffix=" kWh"
-                            yLabelsOffset={0}
-                            chartConfig={{
-                                backgroundColor: "#fff",
-                                backgroundGradientFrom: "#f8f9fa",
-                                backgroundGradientTo: "#e9ecef",
-                                decimalPlaces: 1,
-                                color: (opacity = 1) => `rgba(0, 174, 239, ${opacity})`,
-                                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                                propsForDots: { r: "4", strokeWidth: "2", stroke: "#00AEEF" },
-                            }}
-                            bezier
-                        />
-                    </View>
-                </ScrollView>
+                <View style={{ height: 220 }}>
+                    {Platform.OS === "web" ? (
+                        <Svg width={screenWidth} height={220}>
+                            <CartesianChart
+                                data={timeFrameData[timeFrame]}
+                                xKey="time"
+                                yKeys={["consumption"]}
+                                axisOptions={{ font }}
+                            >
+                                {({ points }) => (
+                                    <Line
+                                        points={points.consumption}
+                                        color={timeFrame === "hourly" ? "blue" : timeFrame === "daily" ? "green" : "red"}
+                                        strokeWidth={3}
+                                    />
+                                )}
+                            </CartesianChart>
+                        </Svg>
+                    ) : (
+                        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                            <View style={{ width: Math.max(screenWidth, timeFrameData[timeFrame].length * 10), height: 220 }}>
+                                <CartesianChart
+                                    data={timeFrameData[timeFrame]}
+                                    xKey="time"
+                                    yKeys={["consumption"]}
+                                    axisOptions={{ font }}
+                                >
+                                    {({ points }) => (
+                                        <Line
+                                            points={points.consumption}
+                                            color={timeFrame === "hourly" ? "blue" : timeFrame === "daily" ? "green" : "red"}
+                                            strokeWidth={3}
+                                            connectMissingData={true}
+                                            tooltip={({ datum }) => (
+                                                <VictoryTooltip
+                                                    text={`Time: ${datum.time}\nConsumption: ${datum.consumption} kWh`}
+                                                    flyoutStyle={{ fill: "white", stroke: "gray" }}
+                                                />
+                                            )}
+                                        />
+                                    )}
+                                </CartesianChart>
+                            </View>
+                        </ScrollView>
+                    )}
+
+                </View>
             </View>
 
             {/* Appliance Usage */}
@@ -118,7 +169,7 @@ const ConsumptionDetail = ({ onBack }) => {
                     <Text className="text-lg text-blue-500">0.5 kWh</Text>
                 </View>
             </View>
-        </ScrollView>
+        </ScrollView >
     );
 };
 

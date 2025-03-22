@@ -1,15 +1,17 @@
-import { View, Text, SafeAreaView, ScrollView } from 'react-native'
+import { View, Text, SafeAreaView, ScrollView, Button, StatusBar } from 'react-native'
 import React, { useState } from 'react'
 import ConsumptionOverview from "../../components/dashboard/ConsumptionOverview";
 import ConsumptionDetail from "../../components/dashboard/ConsumptionDetail";
 import BudgetTracker from "../../components/dashboard/BudgetTracker";
 import ApplianceCards from "../../components/dashboard/ApplianceCards";
 import EnergyTips from "../../components/dashboard/EnergyTips";
+import { handleLogout } from '../../hooks/useAuth';
 
 export default function Consumption() {
     const [showConsumptionDetails, setShowConsumptionDetails] = useState(false);
     return (
         <SafeAreaView className="flex-1 bg-white">
+            <StatusBar barStyle="dark-content" backgroundColor="white" />
             <ScrollView className="px-4 py-6">
                 <View className="space-y-6">
                     {showConsumptionDetails ? (
@@ -45,6 +47,7 @@ export default function Consumption() {
                         </>
                     )}
                 </View>
+                <Button title='Logout' onPress={handleLogout} color="red" />
             </ScrollView>
         </SafeAreaView>
 

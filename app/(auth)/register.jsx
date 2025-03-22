@@ -1,16 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
     ScrollView,
+    Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase/firebaseConfig";
+import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { useRouter } from "expo-router";
 
 const RegisterForm = ({ onSubmit, isLoading = false }) => {
+
+    const router = useRouter();
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                router.replace("/(tabs)"); // Redirect to home if already logged in
+            }
+        });
+
+        return unsubscribe;
+    }, []);
+
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -39,17 +54,24 @@ const RegisterForm = ({ onSubmit, isLoading = false }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = () => {
-        console.log(email + " " + password);
-        if (validateForm() && onSubmit) {
+    const handleSubmit = async () => {
+        // console.log(email + " " + password);
+        // if (validateForm() && onSubmit) {
 
-            // onSubmit({ name, email, password });
-            createUserWithEmailAndPassword(auth, email, password)
-                .then(res => {
-                    const user = res.user;
-                    console.log(user);
+        //     // onSubmit({ name, email, password });
+        //     createUserWithEmailAndPassword(auth, email, password)
+        //         .then(res => {
+        //             const user = res.user;
+        //             console.log(user);
 
-                })
+        //         })
+        // }
+        try {
+            const res = await createUserWithEmailAndPassword(auth, email, password);
+            console.log('Success' + res.user)
+            Alert.alert('Success', "Account Created.")
+        } catch (e) {
+            Alert.alert('Failed', e.message)
         }
     };
 
@@ -134,6 +156,9 @@ const RegisterForm = ({ onSubmit, isLoading = false }) => {
                     </Text>
                 </TouchableOpacity>
             </View>
+            <TouchableOpacity onPress={() => router.push("/(auth)/login")} className="bg-gray-300 py-3 rounded-md">
+                <Text className="text-blue-600 text-center font-semibold">Login</Text>
+            </TouchableOpacity>
         </ScrollView>
     );
 };
