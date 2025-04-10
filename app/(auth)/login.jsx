@@ -12,7 +12,7 @@ const LoginForm = () => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
-                router.replace("/(tabs)"); // Redirect to home if already logged in
+                router.replace("/(tabs)");
             }
         });
 

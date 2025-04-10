@@ -5,6 +5,7 @@ import { PieChart, BarChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Dimensions } from 'react-native';
+import Header from '../../components/ui/Header';
 const screenWidth = Dimensions.get('window').width;
 
 export default function Dashboard() {
@@ -41,16 +42,11 @@ export default function Dashboard() {
     ];
     return (
         <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
-
-            {/* Greeting */}
+            <Header />
             <View className="flex-row justify-between items-center bg-white mb-4 rounded-2xl p-5">
                 <View>
-                    <Text className="text-xl font-semibold text-gray-800">Good Morning, Maria!</Text>
+                    <Text className="text-xl font-semibold text-gray-800">Good Morning, Twinky!</Text>
                     <Text className="text-sm text-gray-600">You've saved ₱150 this week compared to last!</Text>
-                </View>
-                <View className="flex-row items-center space-x-1">
-                    <FontAwesome name="cloud" size={20} color="gray" />
-                    <Text className="text-gray-600">72°</Text>
                 </View>
             </View>
 
