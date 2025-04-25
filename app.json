@@ -8,6 +8,11 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#ffffff",
+      "translucent": false
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.storeblues123.WisEnergy"

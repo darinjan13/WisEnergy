@@ -19,10 +19,10 @@ const Header = () => {
 
     return (
         <View className="flex-row justify-between items-center h-16 mb-4">
-            <View className="h-40 w-40 -ml-2">
+            <View className="w-10 h-10 justify-center -ml-2">
                 <Image
-                    source={require('../../assets/images/WisEnergy_LOGO2.png')}
-                    className="w-full h-full relative"
+                    source={require('@/assets/images/WisEnergy_LOGO2.png')}
+                    className="max-h-40 max-w-40"
                     resizeMode="contain"
                 />
             </View>

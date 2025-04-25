@@ -1,55 +1,143 @@
-import { View, Text, SafeAreaView, ScrollView, Button, StatusBar } from 'react-native'
-import React, { useState } from 'react'
-import ConsumptionOverview from "../../components/dashboard/ConsumptionOverview";
-import ConsumptionDetail from "../../components/dashboard/ConsumptionDetail";
-import BudgetTracker from "../../components/dashboard/BudgetTracker";
-import ApplianceCards from "../../components/dashboard/ApplianceCards";
-import EnergyTips from "../../components/dashboard/EnergyTips";
-import { handleLogout } from '../../hooks/useAuth';
+import React from 'react';
+import { View, Text, ScrollView } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+import { PieChart, BarChart } from 'react-native-gifted-charts';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function Consumption() {
-    const [showConsumptionDetails, setShowConsumptionDetails] = useState(false);
+import { Dimensions } from 'react-native';
+import Header from '../../components/ui/Header';
+const screenWidth = Dimensions.get('window').width;
+
+export default function Dashboard() {
+    const insets = useSafeAreaInsets();
+    const efficiencyData = [
+        {
+            value: 82,
+            color: '#10b981',
+        },
+        {
+            value: 18,
+            color: '#e5e7eb',
+        },
+    ];
+    const smartBudget = [
+        {
+            value: 75,
+            color: '#36a25e',
+        },
+        {
+            value: 25,
+
+            color: '#e5e7eb',
+        },
+    ];
+    const barData = [
+        { value: 5.1, label: 'S' },
+        { value: 4.7, label: 'M' },
+        { value: 2.5, label: 'T' },
+        { value: 3.0, label: 'W' },
+        { value: 4.2, label: 'TH' },
+        { value: 5.1, label: 'F' },
+        { value: 4.6, label: 'S' },
+    ];
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <StatusBar barStyle="dark-content" backgroundColor="white" />
-            <ScrollView className="px-4 py-6">
-                <View className="space-y-6">
-                    {showConsumptionDetails ? (
-                        <ConsumptionDetail
-                            onBack={() => setShowConsumptionDetails(false)}
-                            currentPower={2.4}
-                            dailyConsumption={18.7}
-                            previousPeriodConsumption={16.2}
-                        />
-                    ) : (
-                        <ConsumptionOverview
-                            currentPower={2.4}
-                            dailyConsumption={18.7}
-                            estimatedCost={156.32}
-                            maxPower={5}
-                            onViewDetails={() => setShowConsumptionDetails(true)}
-                        />
-                    )}
-
-                    {!showConsumptionDetails && (
-                        <>
-                            <BudgetTracker budgetAmount={2500} currentUsage={1875} daysRemaining={12} billingCycleTotal={30} />
-                            <ApplianceCards
-                                appliances={[
-                                    { name: "Air Conditioner", currentPower: 1.2, dailyUsage: 8.5, efficiency: "medium" },
-                                    { name: "Refrigerator", currentPower: 0.8, dailyUsage: 5.2, efficiency: "high" },
-                                    { name: "Television", currentPower: 0.3, dailyUsage: 2.1, efficiency: "high" },
-                                    { name: "Water Heater", currentPower: 2.5, dailyUsage: 4.7, efficiency: "low" },
-                                    { name: "Washing Machine", currentPower: 0.1, dailyUsage: 1.8, efficiency: "medium" },
-                                ]}
-                            />
-                            <EnergyTips />
-                        </>
-                    )}
+        <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
+            <Header />
+            <View className="flex-row justify-between items-center bg-white mb-4 rounded-2xl p-5">
+                <View>
+                    <Text className="text-xl font-semibold text-gray-800">Good Morning, Twinky!</Text>
+                    <Text className="text-sm text-gray-600">You've saved ₱150 this week compared to last!</Text>
                 </View>
-                <Button title='Logout' onPress={handleLogout} color="red" />
-            </ScrollView>
-        </SafeAreaView>
+            </View>
 
-    )
+            <View className="flex-row justify-between bg-white p-4 mb-4 rounded-2xl">
+                <View className="flex-1 items-center">
+                    <Text className="text-lg font-bold mb-2 text-[#23403A]">Energy Efficiency</Text>
+                    <PieChart
+                        donut
+                        innerRadius={35}
+                        radius={50}
+                        data={efficiencyData}
+                        showText
+                        textColor="#111827"
+                        textSize={22}
+                        textBackgroundColor="transparent"
+                        centerLabelComponent={() => (
+                            <Text className="text-2xl font-bold text-gray-900">82%</Text>
+                        )}
+                    />
+                    <Text className="text-sm text-green-600 mt-2">Efficient</Text>
+                    <Text className="text-center text-gray-600 mt-2">Your household is 82% energy efficient this week.</Text>
+                    <Text className="text-center text-blue-600 font-medium mt-2">See how to improve →</Text>
+                </View>
+
+                <View className="flex-1 items-center ">
+                    <Text className="text-lg font-bold mb-2 text-[#23403A]">Smart Budget</Text>
+                    <PieChart
+                        donut
+                        innerRadius={35}
+                        radius={50}
+                        data={smartBudget}
+                        showText
+                        textColor="#111827"
+                        textSize={22}
+                        textBackgroundColor="transparent"
+                        centerLabelComponent={() => (
+                            <Text className="text-2xl font-bold text-gray-900">75%</Text>
+                        )}
+                    />
+                    <Text className="mt-2 text-lg text-blue-600">You're on track!</Text>
+                    <Text className="text-sm text-gray-600">9 days remaining</Text>
+                </View>
+            </View>
+
+
+
+            {/* Weekly Trends */}
+            <View className="flex-1 flex-wrap bg-white p-4 rounded-2xl mb-4">
+                <View className="w-screen">
+                    <Text className="text-lg font-semibold mb-2">Weekly Energy Trends</Text>
+                    <BarChart
+                        data={barData}
+                        barWidth={screenWidth / barData.length / 1.8}
+                        barBorderRadius={5}
+                        frontColor="#10b981"
+                        yAxisThickness={0}
+                        xAxisThickness={0}
+                        xAxisLabelTextStyle={{ color: '#4B5563', fontSize: 12 }}
+                        yAxisTextStyle={{ color: '#4B5563' }}
+                        spacing={10}
+                        maxValue={6}
+                        noOfSections={3}
+                        isAn
+                    />
+                </View>
+            </View>
+
+            {/* Top Appliances */}
+            <View className="bg-white p-4 rounded-2xl mb-4">
+                <Text className="text-lg font-semibold mb-2">Top Appliances</Text>
+                <View className="space-y-1">
+                    <Text className="text-gray-800">❄️ Air Conditioner - <Text className="text-orange-500">High</Text></Text>
+                    <Text className="text-gray-800">🧺 Washing Machine - <Text className="text-yellow-500">Medium</Text></Text>
+                    <Text className="text-gray-800">💻 Computer - <Text className="text-green-600">Low</Text></Text>
+                </View>
+            </View>
+
+            {/* AI Recommendation */}
+            <View className="bg-white p-4 rounded-2xl flex-row items-center space-x-3 mb-4">
+                <FontAwesome name="plug" size={24} color="black" />
+                <Text className="text-gray-700">
+                    Consider unplugging unused devices to save ₱50/month.
+                </Text>
+            </View>
+
+            {/* Buttons */}
+            <View className="flex-row justify-between mt-4">
+                <Text className="bg-blue-100 px-4 py-2 rounded-xl text-blue-800 font-semibold">Run Appliance Checkup</Text>
+                <Text className="bg-blue-100 px-4 py-2 rounded-xl text-blue-800 font-semibold">Update Budget Plan</Text>
+                <Text className="bg-blue-100 px-4 py-2 rounded-xl text-blue-800 font-semibold">View Reports</Text>
+            </View>
+        </ScrollView>
+    );
 }

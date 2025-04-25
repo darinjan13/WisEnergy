@@ -6,161 +6,163 @@ import {
     TouchableOpacity,
     ScrollView,
     Alert,
+    Image,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { auth } from "../../firebase/firebaseConfig";
 import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "expo-router";
+import AuthHeader from "../../components/ui/AuthHeader";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const RegisterForm = ({ onSubmit, isLoading = false }) => {
-
+export default function RegisterForm() {
     const router = useRouter();
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                router.replace("/(tabs)"); // Redirect to home if already logged in
-            }
-        });
+    const [form, setForm] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+    });
 
-        return unsubscribe;
-    }, []);
-
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
 
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) router.replace("/(tabs)");
+        });
+        return unsubscribe;
+    }, []);
+
+    const handleChange = (field, value) => {
+        setForm({ ...form, [field]: value });
+    };
+
     const validateForm = () => {
         const newErrors = {};
-
-        if (!name.trim()) newErrors.name = "Name is required";
-        if (!email.trim()) newErrors.email = "Email is required";
-        else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Email is invalid";
-
-        if (!password) newErrors.password = "Password is required";
-        else if (password.length < 8)
-            newErrors.password = "Password must be at least 8 characters";
-
-        if (password !== confirmPassword)
+        if (!form.firstName.trim()) newErrors.firstName = "First name is required";
+        if (!form.lastName.trim()) newErrors.lastName = "Last name is required";
+        if (!form.email.trim()) newErrors.email = "Email is required";
+        else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "Email is invalid";
+        if (!form.password) newErrors.password = "Password is required";
+        else if (form.password.length < 8) newErrors.password = "Min. 8 characters";
+        if (form.password !== form.confirmPassword)
             newErrors.confirmPassword = "Passwords do not match";
         if (!acceptTerms)
-            newErrors.terms = "You must accept the terms and conditions";
+            newErrors.terms = "You must agree to the Terms & Privacy Policy";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async () => {
-        // console.log(email + " " + password);
-        // if (validateForm() && onSubmit) {
+        // if (!validateForm()) return;
 
-        //     // onSubmit({ name, email, password });
-        //     createUserWithEmailAndPassword(auth, email, password)
-        //         .then(res => {
-        //             const user = res.user;
-        //             console.log(user);
-
-        //         })
-        // }
         try {
-            const res = await createUserWithEmailAndPassword(auth, email, password);
-            console.log('Success' + res.user)
-            Alert.alert('Success', "Account Created.")
+            const res = await createUserWithEmailAndPassword(auth, form.email, form.password);
+            Alert.alert("Success", "Account created!");
         } catch (e) {
-            Alert.alert('Failed', e.message)
+            Alert.alert("Error", e.message);
         }
     };
 
     return (
-        <ScrollView style={{ backgroundColor: "white", padding: 16, borderRadius: 8, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, width: "100%", maxWidth: 350 }}>
-            <View style={{ gap: 16 }}>
-                <View>
-                    <Text style={{ color: "#374151", marginBottom: 4, fontWeight: "500" }}>Full Name</Text>
-                    <TextInput
-                        style={{
-                            borderWidth: 1,
-                            borderColor: errors.name ? "#EF4444" : "#D1D5DB",
-                            borderRadius: 8,
-                            padding: 12,
-                            backgroundColor: "#F9FAFB",
-                        }}
-                        placeholder="John Doe"
-                        value={name}
-                        onChangeText={setName}
-                    />
-                    {errors.name && <Text style={{ color: "#EF4444", fontSize: 12, marginTop: 4 }}>{errors.name}</Text>}
-                </View>
+        <SafeAreaView className="h-full">
+            <ScrollView className="h-full md:w-1/3 md:mx-auto bg-white px-6">
+                <AuthHeader textHeader="Create and account" />
 
-                <View>
-                    <Text style={{ color: "#374151", marginBottom: 4, fontWeight: "500" }}>Email Address</Text>
-                    <TextInput
-                        style={{
-                            borderWidth: 1,
-                            borderColor: errors.email ? "#EF4444" : "#D1D5DB",
-                            borderRadius: 8,
-                            padding: 12,
-                            backgroundColor: "#F9FAFB",
-                        }}
-                        placeholder="you@example.com"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
-                    {errors.email && <Text style={{ color: "#EF4444", fontSize: 12, marginTop: 4 }}>{errors.email}</Text>}
-                </View>
-
-                <View>
-                    <Text style={{ color: "#374151", marginBottom: 4, fontWeight: "500" }}>Password</Text>
-                    <View style={{ position: "relative" }}>
+                {/* First and Last Name */}
+                <View className="flex-row justify-between mb-4">
+                    <View className="flex-1 mr-2">
                         <TextInput
-                            style={{
-                                borderWidth: 1,
-                                borderColor: errors.password ? "#EF4444" : "#D1D5DB",
-                                borderRadius: 8,
-                                padding: 12,
-                                backgroundColor: "#F9FAFB",
-                                paddingRight: 40,
-                            }}
-                            placeholder="••••••••"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
+                            placeholder="First Name"
+                            value={form.firstName}
+                            onChangeText={(text) => handleChange("firstName", text)}
+                            className={`border px-3 py-2 rounded-md bg-white ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
                         />
-                        <TouchableOpacity
-                            style={{ position: "absolute", right: 12, top: 12 }}
-                            onPress={() => setShowPassword(!showPassword)}
-                        >
-                            <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#6b7280" />
-                        </TouchableOpacity>
                     </View>
-                    {errors.password && <Text style={{ color: "#EF4444", fontSize: 12, marginTop: 4 }}>{errors.password}</Text>}
+                    <View className="flex-1 ml-2">
+                        <TextInput
+                            placeholder="Last Name"
+                            value={form.lastName}
+                            onChangeText={(text) => handleChange("lastName", text)}
+                            className={`border px-3 py-2 rounded-md bg-white ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
+                        />
+                    </View>
                 </View>
 
-                <TouchableOpacity
-                    style={{
-                        marginTop: 16,
-                        borderRadius: 8,
-                        paddingVertical: 12,
-                        paddingHorizontal: 16,
-                        backgroundColor: isLoading || !name || !email || !password || !confirmPassword || !acceptTerms ? "#818CF8" : "#4F46E5",
-                    }}
-                    onPress={handleSubmit}
-                >
-                    <Text style={{ color: "white", textAlign: "center", fontWeight: "600" }}>
-                        {isLoading ? "Creating Account..." : "Create Account"}
-                    </Text>
-                </TouchableOpacity>
-            </View>
-            <TouchableOpacity onPress={() => router.push("/(auth)/login")} className="bg-gray-300 py-3 rounded-md">
-                <Text className="text-blue-600 text-center font-semibold">Login</Text>
-            </TouchableOpacity>
-        </ScrollView>
-    );
-};
+                {/* Email */}
+                <TextInput
+                    placeholder="Email"
+                    value={form.email}
+                    onChangeText={(text) => handleChange("email", text)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    className={`mb-4 border px-3 py-2 rounded-md bg-white ${errors.email ? "border-red-500" : "border-gray-300"}`}
+                />
 
-export default RegisterForm;
+                {/* Password */}
+                <TextInput
+                    placeholder="Password"
+                    value={form.password}
+                    onChangeText={(text) => handleChange("password", text)}
+                    secureTextEntry={!showPassword}
+                    className={`mb-4 border px-3 py-2 rounded-md bg-white ${errors.password ? "border-red-500" : "border-gray-300"}`}
+                />
+
+                {/* Confirm Password */}
+                <TextInput
+                    placeholder="Confirm Password"
+                    value={form.confirmPassword}
+                    onChangeText={(text) => handleChange("confirmPassword", text)}
+                    secureTextEntry
+                    className={`mb-4 border px-3 py-2 rounded-md bg-white ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
+                />
+
+                {/* Terms & Privacy */}
+                <Text className="text-xs text-gray-600 text-center mb-4">
+                    By clicking continue, you agree to our{" "}
+                    <Text className="text-green-700 font-semibold">Terms of Service</Text>{" "}
+                    and <Text className="text-green-700 font-semibold">Privacy Policy</Text>
+                </Text>
+
+                {/* Confirm Button */}
+                <TouchableOpacity
+                    onPress={handleSubmit}
+                    className="bg-green-700 py-3 rounded-md mb-4"
+                >
+                    <Text className="text-white text-center font-semibold">Confirm</Text>
+                </TouchableOpacity>
+
+                {/* Divider */}
+                <View className="flex-row items-center my-3">
+                    <View className="flex-1 h-px bg-gray-300" />
+                    <Text className="mx-2 text-gray-500">or</Text>
+                    <View className="flex-1 h-px bg-gray-300" />
+                </View>
+
+                {/* Google Button */}
+                <TouchableOpacity className="bg-gray-100 border border-gray-300 py-3 rounded-md flex-row items-center justify-center mb-4">
+                    <Image
+                        source={{
+                            uri: "https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg",
+                        }}
+                        className="w-5 h-5 mr-2"
+                    />
+                    <Text className="text-sm font-medium">Continue with Google</Text>
+                </TouchableOpacity>
+                <Text className="text-sm text-gray-700 text-center">
+                    Already have an account?{" "}
+                    <Text
+                        onPress={() => router.push("/(auth)/login")}
+                        className="text-green-700 font-semibold"
+                    >
+                        Login
+                    </Text>
+                </Text>
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
