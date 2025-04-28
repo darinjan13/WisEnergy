@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal, TextInput, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import Toast from 'react-native-toast-message';
+import { BlurView } from "expo-blur";
+
 import Header from "../../components/ui/Header";
 import { auth, db } from "../../firebase/firebaseConfig";
-import { get, onValue, ref, update } from "firebase/database";
+import { get, off, onValue, ref, update } from "firebase/database";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
 
 
-const ApplianceCard = ({ item, deleteDevice }) => (
+const ApplianceCard = ({ item, resetDevice, deleteDevice }) => (
 
     <View style={styles.cardShadow} className="bg-white rounded-xl p-4 mb-10 flex-row items-start space-x-3 overflow-hidden">
         <View className="w-10 h-10 my-auto mx-2 justify-center items-center">
@@ -22,7 +26,7 @@ const ApplianceCard = ({ item, deleteDevice }) => (
                 <TouchableOpacity style={styles.cardShadow} className="bg-white px-3 py-1 mr-5 rounded border border-gray-300">
                     <Text className="text-sm text-[#2E4F4F] font-medium">Edit</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.cardShadow} className="bg-white px-3 py-1 mr-5 rounded border border-gray-300">
+                <TouchableOpacity onPress={resetDevice} style={styles.cardShadow} className="bg-white px-3 py-1 mr-5 rounded border border-gray-300">
                     <Text className="text-sm text-[#2E4F4F] font-medium">Reset</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={deleteDevice} style={styles.cardShadow} className="bg-white px-3 py-1 rounded border border-gray-300">
@@ -45,11 +49,15 @@ const styles = StyleSheet.create({
 });
 
 export default function appliances() {
-    const [modalVisible, setModalVisible] = useState(false);
     const [deviceName, setDeviceName] = useState("");
     const [deviceCode, setDeviceCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [applianceName, setApplianceName] = useState("");
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [deviceId, setDeviceId] = useState(null);
+    const [action, setAction] = useState(null);
 
     const [appliancesData, setAppliancesData] = useState([]);
 
@@ -72,7 +80,6 @@ export default function appliances() {
             setAppliancesData(devices);
         });
 
-        // ✅ Unsubscribe on unmount
         return () => off(devicesRef);
     }, []);
 
@@ -120,7 +127,8 @@ export default function appliances() {
                 const deviceData = child.val();
 
                 if (
-                    deviceData.pairingCode === deviceCode.trim().toUpperCase() &&
+                    deviceData.deviceID === deviceName.trim() &&
+                    deviceData.pairingCode === deviceCode.trim() &&
                     deviceData.status === "unpaired"
                 ) {
                     matchedDeviceKey = deviceKey;
@@ -137,91 +145,103 @@ export default function appliances() {
                 });
                 await fetchDevices();
 
-                Alert.alert("Success", "Device successfully paired!");
+                Toast.show({
+                    type: "success",
+                    text1: "Success",
+                    text2: "Device successfully paired!",
+                });
                 setDeviceCode("");
                 setDeviceName("");
                 setApplianceName("");
                 setModalVisible(false);
             } else {
-                Alert.alert("Not Found", "Invalid or already paired device code.");
+                setModalVisible(false);
+                setTimeout(() => {
+                    Toast.show({
+                        type: "error",
+                        text1: "Error",
+                        text2: "No matching device found or device is already paired.",
+                    });
+                }, 1000);
             }
         } catch (error) {
-            console.error("Error pairing device:", error);
             Alert.alert("Error", "Failed to add device. Please try again.");
         }
     };
 
-    const deleteDevice = async (deviceId) => {
-        Alert.alert(
-            "Delete Appliance",
-            "Are you sure you want to delete this appliance?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const deviceRef = ref(db, `devices/${deviceId}`);
-                            await update(deviceRef, {
-                                status: "unpaired",
-                                owner: null,
-                                applianceName: null,
-                                dateAdded: null,
-                            });
-                            await fetchDevices(); // Refresh
-                            Alert.alert("Deleted", "Device successfully unpaired.");
-                        } catch (error) {
-                            console.error("Error unpairing device:", error);
-                            Alert.alert("Error", "Failed to unpair device.");
-                        }
-                    },
-                },
-            ]
-        );
+    const openConfirmModal = (deviceId, action) => {
+        setAction(action);
+        setDeviceId(deviceId);
+        setShowConfirmModal(true);
+    };
+
+    const handleDeleteConfirmed = async () => {
+        if (!deviceId) return;
+
+        try {
+            const deviceRef = ref(db, `devices/${deviceId}`);
+            await update(deviceRef, {
+                status: "unpaired",
+                owner: null,
+                applianceName: null,
+                dateAdded: null,
+            });
+            await fetchDevices();
+            setShowConfirmModal(false);
+            setDeviceId(null);
+
+            Toast.show({
+                type: "success",
+                text1: "Deleted",
+                text2: "Device successfully unpaired.",
+            });
+        } catch (error) {
+            console.error("Error unpairing device:", error);
+            Alert.alert("Error", "Failed to unpair device.");
+        }
+    };
+    const handleResetConfirmed = async () => {
+        if (!deviceId) return;
+        console.log("Resetting device with ID:", deviceId);
+
     }
     return (
         <View className="flex-1 bg-gray-100 p-4">
-            <Header />
-            {/* Header */}
-            <View className="flex-row items-center justify-between mb-5">
-                <Text className="text-2xl font-bold text-[#2E4F4F]">Appliances</Text>
-                <TouchableOpacity onPress={showAddDeviceModal} className="p-2">
-                    <Feather name="plus-circle" size={28} color="#166534" />
-                </TouchableOpacity>
-            </View>
+            <ScrollView className="" showsVerticalScrollIndicator={false}>
+                <Header />
+                <View className="flex-row items-center justify-between mb-5">
+                    <Text className="text-2xl font-bold text-[#2E4F4F]">Appliances</Text>
+                    <TouchableOpacity onPress={showAddDeviceModal} className="p-2">
+                        <Feather name="plus-circle" size={28} color="#166534" />
+                    </TouchableOpacity>
+                </View>
 
-            {/* Appliance List */}
-            {appliancesData.length > 0 ? (
-                <ScrollView showsVerticalScrollIndicator={false}>
+                {appliancesData.length > 0 ? (
                     <View className="px-5">
                         {appliancesData.map((item, index) => (
-                            <ApplianceCard key={index} item={item} deleteDevice={() => deleteDevice(item.id)} />
+                            <ApplianceCard key={index} item={item} resetDevice={() => openConfirmModal(item.id, "reset")} deleteDevice={() => openConfirmModal(item.id, "delete")} />
+
                         ))}
                     </View>
-                </ScrollView>
-            ) : (
-                <View className="flex-1 justify-center items-center">
-                    <MaterialCommunityIcons name="lightning-bolt-outline" size={64} color="#9CA3AF" />
-                    <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                        No appliances added yet
-                    </Text>
-                    <Text className="text-gray-400 mt-1 text-sm">
-                        Tap the plus icon to add one
-                    </Text>
-                </View>
-            )}
-
-
-
-            {/* Add Device Button */}
+                ) : (
+                    <View className="flex-1 justify-center items-center">
+                        <MaterialCommunityIcons name="lightning-bolt-outline" size={64} color="#9CA3AF" />
+                        <Text className="text-gray-500 mt-4 text-lg font-semibold">
+                            No appliances added yet
+                        </Text>
+                        <Text className="text-gray-400 mt-1 text-sm">
+                            Tap the plus icon to add one
+                        </Text>
+                    </View>
+                )}
+            </ScrollView >
             <Modal
                 animationType="fade"
                 transparent={true}
                 visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
             >
-                <View className="flex-1 justify-center items-center bg-black/30">
+                <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
                     <View className="bg-white rounded-xl p-6 w-11/12">
                         <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">Add Appliance</Text>
                         <TextInput
@@ -266,8 +286,12 @@ export default function appliances() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                </View>
+                </BlurView>
             </Modal>
-        </View >
+            <ConfirmModal visible={showConfirmModal} onCancel={() => {
+                setShowConfirmModal(false);
+                setDeviceId(null);
+            }} onConfirm={action === "delete" ? handleDeleteConfirmed : handleResetConfirmed} action={action} />
+        </View>
     );
 }

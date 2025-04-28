@@ -1,61 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ThemeProvider, DefaultTheme } from "@react-navigation/native";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/firebase/firebaseConfig"; // Import your Firebase auth instance
+import { auth } from "@/firebase/firebaseConfig";
 import { View, ActivityIndicator } from "react-native";
 import { useNavigationContainerRef } from "@react-navigation/native";
+import Toast from 'react-native-toast-message';
+import useAuth from "@/hooks/useAuth";
 
 export default function RootLayout() {
-  const [user, setUser] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { user, checkingAuth } = useAuth();
+  // const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
-  const navigationRef = useNavigationContainerRef(); // Ensures navigation is mounted
+  const navigationRef = useNavigationContainerRef();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setCheckingAuth(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  const segments = useSegments();
-
-  // useEffect(() => {
-  //   const pageTitle = {
-  //     "": "Home - WisEnergy",
-  //     login: "Login - WisEnergy",
-  //     register: "Register - WisEnergy",
-  //     dashboard: "Dashboard - WisEnergy",
-  //   };
-
-  //   const currentSegment = segments[1] || ""; // Get first part of URL
-  //   document.title = pageTitle[currentSegment] || "WisEnergy"; // Default title
-  // }, [segments]);
-
-  useEffect(() => {
-    if (!checkingAuth && navigationRef.isReady() && user) {
-      router.replace("/(tabs)"); // Redirect only if navigation is ready
+    if (!checkingAuth && navigationRef.isReady()) {
+      router.replace(user ? "/(tabs)" : "/(auth)/login");
     }
   }, [checkingAuth, user, navigationRef]);
 
   if (checkingAuth) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#166534" />
       </View>
     );
   }
 
   return (
     <ThemeProvider value={DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      <>
+        <Stack>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+
+        <Toast />
+      </>
     </ThemeProvider>
   );
 }

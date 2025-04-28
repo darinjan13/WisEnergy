@@ -1,15 +1,26 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { PieChart, BarChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Dimensions } from 'react-native';
 import Header from '../../components/ui/Header';
+import { auth } from '../../firebase/firebaseConfig';
 const screenWidth = Dimensions.get('window').width;
 
 export default function Dashboard() {
     const insets = useSafeAreaInsets();
+    const [userName, setUserName] = useState("");
+
+    useEffect(() => {
+
+        if (auth.currentUser) {
+            const user = auth.currentUser;
+            setUserName(user.displayName || "User");
+        }
+    }, []);
+
     const efficiencyData = [
         {
             value: 82,
@@ -45,7 +56,7 @@ export default function Dashboard() {
             <Header />
             <View className="flex-row justify-between items-center bg-white mb-4 rounded-2xl p-5">
                 <View>
-                    <Text className="text-xl font-semibold text-gray-800">Good Morning, Twinky!</Text>
+                    <Text className="text-xl font-semibold text-gray-800">Good Morning, {userName}!</Text>
                     <Text className="text-sm text-gray-600">You've saved ₱150 this week compared to last!</Text>
                 </View>
             </View>

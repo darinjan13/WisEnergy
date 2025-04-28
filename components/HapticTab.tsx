@@ -14,7 +14,7 @@ export function HapticTab(props: BottomTabBarButtonProps) {
         props.onPressIn?.(e);
       }}
     >
-      {props.children} {/* 👈 Needed to render icon + label */}
+      {props.children}
     </PlatformPressable>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
     View,
     Text,
@@ -7,15 +7,17 @@ import {
     ScrollView,
     Alert,
     Image,
+    ActivityIndicator,
 } from "react-native";
-import { auth } from "../../firebase/firebaseConfig";
-import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "expo-router";
 import AuthHeader from "../../components/ui/AuthHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
+import useAuth from "../../hooks/useAuth";
 
 export default function RegisterForm() {
     const router = useRouter();
+
+    const { register } = useAuth();
 
     const [form, setForm] = useState({
         firstName: "",
@@ -25,16 +27,12 @@ export default function RegisterForm() {
         confirmPassword: "",
     });
 
+    const [isLoading, setIsLoading] = useState(false);
+
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) router.replace("/(tabs)");
-        });
-        return unsubscribe;
-    }, []);
 
     const handleChange = (field, value) => {
         setForm({ ...form, [field]: value });
@@ -42,12 +40,13 @@ export default function RegisterForm() {
 
     const validateForm = () => {
         const newErrors = {};
+        setIsLoading(true);
         if (!form.firstName.trim()) newErrors.firstName = "First name is required";
         if (!form.lastName.trim()) newErrors.lastName = "Last name is required";
         if (!form.email.trim()) newErrors.email = "Email is required";
         else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "Email is invalid";
         if (!form.password) newErrors.password = "Password is required";
-        else if (form.password.length < 8) newErrors.password = "Min. 8 characters";
+        else if (form.password.length < 6) newErrors.password = "Min. 8 characters";
         if (form.password !== form.confirmPassword)
             newErrors.confirmPassword = "Passwords do not match";
         if (!acceptTerms)
@@ -57,15 +56,11 @@ export default function RegisterForm() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         // if (!validateForm()) return;
-
-        try {
-            const res = await createUserWithEmailAndPassword(auth, form.email, form.password);
-            Alert.alert("Success", "Account created!");
-        } catch (e) {
-            Alert.alert("Error", e.message);
-        }
+        // Alert.alert(form.firstName, form.lastName);
+        setIsLoading(true);
+        register(setIsLoading, form.firstName, form.email, form.password);
     };
 
     return (
@@ -132,8 +127,13 @@ export default function RegisterForm() {
                 <TouchableOpacity
                     onPress={handleSubmit}
                     className="bg-green-700 py-3 rounded-md mb-4"
+                    disabled={isLoading}
                 >
-                    <Text className="text-white text-center font-semibold">Confirm</Text>
+                    {!isLoading ? (
+                        <Text className="text-white text-center font-semibold">Sign up</Text>
+                    ) : (
+                        <ActivityIndicator size="small" color="white" />
+                    )}
                 </TouchableOpacity>
 
                 {/* Divider */}

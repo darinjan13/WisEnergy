@@ -1,25 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
-    Alert,
     Image,
+    ActivityIndicator
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import {
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-} from "firebase/auth";
-import { auth } from "../../firebase/firebaseConfig";
-import Header from "@/components/ui/Header";
 import AuthHeader from "../../components/ui/AuthHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
+import useAuth from "../../hooks/useAuth";
 
 export default function LoginForm() {
     const router = useRouter();
+    const { login } = useAuth();
+
+    const [isLoading, setIsLoading] = useState(false);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -27,23 +25,15 @@ export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({ email: "", password: "" });
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                router.replace("/(tabs)");
-            }
-        });
-
-        return unsubscribe;
-    }, []);
-
     const validateForm = () => {
+        setIsLoading(true);
         let isValid = true;
         const newErrors = { email: "", password: "" };
 
         if (!email) {
             newErrors.email = "Email is required";
             isValid = false;
+            setIsLoading(false);
         } else if (!/\S+@\S+\.\S+/.test(email)) {
             newErrors.email = "Email is invalid";
             isValid = false;
@@ -61,32 +51,14 @@ export default function LoginForm() {
         return isValid;
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         if (!validateForm()) return;
-
-        try {
-            const userCredential = await signInWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
-            Alert.alert("Success", "You are now logged in!");
-            router.replace("/(tabs)");
-        } catch (error) {
-            let errorMessage = "An error occurred. Please try again.";
-            if (error.code === "auth/user-not-found") {
-                errorMessage = "No user found with this email.";
-            } else if (error.code === "auth/wrong-password") {
-                errorMessage = "Incorrect password.";
-            }
-            Alert.alert("Login Failed", errorMessage);
-        }
+        login(setIsLoading, email, password);
     };
 
     return (
         <SafeAreaView className="h-full">
             <View className="h-full md:w-1/3 md:mx-auto bg-white px-6">
-                {/* Logo */}
                 <AuthHeader textHeader="Login" />
 
                 <View className="flex-1 items-center">
@@ -107,7 +79,6 @@ export default function LoginForm() {
                         )}
                     </View>
 
-                    {/* Password Field */}
                     <View className="mb-4 w-full max-w-sm">
                         <View className="flex-row items-center border border-gray-300 rounded-md px-3 py-2">
                             <Feather name="lock" size={18} color="gray" />
@@ -147,8 +118,12 @@ export default function LoginForm() {
                     <TouchableOpacity
                         onPress={handleSubmit}
                         className="bg-green-700 py-3 rounded-md w-full max-w-sm mb-4"
+                        disabled={isLoading}
                     >
-                        <Text className="text-white text-center font-semibold">Log in</Text>
+                        {!isLoading ? (
+                            <Text className="text-white text-center font-semibold">Log in</Text>) : (
+                            <ActivityIndicator size="small" color="white" />
+                        )}
                     </TouchableOpacity>
                     {/* Forgot Password */}
                     <TouchableOpacity>
@@ -174,15 +149,17 @@ export default function LoginForm() {
                     </TouchableOpacity>
 
                     {/* Register */}
-                    <Text className="text-sm text-gray-700 text-center">
-                        Don’t have an account?{" "}
-                        <Text
-                            onPress={() => router.push("/(auth)/register")}
-                            className="text-green-700 font-semibold"
-                        >
-                            Sign up
+                    <View className="flex-row justify-center mt-4">
+                        <Text className="text-sm text-gray-700">
+                            Don’t have an account?{" "}
                         </Text>
-                    </Text>
+                        <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
+                            <Text className="text-sm text-green-700 font-semibold">
+                                Sign up
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
                 </View>
             </View>
         </SafeAreaView>
