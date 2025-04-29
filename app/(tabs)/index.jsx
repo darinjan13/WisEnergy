@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { PieChart, BarChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,9 +14,9 @@ export default function Dashboard() {
     const [userName, setUserName] = useState("");
 
     useEffect(() => {
+        const user = auth?.currentUser;
 
-        if (auth.currentUser) {
-            const user = auth.currentUser;
+        if (user) {
             setUserName(user.displayName || "User");
         }
     }, []);
@@ -54,14 +54,14 @@ export default function Dashboard() {
     return (
         <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
             <Header />
-            <View className="flex-row justify-between items-center bg-white mb-4 rounded-2xl p-5">
+            <View style={styles.cardShadow} className="flex-row justify-between items-center bg-white mb-4 rounded-2xl p-5">
                 <View>
                     <Text className="text-xl font-semibold text-gray-800">Good Morning, {userName}!</Text>
                     <Text className="text-sm text-gray-600">You've saved ₱150 this week compared to last!</Text>
                 </View>
             </View>
 
-            <View className="flex-row justify-between bg-white p-4 mb-4 rounded-2xl">
+            <View style={styles.cardShadow} className="flex-row justify-between bg-white p-4 mb-4 rounded-2xl">
                 <View className="flex-1 items-center">
                     <Text className="text-lg font-bold mb-2 text-[#23403A]">Energy Efficiency</Text>
                     <PieChart
@@ -105,7 +105,7 @@ export default function Dashboard() {
 
 
             {/* Weekly Trends */}
-            <View className="flex-1 flex-wrap bg-white p-4 rounded-2xl mb-4">
+            <View style={styles.cardShadow} className="flex-1 flex-wrap bg-white p-4 rounded-2xl mb-4">
                 <View className="w-screen">
                     <Text className="text-lg font-semibold mb-2">Weekly Energy Trends</Text>
                     <BarChart
@@ -126,7 +126,7 @@ export default function Dashboard() {
             </View>
 
             {/* Top Appliances */}
-            <View className="bg-white p-4 rounded-2xl mb-4">
+            <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
                 <Text className="text-lg font-semibold mb-2">Top Appliances</Text>
                 <View className="space-y-1">
                     <Text className="text-gray-800">❄️ Air Conditioner - <Text className="text-orange-500">High</Text></Text>
@@ -136,7 +136,7 @@ export default function Dashboard() {
             </View>
 
             {/* AI Recommendation */}
-            <View className="bg-white p-4 rounded-2xl flex-row items-center space-x-3 mb-4">
+            <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl flex-row items-center space-x-3 mb-4">
                 <FontAwesome name="plug" size={24} color="black" />
                 <Text className="text-gray-700">
                     Consider unplugging unused devices to save ₱50/month.
@@ -152,3 +152,14 @@ export default function Dashboard() {
         </ScrollView>
     );
 }
+
+const styles = StyleSheet.create({
+    cardShadow: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+
+        elevation: 10,
+    },
+});

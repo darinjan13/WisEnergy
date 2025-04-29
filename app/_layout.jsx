@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { ThemeProvider, DefaultTheme } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/firebase/firebaseConfig";
+import { Provider as PaperProvider } from 'react-native-paper';
+
 import { View, ActivityIndicator } from "react-native";
 import { useNavigationContainerRef } from "@react-navigation/native";
 import Toast from 'react-native-toast-message';
@@ -10,7 +10,6 @@ import useAuth from "@/hooks/useAuth";
 
 export default function RootLayout() {
   const { user, checkingAuth } = useAuth();
-  // const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
   const navigationRef = useNavigationContainerRef();
 
@@ -29,16 +28,15 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <>
+    <PaperProvider>
+      <ThemeProvider value={DefaultTheme}>
         <Stack>
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
-
         <Toast />
-      </>
-    </ThemeProvider>
+      </ThemeProvider>
+    </PaperProvider>
   );
 }

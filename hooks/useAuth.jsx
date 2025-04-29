@@ -4,7 +4,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndP
 import { auth } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
-import { Alert } from "react-native";
+import { set } from "firebase/database";
 
 export default function useAuth() {
     const [user, setUser] = useState(null);
@@ -70,7 +70,7 @@ export default function useAuth() {
         }
     }, [router]);
 
-    const logout = useCallback(async () => {
+    const logout = useCallback(async (setIsLoading) => {
         try {
             router.replace("/(auth)/login");
             await signOut(auth);
@@ -86,6 +86,7 @@ export default function useAuth() {
                 text1: "Logout failed",
                 text2: error.message,
             });
+            setIsLoading(false);
         }
     }, [router]);
 
