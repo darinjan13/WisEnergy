@@ -11,7 +11,7 @@ import ConfirmModal from "../../components/ui/ConfirmModal";
 
 
 
-const ApplianceCard = ({ item, resetDevice, deleteDevice }) => (
+const ApplianceCard = ({ power, item, resetDevice, deleteDevice }) => (
 
     <View style={styles.cardShadow} className="bg-white rounded-xl p-4 mb-10 flex-row items-start space-x-3 overflow-hidden">
         <View className="w-10 h-10 my-auto mx-2 justify-center items-center">
@@ -21,6 +21,10 @@ const ApplianceCard = ({ item, resetDevice, deleteDevice }) => (
             <Text className="font-semibold text-[#2E4F4F] text-base">{item.name}</Text>
             <Text className="text-xs text-gray-600">
                 Added on {item.dates.join(", ")}
+            </Text>
+            {/* 🔌 Latest Power Reading */}
+            <Text className="text-sm text-[#2E4F4F] mt-1">
+                Current Power: <Text className="font-semibold">{power?.toFixed(2)} W</Text>
             </Text>
             <View className="flex-row mt-2">
                 <TouchableOpacity style={styles.cardShadow} className="bg-white px-3 py-1 mr-5 rounded border border-gray-300">
@@ -53,6 +57,8 @@ export default function appliances() {
     const [deviceCode, setDeviceCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [applianceName, setApplianceName] = useState("");
+    const [appliancePower, setAppliancePower] = useState("");
+    const [applianceKWH, setApplianceKWH] = useState("");
 
     const [modalVisible, setModalVisible] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -63,7 +69,56 @@ export default function appliances() {
 
     useEffect(() => {
         const devicesRef = ref(db, "devices");
+        const usageRef = ref(db, "usage");
+        const summaryRef = ref(db, "summary");
 
+        onValue(usageRef, (snapshot) => {
+            let latestPower = 0;
+
+            snapshot.forEach((deviceSnap) => {
+                deviceSnap.forEach((dateSnap) => {
+                    let lastTimeKey = null;
+                    let lastTimeData = null;
+
+                    dateSnap.forEach((timeSnap) => {
+                        const timeKey = timeSnap.key;
+                        if (!lastTimeKey || timeKey > lastTimeKey) {
+                            lastTimeKey = timeKey;
+                            lastTimeData = timeSnap.val();
+                        }
+                    });
+
+                    if (lastTimeData?.power !== undefined) {
+                        latestPower = lastTimeData.power;
+                    }
+                });
+            });
+
+            console.log("⚡ Latest Power:", latestPower);
+            setAppliancePower(latestPower);
+        });
+
+        // onValue(summaryRef, (snapshot) => {
+        //     let latestKWH = 0;
+        //     snapshot.forEach((deviceSnap) => {
+        //         let lastTimeKey = null;
+        //         let lastTimeData = null;
+        //         const dateToday = new Date().toISOString().split('T')[0];
+        //         deviceSnap.forEach((timeSnap) => {
+        //             const timeKey = timeSnap.key;
+        //             if (!lastTimeKey || timeKey > lastTimeKey) {
+        //                 lastTimeKey = timeKey;
+        //                 lastTimeData = timeSnap.val();
+        //             }
+        //             if (lastTimeData?.total_kWh !== undefined) {
+        //                 if (lastTimeKey === dateToday) {
+        //                     console.log("Latest KWH:", lastTimeData.total_kWh);
+        //                 }
+
+        //             }
+        //         })
+        //     })
+        // })
         const unsubscribe = onValue(devicesRef, (snapshot) => {
             const devices = [];
             snapshot.forEach((child) => {
@@ -219,8 +274,7 @@ export default function appliances() {
                 {appliancesData.length > 0 ? (
                     <View className="px-5">
                         {appliancesData.map((item, index) => (
-                            <ApplianceCard key={index} item={item} resetDevice={() => openConfirmModal(item.id, "reset")} deleteDevice={() => openConfirmModal(item.id, "delete")} />
-
+                            <ApplianceCard key={index} power={appliancePower} item={item} resetDevice={() => openConfirmModal(item.id, "reset")} deleteDevice={() => openConfirmModal(item.id, "delete")} />
                         ))}
                     </View>
                 ) : (
