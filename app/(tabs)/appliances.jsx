@@ -11,7 +11,7 @@ import ConfirmModal from "../../components/ui/ConfirmModal";
 
 
 
-const ApplianceCard = ({ power, item, resetDevice, deleteDevice }) => (
+const ApplianceCard = ({ power, item, editDevice, resetDevice, deleteDevice }) => (
 
     <View style={styles.cardShadow} className="bg-white rounded-xl p-4 mb-10 flex-row items-start space-x-3 overflow-hidden">
         <View className="w-10 h-10 my-auto mx-2 justify-center items-center">
@@ -27,7 +27,7 @@ const ApplianceCard = ({ power, item, resetDevice, deleteDevice }) => (
                 Current Power: <Text className="font-semibold">{power?.toFixed(2)} W</Text>
             </Text>
             <View className="flex-row mt-2">
-                <TouchableOpacity style={styles.cardShadow} className="bg-white px-3 py-1 mr-5 rounded border border-gray-300">
+                <TouchableOpacity onPress={editDevice} style={styles.cardShadow} className="bg-white px-3 py-1 mr-5 rounded border border-gray-300">
                     <Text className="text-sm text-[#2E4F4F] font-medium">Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={resetDevice} style={styles.cardShadow} className="bg-white px-3 py-1 mr-5 rounded border border-gray-300">
@@ -72,30 +72,31 @@ export default function appliances() {
         const usageRef = ref(db, "usage");
         const summaryRef = ref(db, "summary");
 
-        onValue(usageRef, (snapshot) => {
+        const unsubscribeUsage = onValue(usageRef, (snapshot) => {
             let latestPower = 0;
+            const powerMap = {};
 
             snapshot.forEach((deviceSnap) => {
+                const deviceID = deviceSnap.key;
+                let lastPower = 0;
+                let lastTimestamp = "";
                 deviceSnap.forEach((dateSnap) => {
-                    let lastTimeKey = null;
-                    let lastTimeData = null;
-
+                    const dateKey = dateSnap.key;
                     dateSnap.forEach((timeSnap) => {
                         const timeKey = timeSnap.key;
-                        if (!lastTimeKey || timeKey > lastTimeKey) {
-                            lastTimeKey = timeKey;
-                            lastTimeData = timeSnap.val();
+                        if (timeKey > lastTimestamp) {
+                            lastTimestamp = timeKey;
+                        }
+                        const data = timeSnap.val();
+                        if (data.power !== undefined) {
+                            lastPower = data.power;
                         }
                     });
-
-                    if (lastTimeData?.power !== undefined) {
-                        latestPower = lastTimeData.power;
-                    }
                 });
+                powerMap[deviceID] = lastPower;
             });
 
-            console.log("⚡ Latest Power:", latestPower);
-            setAppliancePower(latestPower);
+            setAppliancePower(powerMap);
         });
 
         // onValue(summaryRef, (snapshot) => {
@@ -223,6 +224,36 @@ export default function appliances() {
             Alert.alert("Error", "Failed to add device. Please try again.");
         }
     };
+    const showEditModal = (device) => {
+        setAction("edit");
+        setDeviceId(device.id);
+        setApplianceName(device.applianceName);
+        setModalVisible(true);
+    };
+
+    const handleEditConfirmed = async () => {
+        if (!deviceId) return;
+        try {
+            const deviceRef = ref(db, `devices/${deviceId}`);
+            await update(deviceRef, {
+                applianceName: applianceName,
+            });
+            await fetchDevices();
+            setShowConfirmModal(false);
+            setDeviceId(null);
+            setApplianceName("");
+            setAction(null);
+            Toast.show({
+                type: "success",
+                text1: "Success",
+                text2: "Device name successfully updated.",
+            });
+            setModalVisible(false);
+        } catch (error) {
+            console.error("Error updating device name:", error);
+            Alert.alert("Error", "Failed to update device name.");
+        }
+    };
 
     const openConfirmModal = (deviceId, action) => {
         setAction(action);
@@ -274,7 +305,7 @@ export default function appliances() {
                 {appliancesData.length > 0 ? (
                     <View className="px-5">
                         {appliancesData.map((item, index) => (
-                            <ApplianceCard key={index} power={appliancePower} item={item} resetDevice={() => openConfirmModal(item.id, "reset")} deleteDevice={() => openConfirmModal(item.id, "delete")} />
+                            <ApplianceCard key={index} power={appliancePower[item.id]} item={item} editDevice={() => showEditModal(item)} resetDevice={() => openConfirmModal(item.id, "reset")} deleteDevice={() => openConfirmModal(item.id, "delete")} />
                         ))}
                     </View>
                 ) : (
@@ -297,46 +328,55 @@ export default function appliances() {
             >
                 <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
                     <View className="bg-white rounded-xl p-6 w-11/12">
-                        <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">Add Appliance</Text>
+                        <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">{action === "edit" ? "Edit Appliance" : "Add Device"}</Text>
                         <TextInput
                             placeholder="Enter Appliance name"
                             value={applianceName}
                             onChangeText={setApplianceName}
                             className="border border-gray-300 rounded-lg px-4 py-2 mb-6 bg-gray-50"
-                        /><TextInput
-                            placeholder="Enter Device name"
-                            value={deviceName}
-                            onChangeText={setDeviceName}
-                            className="border border-gray-300 rounded-lg px-4 py-2 mb-6 bg-gray-50"
                         />
-                        <View className="border border-gray-300 rounded-lg mb-6 px-4 bg-gray-50 flex-row items-center">
+                        {action !== "edit" ? (<>
                             <TextInput
-                                className="flex-1 py-2 text-base text-gray-800"
-                                placeholder="Enter Device password"
-                                secureTextEntry={!showPassword}
-                                value={deviceCode}
-                                onChangeText={setDeviceCode}
+                                placeholder="Enter Device name"
+                                value={deviceName}
+                                onChangeText={setDeviceName}
+                                className="border border-gray-300 rounded-lg px-4 py-2 mb-6 bg-gray-50"
                             />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                <Feather
-                                    name={showPassword ? "eye-off" : "eye"}
-                                    size={20}
-                                    color="gray"
+                            <View className="border border-gray-300 rounded-lg mb-6 px-4 bg-gray-50 flex-row items-center">
+                                <TextInput
+                                    className="flex-1 py-2 text-base text-gray-800"
+                                    placeholder="Enter Device password"
+                                    secureTextEntry={!showPassword}
+                                    value={deviceCode}
+                                    onChangeText={setDeviceCode}
                                 />
-                            </TouchableOpacity>
-                        </View>
+                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                    <Feather
+                                        name={showPassword ? "eye-off" : "eye"}
+                                        size={20}
+                                        color="gray"
+                                    />
+                                </TouchableOpacity>
+                            </View></>
+                        ) : null}
+
                         <View className="flex-row justify-end">
                             <TouchableOpacity
                                 className="px-4 py-2 bg-gray-300 rounded-lg mr-4"
-                                onPress={() => setModalVisible(false)}
+                                onPress={() => { setModalVisible(false); setAction(null) }}
                             >
                                 <Text className="text-gray-700 font-semibold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 className="px-4 py-2 bg-green-700 rounded-lg"
-                                onPress={addDevice}
-                            >
-                                <Text className="text-white font-semibold">Add</Text>
+                                onPress={() => {
+                                    if (action === "edit") {
+                                        handleEditConfirmed();
+                                    } else {
+                                        addDevice();
+                                    }
+                                }}>
+                                <Text className="text-white font-semibold">{action === "edit" ? "Confirm" : "Add"}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
