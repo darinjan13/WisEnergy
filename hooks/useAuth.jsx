@@ -1,10 +1,27 @@
 // hooks/useAuth.js
 import { useState, useEffect, useCallback } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
-import { auth } from "@/firebase/firebaseConfig";
+import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
-import { set } from "firebase/database";
+import { ref, set } from "firebase/database";
+
+const saveUserDetails = async (user_id, email, first_name, last_name, role) => {
+    const userRef = ref(db, "users/" + user_id);
+
+    set(userRef, {
+        email: email,
+        first_name: first_name,
+        last_name: last_name,
+        role: role,
+        budget_kwh: 0,
+        created_at: new Date().toISOString(),
+        notify_smart_recommendation: false,
+        notify_high_usage_alerts: false,
+        notify_system_updates: false,
+    });
+}
+
 
 export default function useAuth() {
     const [user, setUser] = useState(null);
@@ -19,10 +36,12 @@ export default function useAuth() {
         return unsubscribe;
     }, []);
 
-    const register = useCallback(async (setIsLoading, firstName, email, password) => {
+    const register = useCallback(async (setIsLoading, firstName, lastName, email, password) => {
         try {
             const res = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(res.user, { displayName: firstName });
+            
+            await saveUserDetails(res.user.uid, email, firstName, lastName, "user");
             Toast.show({
                 type: "success",
                 text1: "Registration Successful",

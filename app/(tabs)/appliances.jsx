@@ -22,7 +22,6 @@ const ApplianceCard = ({ power, item, editDevice, resetDevice, deleteDevice }) =
             <Text className="text-xs text-gray-600">
                 Added on {item.dates.join(", ")}
             </Text>
-            {/* 🔌 Latest Power Reading */}
             <Text className="text-sm text-[#2E4F4F] mt-1">
                 Current Power: <Text className="font-semibold">{power?.toFixed(2)} W</Text>
             </Text>
@@ -126,7 +125,7 @@ export default function appliances() {
                 const deviceData = child.val();
                 if (deviceData.owner === auth.currentUser.uid) {
                     devices.push({
-                        id: deviceData.deviceID,
+                        id: child.key,
                         name: deviceData.applianceName,
                         icon: <MaterialCommunityIcons name="lightning-bolt" size={30} color="black" />,
                         dates: [deviceData.dateAdded],
@@ -148,7 +147,7 @@ export default function appliances() {
                 const deviceData = child.val();
                 if (deviceData.owner === auth.currentUser.uid) {
                     devices.push({
-                        id: deviceData.deviceID,
+                        id: child.key,
                         name: deviceData.applianceName,
                         icon: <MaterialCommunityIcons name="lightning-bolt" size={30} color="black" />,
                         dates: [deviceData.dateAdded],
@@ -175,19 +174,16 @@ export default function appliances() {
             const devicesRef = ref(db, "devices");
 
             const snapshot = await get(devicesRef);
-
             let matchedDeviceKey = null;
 
             snapshot.forEach((child) => {
-                const deviceKey = child.key;
                 const deviceData = child.val();
-
                 if (
-                    deviceData.deviceID === deviceName.trim() &&
+                    child.key === deviceName.trim() &&
                     deviceData.pairingCode === deviceCode.trim() &&
                     deviceData.status === "unpaired"
                 ) {
-                    matchedDeviceKey = deviceKey;
+                    matchedDeviceKey = child.key;
                 }
             });
 
@@ -224,14 +220,16 @@ export default function appliances() {
             Alert.alert("Error", "Failed to add device. Please try again.");
         }
     };
-    const showEditModal = (device) => {
+    const showEditModal = (device) => {        
         setAction("edit");
         setDeviceId(device.id);
-        setApplianceName(device.applianceName);
+        setApplianceName(device.name);
         setModalVisible(true);
     };
 
     const handleEditConfirmed = async () => {
+        console.log(deviceId);
+        
         if (!deviceId) return;
         try {
             const deviceRef = ref(db, `devices/${deviceId}`);

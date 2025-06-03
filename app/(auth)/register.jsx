@@ -60,7 +60,7 @@ export default function RegisterForm() {
         // if (!validateForm()) return;
         // Alert.alert(form.firstName, form.lastName);
         setIsLoading(true);
-        register(setIsLoading, form.firstName, form.email, form.password);
+        register(setIsLoading, form.firstName, form.lastName, form.email, form.password);
     };
 
     return (
