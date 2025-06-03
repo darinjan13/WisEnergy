@@ -1,11 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Header from "../../components/ui/Header";
+import { ref } from "firebase/database";
+import { db } from "../../firebase/firebaseConfig";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
+    const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
+
+    useEffect(() => {
+        const dailySummaryRef = ref(db, 'dailySummary');
+
+    }, []);
 
     const barData = [
         { value: 30, label: 'Jan' },
@@ -45,7 +53,7 @@ export default function reports() {
             {/* Energy Consumption */}
             <View className="flex-row justify-between mb-2 text-center">
                 <Text className="text-2xl font-bold text-[#14532d] my-auto">Energy Consumption</Text>
-                <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">126.789 kWh</Text>
+                <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption} kWh</Text>
             </View>
             <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
                 <BarChart

@@ -53,6 +53,7 @@ export default function RegisterForm() {
             newErrors.terms = "You must agree to the Terms & Privacy Policy";
 
         setErrors(newErrors);
+        setIsLoading(false);
         return Object.keys(newErrors).length === 0;
     };
 

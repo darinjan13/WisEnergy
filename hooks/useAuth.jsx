@@ -15,6 +15,7 @@ const saveUserDetails = async (user_id, email, first_name, last_name, role) => {
         last_name: last_name,
         role: role,
         budget_kwh: 0,
+        total_energy_consumption: 0,
         created_at: new Date().toISOString(),
         notify_smart_recommendation: false,
         notify_high_usage_alerts: false,
@@ -40,7 +41,7 @@ export default function useAuth() {
         try {
             const res = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(res.user, { displayName: firstName });
-            
+
             await saveUserDetails(res.user.uid, email, firstName, lastName, "user");
             Toast.show({
                 type: "success",
@@ -65,6 +66,7 @@ export default function useAuth() {
     }, [router]);
 
     const login = useCallback(async (setIsLoading, email, password) => {
+        setIsLoading(true);
         try {
             await signInWithEmailAndPassword(auth, email, password);
             Toast.show({
@@ -72,14 +74,17 @@ export default function useAuth() {
                 text1: "Welcome back!",
                 text2: "You are now logged in.",
             });
+            setIsLoading(false);
             router.replace("/(tabs)");
         } catch (e) {
             let message = "An error occurred. Please try again.";
             if (e.code === "auth/user-not-found") {
                 message = "No user found with this email.";
-            } else if (e.code === "auth/wrong-password") {
-                message = "Incorrect password.";
+            } else if (e.code === "auth/invalid-credential") {
+                message = "Incorrect email or password.";
             }
+            console.log(e);
+
             Toast.show({
                 type: "error",
                 text1: "Login Failed",

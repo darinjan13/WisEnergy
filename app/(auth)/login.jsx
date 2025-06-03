@@ -26,7 +26,6 @@ export default function LoginForm() {
     const [errors, setErrors] = useState({ email: "", password: "" });
 
     const validateForm = () => {
-        setIsLoading(true);
         let isValid = true;
         const newErrors = { email: "", password: "" };
 

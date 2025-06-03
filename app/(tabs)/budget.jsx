@@ -30,8 +30,8 @@ export default function budget() {
                     radius={70}
                     innerRadius={50}
                     data={[
-                        { value: 75, color: '#10b981' },      // Filled portion
-                        { value: 25, color: '#E5E7EB' },      // Unfilled background
+                        { value: 75, color: '#10b981' },
+                        { value: 25, color: '#E5E7EB' },
                     ]}
                 />
                 <Text className="absolute text-3xl font-bold text-[#23403A]">

@@ -98,27 +98,6 @@ export default function appliances() {
             setAppliancePower(powerMap);
         });
 
-        // onValue(summaryRef, (snapshot) => {
-        //     let latestKWH = 0;
-        //     snapshot.forEach((deviceSnap) => {
-        //         let lastTimeKey = null;
-        //         let lastTimeData = null;
-        //         const dateToday = new Date().toISOString().split('T')[0];
-        //         deviceSnap.forEach((timeSnap) => {
-        //             const timeKey = timeSnap.key;
-        //             if (!lastTimeKey || timeKey > lastTimeKey) {
-        //                 lastTimeKey = timeKey;
-        //                 lastTimeData = timeSnap.val();
-        //             }
-        //             if (lastTimeData?.total_kWh !== undefined) {
-        //                 if (lastTimeKey === dateToday) {
-        //                     console.log("Latest KWH:", lastTimeData.total_kWh);
-        //                 }
-
-        //             }
-        //         })
-        //     })
-        // })
         const unsubscribe = onValue(devicesRef, (snapshot) => {
             const devices = [];
             snapshot.forEach((child) => {
@@ -220,7 +199,7 @@ export default function appliances() {
             Alert.alert("Error", "Failed to add device. Please try again.");
         }
     };
-    const showEditModal = (device) => {        
+    const showEditModal = (device) => {
         setAction("edit");
         setDeviceId(device.id);
         setApplianceName(device.name);
@@ -229,7 +208,7 @@ export default function appliances() {
 
     const handleEditConfirmed = async () => {
         console.log(deviceId);
-        
+
         if (!deviceId) return;
         try {
             const deviceRef = ref(db, `devices/${deviceId}`);
