@@ -1,19 +1,33 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Header from "../../components/ui/Header";
-import { ref } from "firebase/database";
-import { db } from "../../firebase/firebaseConfig";
+import { get, off, onValue, ref, set } from "firebase/database";
+import { auth, db } from "../../firebase/firebaseConfig";
+import { useFocusEffect } from "expo-router";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
+    const [reportCategory, setReportCategory] = useState("Monthly");
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
 
+    const category = ["Monthly", "Weekly", "Daily"];
+
     useEffect(() => {
-        const dailySummaryRef = ref(db, 'dailySummary');
+        fetchTotalEnergyConsumption()
 
     }, []);
+
+    const fetchTotalEnergyConsumption = async () => {
+        const now = new Date();
+        const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const todayLocal = offsetDate.toISOString().split("T")[0];
+
+        const dailySummaryRef = ref(db, `daily_total_consumption/${auth.currentUser.uid}/${todayLocal}`);
+        const snapshot = await get(dailySummaryRef);
+        setTotalEnergyConsumption(snapshot.val()?.total_energy_consumption || 0);
+    }
 
     const barData = [
         { value: 30, label: 'Jan' },
@@ -21,7 +35,7 @@ export default function reports() {
         { value: 55, label: 'Mar' },
         { value: 60, label: 'Apr' },
         { value: 75, label: 'May' },
-        { value: 90, label: 'Jun' },
+        { value: totalEnergyConsumption, label: 'Jun' },
     ];
 
     const lineData = [
@@ -35,22 +49,18 @@ export default function reports() {
     return (
         <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
             <Header />
-            {/* Title */}
             <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Usage Report</Text>
-
-            {/* Toggle Buttons */}
-            <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl shadow-sm justify-between items-center">
-                {["Today", "Weekly", "Monthly"].map((label, index) => (
+            {/* <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl shadow-sm justify-between items-center">
+                {category?.map((label, index) => (
                     <TouchableOpacity
                         key={index}
+                        onPress={() => setReportCategory(label)}
                         className={`px-4 py-2 rounded-full border ${label === "Monthly" ? "bg-green-700 border-green-700" : "bg-white border-gray-300"}`}
                     >
                         <Text className={`${label === "Monthly" ? "text-white" : "text-gray-700"} font-semibold`}>{label}</Text>
                     </TouchableOpacity>
                 ))}
-            </View>
-
-            {/* Energy Consumption */}
+            </View> */}
             <View className="flex-row justify-between mb-2 text-center">
                 <Text className="text-2xl font-bold text-[#14532d] my-auto">Energy Consumption</Text>
                 <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption} kWh</Text>

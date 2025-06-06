@@ -8,7 +8,8 @@ import { ref, set } from "firebase/database";
 
 const saveUserDetails = async (user_id, email, first_name, last_name, role) => {
     const userRef = ref(db, "users/" + user_id);
-
+    const now = new Date();
+    const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
     set(userRef, {
         email: email,
         first_name: first_name,
@@ -16,7 +17,7 @@ const saveUserDetails = async (user_id, email, first_name, last_name, role) => {
         role: role,
         budget_kwh: 0,
         total_energy_consumption: 0,
-        created_at: new Date().toISOString(),
+        created_at: offsetDate.toISOString(),
         notify_smart_recommendation: false,
         notify_high_usage_alerts: false,
         notify_system_updates: false,

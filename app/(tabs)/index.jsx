@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { PieChart, BarChart } from 'react-native-gifted-charts';
@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Dimensions } from 'react-native';
 import Header from '../../components/ui/Header';
 import { auth } from '../../firebase/firebaseConfig';
+import { useFocusEffect } from 'expo-router';
+import { ActivityIndicator } from 'react-native-paper';
 const screenWidth = Dimensions.get('window').width;
 
 export default function Dashboard() {
