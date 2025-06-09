@@ -44,15 +44,6 @@ export default function Dashboard() {
             color: '#e5e7eb',
         },
     ];
-    const barData = [
-        { value: 5.1, label: 'S' },
-        { value: 4.7, label: 'M' },
-        { value: 2.5, label: 'T' },
-        { value: 3.0, label: 'W' },
-        { value: 4.2, label: 'TH' },
-        { value: 5.1, label: 'F' },
-        { value: 4.6, label: 'S' },
-    ];
     return (
         <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
             <Header />
@@ -101,29 +92,6 @@ export default function Dashboard() {
                     />
                     <Text className="mt-2 text-lg text-blue-600">You're on track!</Text>
                     <Text className="text-sm text-gray-600">9 days remaining</Text>
-                </View>
-            </View>
-
-
-
-            {/* Weekly Trends */}
-            <View style={styles.cardShadow} className="flex-1 flex-wrap bg-white p-4 rounded-2xl mb-4">
-                <View className="w-screen">
-                    <Text className="text-lg font-semibold mb-2">Weekly Energy Trends</Text>
-                    <BarChart
-                        data={barData}
-                        barWidth={screenWidth / barData.length / 1.8}
-                        barBorderRadius={5}
-                        frontColor="#10b981"
-                        yAxisThickness={0}
-                        xAxisThickness={0}
-                        xAxisLabelTextStyle={{ color: '#4B5563', fontSize: 12 }}
-                        yAxisTextStyle={{ color: '#4B5563' }}
-                        spacing={10}
-                        maxValue={6}
-                        noOfSections={3}
-                        isAn
-                    />
                 </View>
             </View>
 

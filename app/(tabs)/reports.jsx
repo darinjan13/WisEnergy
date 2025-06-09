@@ -30,12 +30,10 @@ export default function reports() {
     }
 
     const barData = [
-        { value: 30, label: 'Jan' },
-        { value: 50, label: 'Feb' },
-        { value: 55, label: 'Mar' },
-        { value: 60, label: 'Apr' },
-        { value: 75, label: 'May' },
-        { value: totalEnergyConsumption, label: 'Jun' },
+        { value: 80, label: 'Aircon', extraData: { kWh: 80, cost: 960 } },
+        { value: 60, label: 'Washer', extraData: { kWh: 60, cost: 720 } },
+        { value: 45, label: 'Fridge', extraData: { kWh: 45, cost: 540 } },
+        { value: 30, label: 'TV', extraData: { kWh: 30, cost: 360 } },
     ];
 
     const lineData = [
@@ -50,20 +48,20 @@ export default function reports() {
         <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
             <Header />
             <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Usage Report</Text>
-            {/* <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl shadow-sm justify-between items-center">
+            <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl shadow-sm justify-between items-center">
                 {category?.map((label, index) => (
                     <TouchableOpacity
                         key={index}
                         onPress={() => setReportCategory(label)}
-                        className={`px-4 py-2 rounded-full border ${label === "Monthly" ? "bg-green-700 border-green-700" : "bg-white border-gray-300"}`}
+                        className={`px-4 py-2 rounded-full border ${label === reportCategory ? "bg-green-700 border-green-700" : "bg-white border-gray-300"}`}
                     >
                         <Text className={`${label === "Monthly" ? "text-white" : "text-gray-700"} font-semibold`}>{label}</Text>
                     </TouchableOpacity>
                 ))}
-            </View> */}
+            </View>
             <View className="flex-row justify-between mb-2 text-center">
-                <Text className="text-2xl font-bold text-[#14532d] my-auto">Energy Consumption</Text>
-                <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption} kWh</Text>
+                <Text className="text-2xl font-bold text-[#14532d] my-auto">{reportCategory} Energy Consumption</Text>
+                <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption.toFixed(2)} kWh</Text>
             </View>
             <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
                 <BarChart
@@ -96,17 +94,23 @@ export default function reports() {
 
             {/* Appliance Usage */}
             <Text className="text-2xl font-bold text-[#14532d] mb-4">Appliance Usage</Text>
-            <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-                <View className="">
-                    {["Air Conditioner", "Washing Machine", "Lights", "Refrigerator"].map((item, idx) => (
-                        <View key={idx}>
-                            <Text className="text-gray-600">{item}</Text>
-                            <View className="h-5 mb-5 bg-green-200 rounded-full overflow-hidden">
-                                <View className={`h-full bg-green-700 ${["w-4/5", "w-3/5", "w-2/5", "w-1/3"][idx]}`} />
-                            </View>
-                        </View>
-                    ))}
-                </View>
+            <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-2 shadow-sm">
+                <BarChart
+                    horizontal
+                    barWidth={18}
+                    noOfSections={4}
+                    barBorderRadius={6}
+                    spacing={18}
+                    frontColor="#16a34a"
+                    yAxisThickness={0}
+                    xAxisThickness={0}
+                    shiftX={-10}
+                    shiftY={-10}
+                    data={barData.map(item => ({
+                        ...item,
+                        labelTextStyle: { color: '#374151', fontSize: 14 },
+                    }))}
+                />
             </View>
         </ScrollView>
     );

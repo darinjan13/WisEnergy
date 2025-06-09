@@ -40,3 +40,16 @@ export const streamLiveKWh = (userId, deviceId, applianceName, setApplianceKWh) 
 
   return () => off(usageRef, "value", callback);
 };
+
+export const topAppliances = (usageData) => {
+  const entries = Object.entries(usageData || {}).sort(([a], [b]) => a.localeCompare(b));
+  const top = entries.slice(-3).map(([time, data]) => ({
+    time,
+    power: data?.power || 0,
+  }));
+
+  return top.map(({ time, power }) => ({
+    time,
+    kWh: (power / 3600000).toFixed(6),
+  }));
+}
