@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, InteractionManager } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Toast from 'react-native-toast-message';
 import { BlurView } from "expo-blur";
@@ -16,7 +16,7 @@ export default function appliances() {
     const [deviceName, setDeviceName] = useState("");
     const [deviceCode, setDeviceCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [applianceName, setApplianceName] = useState("");
+    const [appliance_name, setApplianceName] = useState("");
     const [appliancePower, setAppliancePower] = useState("");
     const [applianceKWH, setApplianceKWH] = useState(0);
 
@@ -31,7 +31,7 @@ export default function appliances() {
     const [devices, setDevices] = useState([]);
 
     useEffect(() => {
-        fetchDevices()
+        fetchDevices();
     }, [])
 
     const fetchDevices = async () => {
@@ -43,17 +43,17 @@ export default function appliances() {
             snapshot.forEach((child) => {
                 const deviceData = child.val();
                 if (deviceData.owner === auth.currentUser.uid) {
+                    console.log("Device data:", deviceData);
                     devices.push({
                         id: child.key,
-                        name: deviceData.applianceName,
+                        name: deviceData.appliance_name.replace(/_/g, " "),
                         icon: <MaterialCommunityIcons name="lightning-bolt" size={30} color="black" />,
-                        dates: [deviceData.dateAdded],
+                        dates: [deviceData.paired_at],
                     });
                 }
             });
             setAppliancesData(devices);
             setIsLoading(false);
-
         } catch (error) {
             console.error("Error fetching devices:", error);
             Alert.alert("Error", "Failed to fetch devices. Please try again.");
@@ -79,7 +79,7 @@ export default function appliances() {
                 const deviceData = child.val();
                 if (
                     child.key === deviceName.trim() &&
-                    deviceData.pairingCode === deviceCode.trim() &&
+                    deviceData.pairing_code === deviceCode.trim() &&
                     deviceData.status === "unpaired"
                 ) {
                     matchedDeviceKey = child.key;
@@ -88,11 +88,13 @@ export default function appliances() {
 
             if (matchedDeviceKey) {
                 const today = new Date().toLocaleDateString();
+                console.log("Appliance name:", appliance_name.replace(/[ ]/g, "_"));
+
                 await update(ref(db, `devices/${matchedDeviceKey}`), {
                     owner: auth.currentUser.uid,
                     status: "paired",
-                    applianceName: applianceName,
-                    dateAdded: today,
+                    appliance_name: appliance_name.replace(/[ ]/g, "_"),
+                    paired_at: today,
                 }).then(() => {
                     fetchDevices();
                     setDeviceCode("");
@@ -133,7 +135,7 @@ export default function appliances() {
         try {
             const deviceRef = ref(db, `devices/${deviceId}`);
             await update(deviceRef, {
-                applianceName: applianceName,
+                appliance_name: appliance_name.replace(/[ ]/g, "_"),
             });
             await fetchDevices();
             setShowConfirmModal(false);
@@ -166,8 +168,8 @@ export default function appliances() {
             await update(deviceRef, {
                 status: "unpaired",
                 owner: "",
-                applianceName: "",
-                dateAdded: null,
+                appliance_name: "",
+                paired_at: null,
             })
                 .then(() => {
                     fetchDevices();
@@ -239,7 +241,7 @@ export default function appliances() {
                         <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">{action === "edit" ? "Edit Appliance" : "Add Device"}</Text>
                         <TextInput
                             placeholder="Enter Appliance name"
-                            value={applianceName}
+                            value={appliance_name}
                             onChangeText={setApplianceName}
                             className="border border-gray-300 rounded-lg px-4 py-2 mb-6 bg-gray-50"
                         />

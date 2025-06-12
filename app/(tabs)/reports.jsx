@@ -55,7 +55,7 @@ export default function reports() {
                         onPress={() => setReportCategory(label)}
                         className={`px-4 py-2 rounded-full border ${label === reportCategory ? "bg-green-700 border-green-700" : "bg-white border-gray-300"}`}
                     >
-                        <Text className={`${label === "Monthly" ? "text-white" : "text-gray-700"} font-semibold`}>{label}</Text>
+                        <Text className={`${label === reportCategory ? "text-white" : "text-black"} font-semibold`}>{label}</Text>
                     </TouchableOpacity>
                 ))}
             </View>
@@ -73,7 +73,7 @@ export default function reports() {
                     yAxisThickness={0}
                     xAxisLabelTextStyle={{ color: "#4B5563", fontSize: 12 }}
                     maxValue={120}
-                    noOfSections={3}
+                    noOfSections={4}
                 />
             </View>
 

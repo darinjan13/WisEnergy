@@ -31,20 +31,18 @@ const Header = () => {
             </View>
 
             <View className="">
-                {/* Notification Bell */}
                 <TouchableOpacity
                     onPress={() => {
                         setNotificationDropdownVisible(!notificationDropdownVisible);
-                        setHasUnread(false); // Mark as read when clicked
+                        setHasUnread(false);
                     }}
                 >
                     <Ionicons name="notifications-outline" size={24} color="black" />
-                    {hasUnread && (
+                    {/* {hasUnread && (
                         <View className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full" />
-                    )}
+                    )} */}
                 </TouchableOpacity>
 
-                {/* Dropdown Panel */}
                 <Portal>
                     {notificationDropdownVisible && (
                         <TouchableWithoutFeedback onPress={handleCloseDropdown}>
@@ -58,12 +56,6 @@ const Header = () => {
                     )}
                 </Portal>
             </View>
-            {/* 
-            {notificationDropdownVisible && (
-                <TouchableWithoutFeedback onPress={handleCloseDropdown}>
-                    <View className="absolute inset-0 z-40 bg-black h-fi" />
-                </TouchableWithoutFeedback>
-            )} */}
         </View>
     );
 };

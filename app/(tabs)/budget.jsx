@@ -8,7 +8,7 @@ import Header from "../../components/ui/Header";
 export default function Budget() {
   const insets = useSafeAreaInsets();
 
-  const [rate, setRate] = useState(12); // ₱ per kWh
+  const [rate, setRate] = useState(12);
   const [editingRate, setEditingRate] = useState(false);
   const [rateInput, setRateInput] = useState(rate.toString());
 
@@ -24,13 +24,11 @@ export default function Budget() {
     <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
       <Header />
 
-      {/* Header Card */}
       <View style={styles.cardShadow} className="bg-white mb-4 rounded-2xl p-4">
         <Text className="text-2xl font-bold text-[#23403A] mb-1">Monthly Budget</Text>
         <Text className="text-sm text-gray-600">Track and manage your monthly energy usage.</Text>
       </View>
 
-      {/* Pie Chart */}
       <View className="items-center justify-center my-6">
         <PieChart
           donut
@@ -47,7 +45,6 @@ export default function Budget() {
       <Text className="text-center font-bold text-[#23403A] text-lg">UNDER BUDGET</Text>
       <Text className="text-center text-gray-600 mb-6">You've used {Math.round(percentUsed)}% of your ₱{monthlyBudget.toLocaleString()} budget.</Text>
 
-      {/* Timeline */}
       <View className="flex-row justify-between mb-4">
         <Text className="text-sm text-gray-700">Set on: March 14, 2025</Text>
         <Text className="text-sm text-gray-700">Resets on: April 14, 2025</Text>
@@ -57,7 +54,6 @@ export default function Budget() {
         <Text className="text-white font-semibold text-center">Adjust Budget</Text>
       </TouchableOpacity>
 
-      {/* Budget Breakdown */}
       <View className="flex-row justify-between mb-6">
         <View style={styles.cardShadow} className="flex-1 bg-white px-4 py-3 rounded-xl mr-2">
           <Text className="text-xs text-gray-500">Budget</Text>
@@ -76,37 +72,11 @@ export default function Budget() {
         </View>
       </View>
 
-      {/* Rate */}
       <View className="bg-white px-4 py-3 rounded-xl mb-6" style={styles.cardShadow}>
         <Text className="text-sm text-gray-500 mb-1">Electricity Rate</Text>
         <View className="flex-row items-center">
-          {editingRate ? (
-            <>
-              <TextInput
-                value={rateInput}
-                onChangeText={setRateInput}
-                keyboardType="numeric"
-                className="border-b border-green-600 text-green-600 w-20 text-center mr-2"
-                onBlur={() => {
-                  setRate(Number(rateInput));
-                  setEditingRate(false);
-                }}
-              />
-              <TouchableOpacity onPress={() => {
-                setRate(Number(rateInput));
-                setEditingRate(false);
-              }}>
-                <MaterialCommunityIcons name="check" size={22} color="#10b981" />
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text className="text-lg font-semibold text-green-700">₱{rate}/kWh</Text>
-              <TouchableOpacity onPress={() => setEditingRate(true)}>
-                <MaterialCommunityIcons name="pencil" size={18} color="#6b7280" className="ml-2" />
-              </TouchableOpacity>
-            </>
-          )}
+          <Text className="text-lg font-semibold text-green-700">₱{rate}/kWh</Text>
+
         </View>
       </View>
 
@@ -116,7 +86,7 @@ export default function Budget() {
         <View className="flex-1">
           <Text className="text-sm text-gray-800 font-semibold mb-1">Smart Tip</Text>
           <Text className="text-sm text-gray-600">
-            Reduce air conditioner usage from 2PM–6PM to stay under budget.
+            Reduce air conditioner usage from 2PM-6PM to stay under budget.
           </Text>
         </View>
       </View>

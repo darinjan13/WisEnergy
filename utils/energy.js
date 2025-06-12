@@ -24,7 +24,10 @@ export const computeTotalKWh = (usageData) => {
 
 export const streamLiveKWh = (userId, deviceId, applianceName, setApplianceKWh) => {
   const today = new Date().toISOString().split("T")[0];
-  const usageRef = ref(db, `/usage/${userId}/${deviceId}/${applianceName}/${today}`);
+  console.log(`Streaming live kWh for ${applianceName} on ${today}`);
+
+  const usageRef = ref(db, `/usage/${userId}/${deviceId}/${applianceName.replace(/ /g, "_")}/${today}`);
+  console.log(`Usage reference: ${usageRef.toString()}`);
 
   const callback = (snapshot) => {
     const usage = snapshot.val();

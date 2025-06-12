@@ -6,16 +6,18 @@ import { streamLiveKWh } from "../utils/energy";
 
 export const useApplianceStreams = (isLoading, appliancesData, userId, setAppliancePower, setApplianceKWH) => {
     useFocusEffect(
-        useCallback(() => {            
+
+        useCallback(() => {
             if (isLoading) return;
 
             const usageRefs = [];
             const unsubKwhList = [];
 
-            appliancesData.forEach((device) => {
+            appliancesData?.forEach((device) => {
+
                 const deviceId = device.id;
                 const applianceName = device.name;
-                const usageRef = ref(db, `usage/${userId}/${deviceId}/${applianceName}`);
+                const usageRef = ref(db, `usage/${userId}/${deviceId}/${applianceName.replace(/ /g, "_")}`);
                 usageRefs.push(usageRef);
 
                 const listener = onValue(usageRef, (applianceSnap) => {
@@ -45,7 +47,7 @@ export const useApplianceStreams = (isLoading, appliancesData, userId, setApplia
 
                     setAppliancePower((prev) => ({
                         ...prev,
-                        [deviceId]: power
+                        [applianceName]: power
                     }));
                 });
 

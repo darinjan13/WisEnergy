@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { PieChart, BarChart } from 'react-native-gifted-charts';
@@ -72,7 +72,6 @@ export default function Dashboard() {
                     />
                     <Text className="text-sm text-green-600 mt-2">Efficient</Text>
                     <Text className="text-center text-gray-600 mt-2">Your household is 82% energy efficient this week.</Text>
-                    <Text className="text-center text-blue-600 font-medium mt-2">See how to improve →</Text>
                 </View>
 
                 <View className="flex-1 items-center ">
@@ -95,7 +94,6 @@ export default function Dashboard() {
                 </View>
             </View>
 
-            {/* Top Appliances */}
             <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
                 <Text className="text-lg font-semibold mb-2">Top Appliances</Text>
                 <View className="space-y-1">
@@ -105,19 +103,11 @@ export default function Dashboard() {
                 </View>
             </View>
 
-            {/* AI Recommendation */}
             <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl flex-row items-center space-x-3 mb-4">
                 <FontAwesome name="plug" size={24} color="black" />
                 <Text className="text-gray-700">
                     Consider unplugging unused devices to save ₱50/month.
                 </Text>
-            </View>
-
-            {/* Buttons */}
-            <View className="flex-row justify-between mt-4">
-                <Text className="bg-blue-100 px-4 py-2 rounded-xl text-blue-800 font-semibold">Run Appliance Checkup</Text>
-                <Text className="bg-blue-100 px-4 py-2 rounded-xl text-blue-800 font-semibold">Update Budget Plan</Text>
-                <Text className="bg-blue-100 px-4 py-2 rounded-xl text-blue-800 font-semibold">View Reports</Text>
             </View>
         </ScrollView>
     );
