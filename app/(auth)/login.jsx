@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     View,
     Text,
@@ -30,27 +30,40 @@ export default function LoginForm() {
         const newErrors = { email: "", password: "" };
 
         if (!email) {
-            newErrors.email = "Email is required";
+            setTimeout(() => {
+                setIsLoading(false);
+                newErrors.email = "Email is required";
+            }, 1000);
             isValid = false;
-            setIsLoading(false);
         } else if (!/\S+@\S+\.\S+/.test(email)) {
-            newErrors.email = "Email is invalid";
+            setTimeout(() => {
+                setIsLoading(false);
+                newErrors.email = "Email is invalid";
+            }, 1000);
             isValid = false;
         }
 
         if (!password) {
-            newErrors.password = "Password is required";
+            setTimeout(() => {
+                setIsLoading(false);
+                newErrors.password = "Password is required";
+            }, 1000);
             isValid = false;
         } else if (password.length < 6) {
-            newErrors.password = "Password must be at least 6 characters";
+            setTimeout(() => {
+                setIsLoading(false);
+                newErrors.password = "Password must be at least 6 characters";
+            }, 1000);
             isValid = false;
         }
 
         setErrors(newErrors);
+
         return isValid;
     };
 
     const handleSubmit = () => {
+        setIsLoading(true);
         if (!validateForm()) return;
         login(setIsLoading, email, password);
     };
@@ -101,7 +114,6 @@ export default function LoginForm() {
                         )}
                     </View>
 
-                    {/* Remember Me */}
                     <TouchableOpacity
                         onPress={() => setRememberMe(!rememberMe)}
                         className="flex-row items-center mb-4 w-full max-w-sm"
@@ -113,41 +125,29 @@ export default function LoginForm() {
                         <Text className="text-sm text-gray-700">Remember me</Text>
                     </TouchableOpacity>
 
-                    {/* Log In Button */}
                     <TouchableOpacity
                         onPress={handleSubmit}
-                        className="bg-green-700 py-3 rounded-md w-full max-w-sm mb-4"
+                        className="bg-green-700 py-5 rounded-md w-full max-w-sm mb-4"
                         disabled={isLoading}
                     >
-                        {!isLoading ? (
-                            <Text className="text-white text-center font-semibold">Log in</Text>) : (
-                            <ActivityIndicator size="small" color="white" />
-                        )}
+                        <View className="h-5 items-center justify-center">
+                            {!isLoading ? (
+                                <Text className="text-white text-center font-semibold">Log in</Text>
+                            ) : (
+                                <ActivityIndicator size="small" color="white" />
+                            )}
+                        </View>
                     </TouchableOpacity>
-                    {/* Forgot Password */}
                     <TouchableOpacity>
                         <Text className="text-green-700 text-sm mb-4 text-center">Forgot password?</Text>
                     </TouchableOpacity>
 
-                    {/* Divider */}
                     <View className="flex-row items-center my-3 w-full max-w-sm">
                         <View className="flex-1 h-px bg-gray-300" />
                         <Text className="mx-2 text-gray-500">or</Text>
                         <View className="flex-1 h-px bg-gray-300" />
                     </View>
 
-                    {/* Google Sign In */}
-                    <TouchableOpacity className="bg-gray-100 border border-gray-300 w-full max-w-sm py-3 rounded-md flex-row items-center justify-center mb-4">
-                        <Image
-                            source={{
-                                uri: "https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg",
-                            }}
-                            className="w-5 h-5 mr-2"
-                        />
-                        <Text className="text-sm font-medium">Continue with Google</Text>
-                    </TouchableOpacity>
-
-                    {/* Register */}
                     <View className="flex-row justify-center mt-4">
                         <Text className="text-m text-gray-700">
                             Don’t have an account?{" "}

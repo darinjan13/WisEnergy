@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Toast from 'react-native-toast-message';
@@ -11,6 +11,7 @@ import ConfirmModal from "../../components/ui/ConfirmModal";
 import ApplianceCard from "../../components/appliances/ApplianceCard.jsx";
 import { useApplianceStreams } from "../../hooks/useApplianceStreams.jsx";
 import { ActivityIndicator } from "react-native-paper";
+import { useFocusEffect } from "expo-router";
 
 export default function appliances() {
     const [deviceName, setDeviceName] = useState("");
@@ -30,9 +31,15 @@ export default function appliances() {
 
     const [devices, setDevices] = useState([]);
 
-    useEffect(() => {
-        fetchDevices();
-    }, [])
+    useFocusEffect(
+        useCallback(() => {
+            fetchDevices();
+            return () => {
+                setModalVisible(false);
+                setIsLoading(true);
+            };
+        }, [])
+    )
 
     const fetchDevices = async () => {
         setIsLoading(true);
@@ -43,7 +50,6 @@ export default function appliances() {
             snapshot.forEach((child) => {
                 const deviceData = child.val();
                 if (deviceData.owner === auth.currentUser.uid) {
-                    console.log("Device data:", deviceData);
                     devices.push({
                         id: child.key,
                         name: deviceData.appliance_name.replace(/_/g, " "),
@@ -88,7 +94,6 @@ export default function appliances() {
 
             if (matchedDeviceKey) {
                 const today = new Date().toLocaleDateString();
-                console.log("Appliance name:", appliance_name.replace(/[ ]/g, "_"));
 
                 await update(ref(db, `devices/${matchedDeviceKey}`), {
                     owner: auth.currentUser.uid,
@@ -195,12 +200,15 @@ export default function appliances() {
     }
 
     return (
-        <View className="flex-1 bg-gray-100 p-4">
-            <ScrollView className="" showsVerticalScrollIndicator={false}>
+        <View className="bg-gray-100">
+            <ScrollView className=" p-4">
                 <Header />
                 {isLoading ? (
-                    <View className="flex-1 justify-center items-center">
+                    <View className="h-screen -mt-36 items-center justify-center">
                         <ActivityIndicator size="large" color="#166534" />
+                        <Text className="text-gray-500 mt-4 text-lg font-semibold">
+                            Loading appliances...
+                        </Text>
                     </View>
                 ) : (
                     <>
@@ -213,7 +221,7 @@ export default function appliances() {
                         {appliancesData.length > 0 ? (
                             <View className="px-5">
                                 {appliancesData.map((item, index) => (
-                                    <ApplianceCard key={index} power={appliancePower[item.name] || 0} item={item} editDevice={() => showEditModal(item)} resetDevice={() => openConfirmModal(item.id, "reset")} deleteDevice={() => openConfirmModal(item.id, "delete")} applianceKWH={applianceKWH[item.name]} />
+                                    <ApplianceCard key={index} power={appliancePower[item.name] || 0} item={item} editDevice={() => showEditModal(item)} resetDevice={() => openConfirmModal(item.id, "reset")} deleteDevice={() => openConfirmModal(item.id, "delete")} applianceKWH={applianceKWH[item.name] || 0} />
                                 ))}
                             </View>
                         ) : (

@@ -82,12 +82,14 @@ export default function settings() {
             ))}
 
             {/* Logout Button */}
-            <TouchableOpacity className="mt-6 self-center bg-red-700 px-6 py-2 rounded-md">
-                {!isLoading ? (
-                    <Text onPress={handleLogout} className="text-white font-semibold">Log Out</Text>
-                ) : (
-                    <ActivityIndicator size="small" color="#000" />
-                )}
+            <TouchableOpacity onPress={handleLogout} className="mt-6 self-center bg-red-700 px-6 py-2 rounded-md">
+                <View className="h-8 w-16 items-center justify-center">
+                    {!isLoading ? (
+                        <Text className="text-white font-semibold">Log Out</Text>
+                    ) : (
+                        <ActivityIndicator size="small" color="white" />
+                    )}
+                </View>
             </TouchableOpacity>
         </ScrollView>
     );

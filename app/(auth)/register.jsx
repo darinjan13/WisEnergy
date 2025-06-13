@@ -161,11 +161,13 @@ export default function RegisterForm() {
                     className="bg-green-700 py-4 rounded-md mb-4"
                     disabled={isLoading}
                 >
-                    {!isLoading ? (
-                        <Text className="text-white text-center font-semibold">Sign up</Text>
-                    ) : (
-                        <ActivityIndicator size="small" color="white" />
-                    )}
+                    <View className="h-5 items-center justify-center">
+                        {!isLoading ? (
+                            <Text className="text-white font-semibold">Sign up</Text>
+                        ) : (
+                            <ActivityIndicator size="small" color="white" />
+                        )}
+                    </View>
                 </TouchableOpacity>
 
                 <View className="flex-row items-center my-3">
