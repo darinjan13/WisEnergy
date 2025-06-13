@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PieChart } from 'react-native-gifted-charts';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Header from "../../components/ui/Header";
+import { get, ref } from "firebase/database";
+import { db, auth } from "../../firebase/firebaseConfig";
+import { useFocusEffect } from "expo-router";
 
 export default function Budget() {
   const insets = useSafeAreaInsets();
 
   const [rate, setRate] = useState(12);
-  const [editingRate, setEditingRate] = useState(false);
-  const [rateInput, setRateInput] = useState(rate.toString());
 
   const monthlyBudget = 3000;
   const usedKWh = 187.5;
@@ -19,6 +20,27 @@ export default function Budget() {
   const budgetKWh = monthlyBudget / rate;
   const remainingKWh = budgetKWh - usedKWh;
   const percentUsed = Math.min((estimatedCost / monthlyBudget) * 100, 100);
+
+  useFocusEffect(
+    useCallback(() => {
+      getUserLocationRate();
+    }, [])
+  )
+
+  const getUserLocationRate = async () => {
+    
+    const userRef = ref(db, `users/${auth.currentUser.uid}/location`);
+    const location = await get(userRef);
+    const formattedLocation = location.val().replace(/ /g, "_"); 
+    console.log(formattedLocation);
+    const rateRef = ref(db, `city/${formattedLocation}`);
+    console.log(rateRef);
+    const getRate = await get(rateRef);
+    console.log(getRate.val());
+    
+    
+    setRate(getRate.val());
+  }
 
   return (
     <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>

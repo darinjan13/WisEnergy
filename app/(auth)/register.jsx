@@ -5,7 +5,6 @@ import {
     TextInput,
     TouchableOpacity,
     ScrollView,
-    Alert,
     Image,
     ActivityIndicator,
 } from "react-native";
@@ -13,6 +12,8 @@ import { useRouter } from "expo-router";
 import AuthHeader from "../../components/ui/AuthHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAuth from "../../hooks/useAuth";
+import DropDownPicker from "react-native-dropdown-picker";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function RegisterForm() {
     const router = useRouter();
@@ -32,6 +33,12 @@ export default function RegisterForm() {
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
+    const [location, setLocation] = useState();
+    const [open, setOpen] = useState(false);
+    const [items, setItems] = useState([
+        { label: "Lapu-Lapu City", value: "Lapu-Lapu City" },
+        { label: "Mandaue City", value: "Mandaue City" }
+    ]);
 
 
     const handleChange = (field, value) => {
@@ -61,22 +68,21 @@ export default function RegisterForm() {
         // if (!validateForm()) return;
         // Alert.alert(form.firstName, form.lastName);
         setIsLoading(true);
-        register(setIsLoading, form.firstName, form.lastName, form.email, form.password);
+        register(setIsLoading, location, form.firstName, form.lastName, form.email, form.password);
     };
 
     return (
         <SafeAreaView className="h-full">
-            <ScrollView className="h-full md:w-1/3 md:mx-auto bg-white px-6">
+            <View className="h-full md:w-1/3 md:mx-auto bg-white px-6">
                 <AuthHeader textHeader="Create and account" />
 
-                {/* First and Last Name */}
                 <View className="flex-row justify-between mb-4">
                     <View className="flex-1 mr-2">
                         <TextInput
                             placeholder="First Name"
                             value={form.firstName}
                             onChangeText={(text) => handleChange("firstName", text)}
-                            className={`border px-3 py-2 rounded-md bg-white ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
+                            className={`border px-3 py-4 rounded-md bg-white ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
                         />
                     </View>
                     <View className="flex-1 ml-2">
@@ -84,50 +90,75 @@ export default function RegisterForm() {
                             placeholder="Last Name"
                             value={form.lastName}
                             onChangeText={(text) => handleChange("lastName", text)}
-                            className={`border px-3 py-2 rounded-md bg-white ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
+                            className={`border px-3 py-4 rounded-md bg-white ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
                         />
                     </View>
                 </View>
 
-                {/* Email */}
                 <TextInput
                     placeholder="Email"
                     value={form.email}
                     onChangeText={(text) => handleChange("email", text)}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    className={`mb-4 border px-3 py-2 rounded-md bg-white ${errors.email ? "border-red-500" : "border-gray-300"}`}
+                    className={`mb-4 border px-3 py-4 rounded-md bg-white ${errors.email ? "border-red-500" : "border-gray-300"}`}
                 />
 
-                {/* Password */}
+                <View className="mb-4 max-h-14">
+                    <DropDownPicker
+                        open={open}
+                        value={location}
+                        items={items}
+                        setOpen={setOpen}
+                        setValue={setLocation}
+                        setItems={setItems}
+                        placeholder="Select Location"
+                        style={{
+                            borderColor: "#d1d5db",
+                        }}
+                        placeholderStyle={{
+                            color: "#6b7280",
+                        }}
+                        dropDownContainerStyle={{
+                            borderColor: "#d1d5db",
+                        }}
+                        selectedItemLabelStyle={{
+                            color: '#36a25e',
+                        }}
+                        ArrowUpIcon={() => (
+                            <MaterialCommunityIcons name="chevron-up" size={20} color="gray" />
+                        )}
+                        ArrowDownIcon={() => (
+                            <MaterialCommunityIcons name="chevron-down" size={20} color="gray" />
+                        )}
+                    />
+                </View>
+
                 <TextInput
                     placeholder="Password"
                     value={form.password}
                     onChangeText={(text) => handleChange("password", text)}
                     secureTextEntry={!showPassword}
-                    className={`mb-4 border px-3 py-2 rounded-md bg-white ${errors.password ? "border-red-500" : "border-gray-300"}`}
+                    className={`mb-4 border px-3 py-4 rounded-md bg-white ${errors.password ? "border-red-500" : "border-gray-300"}`}
                 />
 
-                {/* Confirm Password */}
                 <TextInput
                     placeholder="Confirm Password"
                     value={form.confirmPassword}
                     onChangeText={(text) => handleChange("confirmPassword", text)}
                     secureTextEntry
-                    className={`mb-4 border px-3 py-2 rounded-md bg-white ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
+                    className={`mb-4 border px-3 py-4 rounded-md bg-white ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
                 />
 
-                {/* Terms & Privacy */}
                 <Text className="text-xs text-gray-600 text-center mb-4">
                     By clicking continue, you agree to our{" "}
                     <Text className="text-green-700 font-semibold">Terms of Service</Text>{" "}
                     and <Text className="text-green-700 font-semibold">Privacy Policy</Text>
                 </Text>
 
-                {/* Confirm Button */}
                 <TouchableOpacity
                     onPress={handleSubmit}
-                    className="bg-green-700 py-3 rounded-md mb-4"
+                    className="bg-green-700 py-4 rounded-md mb-4"
                     disabled={isLoading}
                 >
                     {!isLoading ? (
@@ -137,24 +168,12 @@ export default function RegisterForm() {
                     )}
                 </TouchableOpacity>
 
-                {/* Divider */}
                 <View className="flex-row items-center my-3">
                     <View className="flex-1 h-px bg-gray-300" />
                     <Text className="mx-2 text-gray-500">or</Text>
                     <View className="flex-1 h-px bg-gray-300" />
                 </View>
-
-                {/* Google Button */}
-                <TouchableOpacity className="bg-gray-100 border border-gray-300 py-3 rounded-md flex-row items-center justify-center mb-4">
-                    <Image
-                        source={{
-                            uri: "https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg",
-                        }}
-                        className="w-5 h-5 mr-2"
-                    />
-                    <Text className="text-sm font-medium">Continue with Google</Text>
-                </TouchableOpacity>
-                <Text className="text-sm text-gray-700 text-center">
+                <Text className="text-md text-gray-700 text-center">
                     Already have an account?{" "}
                     <Text
                         onPress={() => router.push("/(auth)/login")}
@@ -163,7 +182,7 @@ export default function RegisterForm() {
                         Login
                     </Text>
                 </Text>
-            </ScrollView>
+            </View>
         </SafeAreaView>
     );
 }

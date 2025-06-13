@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { ref, set } from "firebase/database";
 
-const saveUserDetails = async (user_id, email, first_name, last_name, role) => {
+const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
     const userRef = ref(db, "users/" + user_id);
     const now = new Date();
     const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
@@ -14,6 +14,7 @@ const saveUserDetails = async (user_id, email, first_name, last_name, role) => {
         email: email,
         first_name: first_name,
         last_name: last_name,
+        location: location,
         role: role,
         budget_kwh: 0,
         total_energy_consumption: 0,
@@ -38,12 +39,12 @@ export default function useAuth() {
         return unsubscribe;
     }, []);
 
-    const register = useCallback(async (setIsLoading, firstName, lastName, email, password) => {
+    const register = useCallback(async (setIsLoading, location, firstName, lastName, email, password) => {
         try {
             const res = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(res.user, { displayName: firstName });
 
-            await saveUserDetails(res.user.uid, email, firstName, lastName, "user");
+            await saveUserDetails(res.user.uid, location, email, firstName, lastName, "user");
             Toast.show({
                 type: "success",
                 text1: "Registration Successful",

@@ -149,11 +149,11 @@ export default function LoginForm() {
 
                     {/* Register */}
                     <View className="flex-row justify-center mt-4">
-                        <Text className="text-sm text-gray-700">
+                        <Text className="text-m text-gray-700">
                             Don’t have an account?{" "}
                         </Text>
                         <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
-                            <Text className="text-sm text-green-700 font-semibold">
+                            <Text className="text-md text-green-700 font-semibold">
                                 Sign up
                             </Text>
                         </TouchableOpacity>
