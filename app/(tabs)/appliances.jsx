@@ -12,6 +12,7 @@ import ApplianceCard from "../../components/appliances/ApplianceCard.jsx";
 import { useApplianceStreams } from "../../hooks/useApplianceStreams.jsx";
 import { ActivityIndicator } from "react-native-paper";
 import { useFocusEffect } from "expo-router";
+import DropDownPicker from "react-native-dropdown-picker";
 
 export default function appliances() {
     const [deviceName, setDeviceName] = useState("");
@@ -29,17 +30,45 @@ export default function appliances() {
 
     const [appliancesData, setAppliancesData] = useState([]);
 
-    const [devices, setDevices] = useState([]);
+    const [unPaired, setUnpairedDevices] = useState([]);
+    const [selectedUnpairedDevice, setSelectedUnpairedDevice] = useState(null);
+    const [dropDownOpen, setDropDownOpen] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
             fetchDevices();
+            fetchUnpairedDevices();
             return () => {
                 setModalVisible(false);
                 setIsLoading(true);
             };
         }, [])
     )
+
+    const fetchUnpairedDevices = async () => {
+        try {
+            const devicesRef = ref(db, "devices");
+            const snapshot = await get(devicesRef);
+            const unpairedDevices = [];
+            snapshot.forEach((child) => {
+                const deviceData = child.val();
+                if (deviceData.status === "unpaired") {
+                    console.log("Unpaired device found:", child.key);
+                    unpairedDevices.push(
+                        {
+                            label: child.key,
+                            value: child.key,
+                        }
+                    );
+                }
+            });
+            setUnpairedDevices(unpairedDevices);
+            setIsLoading(false);
+        } catch (error) {
+            console.error("Error fetching unpaired devices:", error);
+            Alert.alert("Error", "Failed to fetch unpaired devices. Please try again.");
+        }
+    }
 
     const fetchDevices = async () => {
         setIsLoading(true);
@@ -84,7 +113,7 @@ export default function appliances() {
             snapshot.forEach((child) => {
                 const deviceData = child.val();
                 if (
-                    child.key === deviceName.trim() &&
+                    child.key === selectedUnpairedDevice.trim() &&
                     deviceData.pairing_code === deviceCode.trim() &&
                     deviceData.status === "unpaired"
                 ) {
@@ -102,8 +131,9 @@ export default function appliances() {
                     paired_at: today,
                 }).then(() => {
                     fetchDevices();
+                    fetchUnpairedDevices();
                     setDeviceCode("");
-                    setDeviceName("");
+                    setSelectedUnpairedDevice("");
                     setApplianceName("");
                     setModalVisible(false);
                     Toast.show({
@@ -251,18 +281,47 @@ export default function appliances() {
                             placeholder="Enter Appliance name"
                             value={appliance_name}
                             onChangeText={setApplianceName}
-                            className="border border-gray-300 rounded-lg px-4 py-2 mb-6 bg-gray-50"
+                            className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50"
                         />
                         {action !== "edit" ? (<>
-                            <TextInput
+                            {/* <TextInput
                                 placeholder="Enter Device name"
                                 value={deviceName}
                                 onChangeText={setDeviceName}
                                 className="border border-gray-300 rounded-lg px-4 py-2 mb-6 bg-gray-50"
-                            />
+                            /> */}
+                            <View className="mb-4">
+                                <DropDownPicker
+                                    open={dropDownOpen}
+                                    value={selectedUnpairedDevice}
+                                    items={unPaired}
+                                    setOpen={setDropDownOpen}
+                                    setValue={setSelectedUnpairedDevice}
+                                    setItems={setUnpairedDevices}
+                                    placeholder="Select Device"
+                                    style={{
+                                        borderColor: "#d1d5db",
+                                    }}
+                                    placeholderStyle={{
+                                        color: "#6b7280",
+                                    }}
+                                    dropDownContainerStyle={{
+                                        borderColor: "#d1d5db",
+                                    }}
+                                    selectedItemLabelStyle={{
+                                        color: '#36a25e',
+                                    }}
+                                    ArrowUpIcon={() => (
+                                        <MaterialCommunityIcons name="chevron-up" size={20} color="gray" />
+                                    )}
+                                    ArrowDownIcon={() => (
+                                        <MaterialCommunityIcons name="chevron-down" size={20} color="gray" />
+                                    )}
+                                />
+                            </View>
                             <View className="border border-gray-300 rounded-lg mb-6 px-4 bg-gray-50 flex-row items-center">
                                 <TextInput
-                                    className="flex-1 py-2 text-base text-gray-800"
+                                    className="flex-1 py-4 text-base text-gray-800"
                                     placeholder="Enter Device password"
                                     secureTextEntry={!showPassword}
                                     value={deviceCode}

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Header from "../../components/ui/Header";
@@ -7,6 +7,7 @@ import { get, off, onValue, ref, set } from "firebase/database";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
 import ProgressBar from "../../components/ui/ProgressBar";
+import { ActivityIndicator } from "react-native-paper";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
@@ -113,10 +114,9 @@ export default function reports() {
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Appliance Usage</Text>
                         <View style={styles.cardShadow} className="p-4 rounded-2xl mb-2 bg-white shadow-sm">
                             {barData?.map((item, index) => (
-                                <View>
+                                <View key={index}>
                                     <Text className="text-lg text-gray-800 font-semibold">{item.label}</Text>
                                     <ProgressBar
-                                        key={index}
                                         value={item.value}
                                         max={100}
                                         height={14}
