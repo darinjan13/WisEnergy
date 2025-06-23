@@ -4,7 +4,7 @@ import { ref, onValue, off } from "firebase/database";
 import { db } from "../firebase/firebaseConfig";
 import { streamLiveKWh } from "../utils/energy";
 
-export const useApplianceStreams = (isLoading, appliancesData, userId, setAppliancePower, setApplianceKWH) => {
+export const useApplianceStreams = (isLoading, deviceId, appliancesData, userId, setAppliancePower, setApplianceKWH) => {
     useFocusEffect(
 
         useCallback(() => {
@@ -15,9 +15,9 @@ export const useApplianceStreams = (isLoading, appliancesData, userId, setApplia
 
             appliancesData?.forEach((device) => {
 
-                const deviceId = device.id;
                 const applianceName = device.name;
                 const usageRef = ref(db, `usage/${userId}/${deviceId}/${applianceName.replace(/ /g, "_")}`);
+
                 usageRefs.push(usageRef);
 
                 const listener = onValue(usageRef, (applianceSnap) => {

@@ -4,43 +4,45 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Toast from 'react-native-toast-message';
 import { BlurView } from "expo-blur";
 
-import Header from "../../components/ui/Header";
-import { auth, db } from "../../firebase/firebaseConfig";
-import { get, ref, update } from "firebase/database";
-import ConfirmModal from "../../components/ui/ConfirmModal";
-import ApplianceCard from "../../components/appliances/ApplianceCard.jsx";
-import { useApplianceStreams } from "../../hooks/useApplianceStreams.jsx";
+import Header from "../../components/ui/Header.jsx";
+import { auth, db } from "../../firebase/firebaseConfig.jsx";
+import { get, ref, set, update } from "firebase/database";
+import ConfirmModal from "../../components/ui/ConfirmModal.jsx";
 import { ActivityIndicator } from "react-native-paper";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
+import DeviceCard from "../../components/appliances/DeviceCard";
 
-export default function appliances() {
-    const [deviceName, setDeviceName] = useState("");
+export default function devices() {
+
     const [deviceCode, setDeviceCode] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [appliance_name, setApplianceName] = useState("");
-    const [appliancePower, setAppliancePower] = useState("");
-    const [applianceKWH, setApplianceKWH] = useState(0);
+    const [device_nickname, setDeviceNickname] = useState("");
+
+    const [deviceId, setDeviceId] = useState(null);
+    const [action, setAction] = useState(null);
+    const [selectedUnpairedDevice, setSelectedUnpairedDevice] = useState(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [deviceId, setDeviceId] = useState(null);
-    const [action, setAction] = useState(null);
-
-    const [appliancesData, setAppliancesData] = useState([]);
+    const [showPassword, setShowPassword] = useState(false);
+    const [dropDownOpen, setDropDownOpen] = useState(false);
 
     const [unPaired, setUnpairedDevices] = useState([]);
-    const [selectedUnpairedDevice, setSelectedUnpairedDevice] = useState(null);
-    const [dropDownOpen, setDropDownOpen] = useState(false);
+    const [devices, setDevices] = useState([]);
 
     useFocusEffect(
         useCallback(() => {
             fetchDevices();
-            fetchUnpairedDevices();
             return () => {
                 setModalVisible(false);
                 setIsLoading(true);
+                setUnpairedDevices([]);
+                setDevices([]);
+                setDeviceCode("");
+                setSelectedUnpairedDevice("");
+                setDeviceId(null);
+                setAction(null);
             };
         }, [])
     )
@@ -53,7 +55,6 @@ export default function appliances() {
             snapshot.forEach((child) => {
                 const deviceData = child.val();
                 if (deviceData.status === "unpaired") {
-                    console.log("Unpaired device found:", child.key);
                     unpairedDevices.push(
                         {
                             label: child.key,
@@ -65,7 +66,6 @@ export default function appliances() {
             setUnpairedDevices(unpairedDevices);
             setIsLoading(false);
         } catch (error) {
-            console.error("Error fetching unpaired devices:", error);
             Alert.alert("Error", "Failed to fetch unpaired devices. Please try again.");
         }
     }
@@ -80,14 +80,12 @@ export default function appliances() {
                 const deviceData = child.val();
                 if (deviceData.owner === auth.currentUser.uid) {
                     devices.push({
+                        ...deviceData,
                         id: child.key,
-                        name: deviceData.appliance_name.replace(/_/g, " "),
-                        icon: <MaterialCommunityIcons name="lightning-bolt" size={30} color="black" />,
-                        dates: [deviceData.paired_at],
                     });
                 }
             });
-            setAppliancesData(devices);
+            setDevices(devices);
             setIsLoading(false);
         } catch (error) {
             console.error("Error fetching devices:", error);
@@ -95,9 +93,8 @@ export default function appliances() {
         }
     };
 
-    useApplianceStreams(isLoading, appliancesData, auth.currentUser?.uid, setAppliancePower, setApplianceKWH);
-
     const showAddDeviceModal = () => {
+        fetchUnpairedDevices();
         setModalVisible(true);
     }
     const addDevice = async () => {
@@ -125,16 +122,16 @@ export default function appliances() {
                 const today = new Date().toLocaleDateString();
 
                 await update(ref(db, `devices/${matchedDeviceKey}`), {
+                    device_nickname: device_nickname,
                     owner: auth.currentUser.uid,
                     status: "paired",
-                    appliance_name: appliance_name.replace(/[ ]/g, "_"),
                     paired_at: today,
                 }).then(() => {
                     fetchDevices();
                     fetchUnpairedDevices();
                     setDeviceCode("");
                     setSelectedUnpairedDevice("");
-                    setApplianceName("");
+                    setDeviceNickname("");
                     setModalVisible(false);
                     Toast.show({
                         type: "success",
@@ -160,22 +157,25 @@ export default function appliances() {
     const showEditModal = (device) => {
         setAction("edit");
         setDeviceId(device.id);
-        setApplianceName(device.name);
+        console.log(device);
+
+        setDeviceNickname(device.name);
         setModalVisible(true);
     };
 
     const handleEditConfirmed = async () => {
+        console.log(device_nickname);
 
         if (!deviceId) return;
         try {
             const deviceRef = ref(db, `devices/${deviceId}`);
             await update(deviceRef, {
-                appliance_name: appliance_name.replace(/[ ]/g, "_"),
+                device_nickname: device_nickname,
             });
             await fetchDevices();
             setShowConfirmModal(false);
             setDeviceId(null);
-            setApplianceName("");
+            setDeviceNickname("");
             setAction(null);
             Toast.show({
                 type: "success",
@@ -184,7 +184,6 @@ export default function appliances() {
             });
             setModalVisible(false);
         } catch (error) {
-            console.error("Error updating device name:", error);
             Alert.alert("Error", "Failed to update device name.");
         }
     };
@@ -196,6 +195,8 @@ export default function appliances() {
     };
 
     const handleDeleteConfirmed = async () => {
+        console.log(deviceId);
+
         if (!deviceId) return;
 
         try {
@@ -203,7 +204,7 @@ export default function appliances() {
             await update(deviceRef, {
                 status: "unpaired",
                 owner: "",
-                appliance_name: "",
+                device_nickname: "",
                 paired_at: null,
             })
                 .then(() => {
@@ -237,21 +238,21 @@ export default function appliances() {
                     <View className="h-screen -mt-36 items-center justify-center">
                         <ActivityIndicator size="large" color="#166534" />
                         <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                            Loading appliances...
+                            Loading devices...
                         </Text>
                     </View>
                 ) : (
                     <>
                         < View className="flex-row items-center justify-between mb-5">
-                            <Text className="text-2xl font-bold text-[#2E4F4F]">Appliances</Text>
+                            <Text className="text-2xl font-bold text-[#2E4F4F]">Devices</Text>
                             <TouchableOpacity onPress={showAddDeviceModal} className="p-2">
                                 <Feather name="plus-circle" size={28} color="#166534" />
                             </TouchableOpacity>
                         </View>
-                        {appliancesData.length > 0 ? (
+                        {devices.length > 0 ? (
                             <View className="px-5">
-                                {appliancesData.map((item, index) => (
-                                    <ApplianceCard key={index} power={appliancePower[item.name] || 0} item={item} editDevice={() => showEditModal(item)} resetDevice={() => openConfirmModal(item.id, "reset")} deleteDevice={() => openConfirmModal(item.id, "delete")} applianceKWH={applianceKWH[item.name] || 0} />
+                                {devices?.map((device, index) => (
+                                    <DeviceCard key={index} onPress={() => router.push(`/appliances/${device.id}`)} deviceData={device} editDevice={() => showEditModal(device.id)} deleteDevice={() => openConfirmModal(device.id, "delete")} />
                                 ))}
                             </View>
                         ) : (
@@ -268,6 +269,8 @@ export default function appliances() {
                         }
                     </>)}
             </ScrollView >
+
+
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -276,20 +279,14 @@ export default function appliances() {
             >
                 <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
                     <View className="bg-white rounded-xl p-6 w-11/12">
-                        <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">{action === "edit" ? "Edit Appliance" : "Add Device"}</Text>
+                        <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">{action === "edit" ? "Edit Device" : "Add Device"}</Text>
                         <TextInput
-                            placeholder="Enter Appliance name"
-                            value={appliance_name}
-                            onChangeText={setApplianceName}
+                            placeholder="Enter Device name"
+                            value={device_nickname}
+                            onChangeText={setDeviceNickname}
                             className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50"
                         />
                         {action !== "edit" ? (<>
-                            {/* <TextInput
-                                placeholder="Enter Device name"
-                                value={deviceName}
-                                onChangeText={setDeviceName}
-                                className="border border-gray-300 rounded-lg px-4 py-2 mb-6 bg-gray-50"
-                            /> */}
                             <View className="mb-4">
                                 <DropDownPicker
                                     open={dropDownOpen}
@@ -311,12 +308,6 @@ export default function appliances() {
                                     selectedItemLabelStyle={{
                                         color: '#36a25e',
                                     }}
-                                    ArrowUpIcon={() => (
-                                        <MaterialCommunityIcons name="chevron-up" size={20} color="gray" />
-                                    )}
-                                    ArrowDownIcon={() => (
-                                        <MaterialCommunityIcons name="chevron-down" size={20} color="gray" />
-                                    )}
                                 />
                             </View>
                             <View className="border border-gray-300 rounded-lg mb-6 px-4 bg-gray-50 flex-row items-center">

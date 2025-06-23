@@ -125,12 +125,6 @@ export default function RegisterForm() {
                         selectedItemLabelStyle={{
                             color: '#36a25e',
                         }}
-                        ArrowUpIcon={() => (
-                            <MaterialCommunityIcons name="chevron-up" size={20} color="gray" />
-                        )}
-                        ArrowDownIcon={() => (
-                            <MaterialCommunityIcons name="chevron-down" size={20} color="gray" />
-                        )}
                     />
                 </View>
 

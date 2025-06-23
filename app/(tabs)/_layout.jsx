@@ -54,9 +54,9 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="appliances"
+          name="devices"
           options={{
-            tabBarLabel: "Appliances",
+            tabBarLabel: "Devices",
             tabBarIcon: ({ focused }) => (
               <MaterialCommunityIcons name={focused ? "lightning-bolt" : "lightning-bolt-outline"} size={24} color={focused ? "black" : "gray"} />
             ),
