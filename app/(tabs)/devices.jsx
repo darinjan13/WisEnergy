@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from "react-native";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { router, useFocusEffect } from "expo-router";
 import Toast from 'react-native-toast-message';
 import { BlurView } from "expo-blur";
+import { ActivityIndicator, IconButton } from "react-native-paper";
+import DropDownPicker from "react-native-dropdown-picker";
 
-import Header from "../../components/ui/Header.jsx";
 import { auth, db } from "../../firebase/firebaseConfig.jsx";
 import { get, ref, set, update } from "firebase/database";
+
 import ConfirmModal from "../../components/ui/ConfirmModal.jsx";
-import { ActivityIndicator } from "react-native-paper";
-import { router, useFocusEffect } from "expo-router";
-import DropDownPicker from "react-native-dropdown-picker";
 import DeviceCard from "../../components/appliances/DeviceCard";
+import Header from "../../components/ui/Header.jsx";
+import { useDeviceStore } from "../../store/firebaseStore.js";
 
 export default function devices() {
+
+    const { devices, userDevices, unpairedDevices, addDevice } = useDeviceStore();
 
     const [deviceCode, setDeviceCode] = useState("");
     const [device_nickname, setDeviceNickname] = useState("");
@@ -28,138 +31,36 @@ export default function devices() {
     const [showPassword, setShowPassword] = useState(false);
     const [dropDownOpen, setDropDownOpen] = useState(false);
 
-    const [unPaired, setUnpairedDevices] = useState([]);
-    const [devices, setDevices] = useState([]);
+    // const [unPaired, setUnpairedDevices] = useState([]);
+    // const [devices, setDevices] = useState([]);
 
     useFocusEffect(
         useCallback(() => {
-            fetchDevices();
             return () => {
                 setModalVisible(false);
-                setIsLoading(true);
-                setUnpairedDevices([]);
-                setDevices([]);
-                setDeviceCode("");
-                setSelectedUnpairedDevice("");
                 setDeviceId(null);
                 setAction(null);
             };
         }, [])
     )
 
-    const fetchUnpairedDevices = async () => {
-        try {
-            const devicesRef = ref(db, "devices");
-            const snapshot = await get(devicesRef);
-            const unpairedDevices = [];
-            snapshot.forEach((child) => {
-                const deviceData = child.val();
-                if (deviceData.status === "unpaired") {
-                    unpairedDevices.push(
-                        {
-                            label: child.key,
-                            value: child.key,
-                        }
-                    );
-                }
-            });
-            setUnpairedDevices(unpairedDevices);
-            setIsLoading(false);
-        } catch (error) {
-            Alert.alert("Error", "Failed to fetch unpaired devices. Please try again.");
-        }
-    }
+    useEffect(() => {
+        setIsLoading(false);
+    }, [devices]);
 
-    const fetchDevices = async () => {
-        setIsLoading(true);
-        try {
-            const devicesRef = ref(db, "devices");
-            const snapshot = await get(devicesRef);
-            const devices = [];
-            snapshot.forEach((child) => {
-                const deviceData = child.val();
-                if (deviceData.owner === auth.currentUser.uid) {
-                    devices.push({
-                        ...deviceData,
-                        id: child.key,
-                    });
-                }
-            });
-            setDevices(devices);
-            setIsLoading(false);
-        } catch (error) {
-            console.error("Error fetching devices:", error);
-            Alert.alert("Error", "Failed to fetch devices. Please try again.");
-        }
-    };
 
     const showAddDeviceModal = () => {
-        fetchUnpairedDevices();
         setModalVisible(true);
     }
-    const addDevice = async () => {
-        if (!deviceCode.trim()) {
-            Alert.alert("Error", "Please enter a device pairing code.");
-            return;
-        }
-        try {
-            const devicesRef = ref(db, "devices");
-            const snapshot = await get(devicesRef);
-            let matchedDeviceKey = null;
-
-            snapshot.forEach((child) => {
-                const deviceData = child.val();
-                if (
-                    child.key === selectedUnpairedDevice.trim() &&
-                    deviceData.pairing_code === deviceCode.trim() &&
-                    deviceData.status === "unpaired"
-                ) {
-                    matchedDeviceKey = child.key;
-                }
-            });
-
-            if (matchedDeviceKey) {
-                const today = new Date().toLocaleDateString();
-
-                await update(ref(db, `devices/${matchedDeviceKey}`), {
-                    device_nickname: device_nickname,
-                    owner: auth.currentUser.uid,
-                    status: "paired",
-                    paired_at: today,
-                }).then(() => {
-                    fetchDevices();
-                    fetchUnpairedDevices();
-                    setDeviceCode("");
-                    setSelectedUnpairedDevice("");
-                    setDeviceNickname("");
-                    setModalVisible(false);
-                    Toast.show({
-                        type: "success",
-                        text1: "Success",
-                        text2: "Device successfully paired!",
-                    });
-                });
-            } else {
-                setModalVisible(false);
-                setTimeout(() => {
-
-                    Toast.show({
-                        type: "error",
-                        text1: "Error",
-                        text2: "No matching device found or device is already paired.",
-                    });
-                }, 1000);
-            }
-        } catch (error) {
-            Alert.alert("Error", "Failed to add device. Please try again.");
-        }
+    const handleAddDevice = async () => {
+        addDevice(deviceCode, selectedUnpairedDevice, device_nickname);
     };
+
     const showEditModal = (device) => {
         setAction("edit");
         setDeviceId(device.id);
-        console.log(device);
 
-        setDeviceNickname(device.name);
+        setDeviceNickname(device.device_nickname);
         setModalVisible(true);
     };
 
@@ -171,24 +72,26 @@ export default function devices() {
             const deviceRef = ref(db, `devices/${deviceId}`);
             await update(deviceRef, {
                 device_nickname: device_nickname,
+            }).then(async () => {
+                setShowConfirmModal(false);
+                setDeviceId(null);
+                setDeviceNickname("");
+                setAction(null);
+                Toast.show({
+                    type: "success",
+                    text1: "Success",
+                    text2: "Device name successfully updated.",
+                });
+                setModalVisible(false);
             });
-            await fetchDevices();
-            setShowConfirmModal(false);
-            setDeviceId(null);
-            setDeviceNickname("");
-            setAction(null);
-            Toast.show({
-                type: "success",
-                text1: "Success",
-                text2: "Device name successfully updated.",
-            });
-            setModalVisible(false);
+
         } catch (error) {
             Alert.alert("Error", "Failed to update device name.");
         }
     };
 
     const openConfirmModal = (deviceId, action) => {
+
         setAction(action);
         setDeviceId(deviceId);
         setShowConfirmModal(true);
@@ -208,7 +111,6 @@ export default function devices() {
                 paired_at: null,
             })
                 .then(() => {
-                    fetchDevices();
                     setShowConfirmModal(false);
                     setDeviceId(null);
 
@@ -245,19 +147,17 @@ export default function devices() {
                     <>
                         < View className="flex-row items-center justify-between mb-5">
                             <Text className="text-2xl font-bold text-[#2E4F4F]">Devices</Text>
-                            <TouchableOpacity onPress={showAddDeviceModal} className="p-2">
-                                <Feather name="plus-circle" size={28} color="#166534" />
-                            </TouchableOpacity>
+                            <IconButton onPress={showAddDeviceModal} icon="plus-circle-outline" size={30} iconColor="#2E4F4F" />
                         </View>
-                        {devices.length > 0 ? (
+                        {userDevices.length > 0 ? (
                             <View className="px-5">
-                                {devices?.map((device, index) => (
-                                    <DeviceCard key={index} onPress={() => router.push(`/appliances/${device.id}`)} deviceData={device} editDevice={() => showEditModal(device.id)} deleteDevice={() => openConfirmModal(device.id, "delete")} />
+                                {userDevices.map((userDevice, index) => (
+                                    <DeviceCard key={index} onPress={() => router.push(`/appliances/${userDevice.id}`)} deviceData={userDevice} editDevice={() => showEditModal(userDevice)} deleteDevice={() => openConfirmModal(userDevice.id, "delete")} />
                                 ))}
                             </View>
                         ) : (
                             <View className="flex-1 justify-center items-center">
-                                <MaterialCommunityIcons name="lightning-bolt-outline" size={64} color="#9CA3AF" />
+                                <IconButton icon="lightning-bolt-outline" size={64} iconColor="#9CA3AF" />
                                 <Text className="text-gray-500 mt-4 text-lg font-semibold">
                                     No appliances added yet
                                 </Text>
@@ -291,10 +191,10 @@ export default function devices() {
                                 <DropDownPicker
                                     open={dropDownOpen}
                                     value={selectedUnpairedDevice}
-                                    items={unPaired}
+                                    items={unpairedDevices}
                                     setOpen={setDropDownOpen}
                                     setValue={setSelectedUnpairedDevice}
-                                    setItems={setUnpairedDevices}
+                                    // setItems={setUnpairedDevices}
                                     placeholder="Select Device"
                                     style={{
                                         borderColor: "#d1d5db",
@@ -318,20 +218,15 @@ export default function devices() {
                                     value={deviceCode}
                                     onChangeText={setDeviceCode}
                                 />
-                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                    <Feather
-                                        name={showPassword ? "eye-off" : "eye"}
-                                        size={20}
-                                        color="gray"
-                                    />
-                                </TouchableOpacity>
+                                <IconButton style={{ marginRight: -15 }} onPress={() => setShowPassword(!showPassword)} icon={showPassword ? "eye-off" : "eye-outline"} iconColor="gray" />
+
                             </View></>
                         ) : null}
 
                         <View className="flex-row justify-end">
                             <TouchableOpacity
                                 className="px-4 py-2 bg-gray-300 rounded-lg mr-4"
-                                onPress={() => { setModalVisible(false); setAction(null) }}
+                                onPress={() => { setModalVisible(false); setAction(null); setDeviceNickname(""); setSelectedUnpairedDevice(""); setDeviceCode(""); }}
                             >
                                 <Text className="text-gray-700 font-semibold">Cancel</Text>
                             </TouchableOpacity>
@@ -341,7 +236,7 @@ export default function devices() {
                                     if (action === "edit") {
                                         handleEditConfirmed();
                                     } else {
-                                        addDevice();
+                                        handleAddDevice();
                                     }
                                 }}>
                                 <Text className="text-white font-semibold">{action === "edit" ? "Confirm" : "Add"}</Text>

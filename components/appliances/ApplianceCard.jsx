@@ -1,7 +1,5 @@
 import { Card, Text, IconButton, RadioButton } from 'react-native-paper';
 import { StyleSheet, View } from 'react-native';
-import { onValue, ref, update } from 'firebase/database';
-import { db } from '../../firebase/firebaseConfig';
 
 export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, onDelete, selectedAppliance, onChange }) {
 
@@ -11,11 +9,11 @@ export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, 
                 <Card.Title
                     title={appliance.name}
                     subtitle={`Added at: ${appliance.added_at || 'N/A'}`}
-                    titleStyle={cardStyles.textBlack}
-                    subtitleStyle={cardStyles.textBlack}
+                    titleStyle={cardStyles.title}
+                    subtitleStyle={cardStyles.subtitle}
                     right={(props) => (
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <IconButton iconColor='blue' icon="pencil" onPress={onEdit} />
+                            <IconButton iconColor='#2E4F4F' icon="pencil" onPress={onEdit} />
                             <IconButton iconColor='red' icon="delete" onPress={onDelete} />
                             <RadioButton
                                 value={appliance.name}
@@ -26,8 +24,8 @@ export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, 
                     )}
                 />
                 <Card.Content>
-                    <Text style={cardStyles.textBlack} variant="bodyMedium">Power: {power?.toFixed(2)} W</Text>
-                    <Text style={cardStyles.textBlack} variant="bodyMedium">Usage: {applianceKWH?.toFixed(2)} kWh</Text>
+                    <Text style={cardStyles.contentText} variant="bodyMedium">Power: {power?.toFixed(2)} W</Text>
+                    <Text style={cardStyles.contentText} variant="bodyMedium">Usage: {applianceKWH?.toFixed(2)} kWh</Text>
                 </Card.Content>
             </Card>
         </View>
@@ -35,7 +33,13 @@ export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, 
 }
 
 const cardStyles = StyleSheet.create({
-    textBlack: {
-        color: 'black',
+    title: {
+        color: "black"
+    },
+    subtitle: {
+        color: '#5f5f5f',
+    },
+    contentText: {
+        color: '#5f5f5f',
     }
 });

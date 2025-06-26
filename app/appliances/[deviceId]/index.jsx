@@ -7,9 +7,12 @@ import { auth, db } from "../../../firebase/firebaseConfig";
 import { useApplianceStreams } from "../../../hooks/useApplianceStreams";
 import ApplianceCard from "../../../components/appliances/ApplianceCard";
 import { ActivityIndicator, RadioButton } from "react-native-paper";
+import { useDeviceStore } from "../../../store/firebaseStore";
 import Header from "../../../components/ui/Header";
 
 export default function DeviceDetails() {
+
+    const { devices } = useDeviceStore();
 
     const userId = auth.currentUser.uid;
     const { deviceId } = useLocalSearchParams();
@@ -17,7 +20,9 @@ export default function DeviceDetails() {
     const [isLoading, setIsLoading] = useState(true);
 
     const [deviceData, setDeviceData] = useState(null);
+
     const [appliances, setAppliances] = useState([]);
+
     const [applianceKWh, setApplianceKWh] = useState(0);
     const [appliancePower, setAppliancePower] = useState(0);
 
@@ -51,7 +56,6 @@ export default function DeviceDetails() {
             if (snapshot.exists()) {
                 if (snapshot.val()) {
                     setSelectedAppliance(snapshot.val().appliance_name || "");
-
                 }
             }
         });
@@ -76,21 +80,22 @@ export default function DeviceDetails() {
     const fetchAppliances = async () => {
         setIsLoading(true);
         const snapshot = await get(ref(db, `usage/${userId}/${deviceId}`));
-        const appliances = [];
+        let appliances = [];
         if (snapshot.exists()) {
             snapshot.forEach((applianceSnap) => {
-                const dateKeys = [];
+                let dateKeys = [];
                 applianceSnap.forEach((dateSnap) => {
                     dateKeys.push(dateSnap.key);
-                })
-                const sortedDateKeys = dateKeys.sort();
+                });
+                dateKeys = dateKeys.sort();
                 appliances.push({
                     ...applianceSnap.val(),
                     name: applianceSnap.key,
-                    added_at: sortedDateKeys[0],
-                })
-            })
+                    added_at: dateKeys[0],
+                });
+            });
         }
+        appliances = appliances.sort((a, b) => (a.added_at > b.added_at ? 1 : -1));
         setAppliances(appliances);
         setIsLoading(false);
     }
@@ -98,7 +103,7 @@ export default function DeviceDetails() {
 
 
     const handleSelectedAppliance = async (value) => {
-        console.log(value);
+        setIsLoading(true);
 
         const deviceRef = ref(db, `devices/${deviceId}`);
 
@@ -106,6 +111,7 @@ export default function DeviceDetails() {
             appliance_name: value,
         }).then(() => {
             setSelectedAppliance(value);
+            setIsLoading(false);
         }).catch((error) => {
             console.error("Error updating appliance:", error);
         });
@@ -126,28 +132,33 @@ export default function DeviceDetails() {
             <Text className="text-xl font-bold text-[#2E4F4F]">Device: {deviceId}</Text>
             <Text className="text-gray-700 mt-2">Status: {deviceData.status}</Text>
             <Text className="text-gray-700">Paired at: {deviceData.paired_at}</Text>
+            <Text className="text-gray-700" onPress={() => {
+                console.log(devices);
+            }} >Last updated: asd</Text>
             <ScrollView className="mt-4 p-5">
-                {appliances.length > 0 && deviceId != null ? (
+                {(appliances.length > 0 && deviceId != null) && (
                     <View className="mb-40">
                         <RadioButton.Group
                             onValueChange={newValue => handleSelectedAppliance(newValue)}
                             value={selectedAppliance}
                         >
-                            {appliances?.map((appliance, index) => (
-                                <ApplianceCard key={index}
-                                    power={appliancePower[appliance.name] || 0}
-                                    appliance={appliance}
-                                    editDevice={() => showEditModal(item)}
-                                    resetDevice={() => openConfirmModal(item.id, "reset")}
-                                    deleteDevice={() => openConfirmModal(item.id, "delete")}
-                                    applianceKWH={applianceKWh[appliance.name] || 0}
-                                    selectedAppliance={selectedAppliance}
-                                    onChange={setSelectedAppliance} />
-                            ))}
+                            {isLoading ? (
+                                <View className="flex-1 justify-center items-center mt-20">
+                                    <ActivityIndicator size="large" color="#166534" />
+                                    <Text className="text-gray-500 mt-2">Switching Appliance...</Text>
+                                </View>) : appliances?.map((appliance, index) => (
+                                    <ApplianceCard key={index}
+                                        power={appliancePower[appliance.name] || 0}
+                                        appliance={appliance}
+                                        editDevice={() => showEditModal(item)}
+                                        resetDevice={() => openConfirmModal(item.id, "reset")}
+                                        deleteDevice={() => openConfirmModal(item.id, "delete")}
+                                        applianceKWH={applianceKWh[appliance.name] || 0}
+                                        selectedAppliance={selectedAppliance}
+                                        onChange={setSelectedAppliance} />
+                                ))}
                         </RadioButton.Group>
                     </View>
-                ) : (
-                    <Text className="text-gray-500 mt-2">No appliances found for this device.</Text>
                 )}
             </ScrollView>
         </View>
