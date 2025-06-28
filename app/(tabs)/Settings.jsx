@@ -26,10 +26,8 @@ export default function settings() {
 
     return (
         <ScrollView className="flex-1 bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
-            {/* Header */}
             <Text className="text-2xl font-bold text-[#23403A] mb-6">Settings</Text>
 
-            {/* Account Section */}
             <Text className="text-lg font-semibold text-[#23403A] mb-2">Account</Text>
             <View className="border-t border-gray-300 mb-4" />
 
@@ -48,7 +46,6 @@ export default function settings() {
                 </TouchableOpacity>
             ))}
 
-            {/* Notification Section */}
             <Text className="text-lg font-semibold text-[#23403A] mt-6 mb-2">Notification</Text>
             <View className="border-t border-gray-300 mb-4" />
 
@@ -63,7 +60,6 @@ export default function settings() {
                 </View>
             ))}
 
-            {/* About Section */}
             <Text className="text-lg font-semibold text-[#23403A] mt-6 mb-2">About</Text>
             <View className="border-t border-gray-300 mb-4" />
 
@@ -81,7 +77,6 @@ export default function settings() {
                 </TouchableOpacity>
             ))}
 
-            {/* Logout Button */}
             <TouchableOpacity onPress={handleLogout} className="mt-6 self-center bg-red-700 px-6 py-2 rounded-md">
                 <View className="h-8 w-16 items-center justify-center">
                     {!isLoading ? (

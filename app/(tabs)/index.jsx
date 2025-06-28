@@ -45,7 +45,7 @@ export default function Dashboard() {
         },
     ];
     return (
-        <ScrollView className="bg-gray-100 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
+        <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
             <Header />
             <View style={styles.cardShadow} className="flex-row justify-between items-center bg-white mb-4 rounded-2xl p-5">
                 <View>

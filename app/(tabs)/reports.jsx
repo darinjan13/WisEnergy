@@ -11,22 +11,89 @@ import { ActivityIndicator } from "react-native-paper";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
+    const usagePath = `usage/${auth.currentUser.uid}`;
     const [reportCategory, setReportCategory] = useState("Daily");
+
+    const [devices, setDevices] = useState([]);
+    const [appliances, setAppliances] = useState([]);
+
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
-    const [loading, setLoading] = useState(true);
+
+    const [isLoading, setIsLoading] = useState(true);
+
 
     const category = ["Monthly", "Weekly", "Daily"];
 
     useFocusEffect(
         useCallback(() => {
-            fetchTotalEnergyConsumption();
+            fetchDevices();
 
             return () => {
                 setTotalEnergyConsumption(0);
-                setLoading(true);
+                setIsLoading(true);
             };
         }, [])
     );
+
+    useEffect(() => {
+        if (devices.length != 0) {
+            fetchAppliances();
+        }
+    }, [devices]);
+
+    const fetchDevices = async () => {
+        try {
+            const usageRef = ref(db, usagePath);
+            const snapshot = await get(usageRef);
+            const devicesList = [];
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    devicesList.push(childSnapshot.key);
+                })
+            }
+            setDevices(devicesList);
+        } catch (error) {
+            console.error("Failed to fetch usage data:", error);
+            setDevices([]);
+            setAppliances([]);
+        }
+    }
+
+    const fetchAppliances = async () => {
+
+        try {
+            const promises = devices?.map(async (deviceId) => {
+                const appliancesRef = ref(db, `${usagePath}/${deviceId}`);
+                const snapshot = await get(appliancesRef);
+                if (snapshot.exists()) {
+                    const appliances = [];
+                    snapshot.forEach((childSnapshot) => {
+                        appliances.push(childSnapshot.key);
+                    });
+
+                    if (appliances.length > 0) {
+                        return { deviceId, appliances };
+                    }
+                }
+                return null;
+            });
+
+            const result = await Promise.all(promises);
+            const appliancesData = result.filter(Boolean);
+            console.log(appliancesData);
+            if (appliancesData.length != 0) {
+                setAppliances(appliancesData);
+                fetchTotalEnergyConsumption();
+                setIsLoading(false);
+            }
+        } catch (error) {
+            console.error("Failed to fetch appliances:", error);
+            setAppliances([]);
+        }
+    };
+
+
+
 
     const fetchTotalEnergyConsumption = async () => {
         const now = new Date();
@@ -35,9 +102,9 @@ export default function reports() {
 
         const dailySummaryRef = ref(db, `daily_total_consumption/${auth.currentUser.uid}/${todayLocal}`);
         const snapshot = await get(dailySummaryRef);
+        console.log(snapshot.val());
 
-        setTotalEnergyConsumption(snapshot.val()?.total_energy_consumption);
-        setLoading(false);
+        setTotalEnergyConsumption(snapshot.val()?.total_energy_consumption || 0);
     }
 
     const barData = [
@@ -55,11 +122,20 @@ export default function reports() {
         { value: 35 },
     ];
 
+    if (isLoading) {
+        return (
+            <View className="flex-1 justify-center items-center">
+                <ActivityIndicator size="large" color="#166534" />
+                <Text className="text-gray-500 mt-2">Loading Reports...</Text>
+            </View>
+        );
+    }
+
     return (
         <View className="flex-1 bg-gray-100">
             <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
                 <Header />
-                {loading ? (
+                {isLoading ? (
                     <View className="h-screen -mt-36 items-center justify-center">
                         <ActivityIndicator size="large" color="#166534" />
                         <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
@@ -80,7 +156,7 @@ export default function reports() {
                         </View>
                         <View className="flex-row justify-between mb-2 text-center">
                             <Text className="text-2xl font-bold text-[#14532d] my-auto">{reportCategory} Energy Consumption</Text>
-                            <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption.toFixed(2)} kWh</Text>
+                            <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption?.toFixed(2)} kWh</Text>
                         </View>
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
                             <BarChart

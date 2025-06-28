@@ -4,7 +4,6 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    Image,
     ActivityIndicator
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -12,6 +11,7 @@ import { useRouter } from "expo-router";
 import AuthHeader from "../../components/ui/AuthHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAuth from "../../hooks/useAuth";
+import { Checkbox, IconButton } from "react-native-paper";
 
 export default function LoginForm() {
     const router = useRouter();
@@ -72,8 +72,7 @@ export default function LoginForm() {
         <SafeAreaView className="h-full">
             <View className="h-full md:w-1/3 md:mx-auto bg-white px-6">
                 <AuthHeader textHeader="Login" />
-
-                <View className="flex-1 items-center">
+                <View className="flex-1">
                     <View className="mb-4 w-full max-w-sm">
                         <View className="flex-row items-center border border-gray-300 rounded-md px-3 py-2">
                             <Feather name="user" size={18} color="gray" />
@@ -92,7 +91,7 @@ export default function LoginForm() {
                     </View>
 
                     <View className="mb-4 w-full max-w-sm">
-                        <View className="flex-row items-center border border-gray-300 rounded-md px-3 py-2">
+                        <View className="flex-row items-center border border-gray-300 rounded-md px-3">
                             <Feather name="lock" size={18} color="gray" />
                             <TextInput
                                 className="ml-2 flex-1"
@@ -101,27 +100,15 @@ export default function LoginForm() {
                                 value={password}
                                 onChangeText={setPassword}
                             />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                <Feather
-                                    name={showPassword ? "eye-off" : "eye"}
-                                    size={18}
-                                    color="gray"
-                                />
-                            </TouchableOpacity>
+                            <IconButton style={{ marginRight: -10 }} size={26} onPress={() => setShowPassword(!showPassword)} icon={showPassword ? "eye-off" : "eye-outline"} iconColor="gray" />
                         </View>
                         {errors.password && (
                             <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>
                         )}
                     </View>
 
-                    <TouchableOpacity
-                        onPress={() => setRememberMe(!rememberMe)}
-                        className="flex-row items-center mb-4 w-full max-w-sm"
-                    >
-                        <View
-                            className={`w-4 h-4 mr-2 border border-gray-400 rounded-sm ${rememberMe ? "bg-green-600" : "bg-white"
-                                }`}
-                        />
+                    <TouchableOpacity className="flex-row items-center mb-4 -ml-2.5" onPress={() => setRememberMe(!rememberMe)}>
+                        <Checkbox color="#15803d" status={rememberMe ? "checked" : "unchecked"} />
                         <Text className="text-sm text-gray-700">Remember me</Text>
                     </TouchableOpacity>
 

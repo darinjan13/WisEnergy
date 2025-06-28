@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { ThemeProvider, DefaultTheme } from "@react-navigation/native";
+import { useEffect, useState } from "react";
+import { ThemeProvider, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
 import { Provider as PaperProvider } from 'react-native-paper';
 
@@ -33,8 +33,13 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="appliances/[deviceId]/index"
+            options={{ headerShown: false }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
+
         <Toast />
       </ThemeProvider>
     </PaperProvider>
