@@ -9,14 +9,9 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import '../../global.css';
 import useAuth from '@/hooks/useAuth';
 import { useDeviceStore } from '@/store/firebaseStore';
+import { auth } from '@/firebase/firebaseConfig';
 
 export default function TabLayout() {
-
-  const { setDevices } = useDeviceStore();
-
-  useEffect(() => {
-    setDevices();
-  }, []);
 
   const router = useRouter();
   const { user, checkingAuth } = useAuth();

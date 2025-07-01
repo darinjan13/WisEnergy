@@ -1,66 +1,45 @@
-import { useFocusEffect } from "expo-router";
-import { useCallback } from "react";
-import { ref, onValue, off } from "firebase/database";
-import { db } from "../firebase/firebaseConfig";
-import { streamLiveKWh } from "../utils/energy";
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+import { listenToLatestPower, listenToLatestKwh } from "../services/firebaseUsageService";
 
-export const useApplianceStreams = (isLoading, deviceId, appliancesData, userId, setAppliancePower, setApplianceKWH) => {
+export default function useApplianceStreams({ appliances, userId, deviceId, setAppliancePower, setApplianceKWh, latestKwh }) {
     useFocusEffect(
-
         useCallback(() => {
-            if (isLoading) return;
-
-            const usageRefs = [];
-            const unsubKwhList = [];
-
-            appliancesData?.forEach((device) => {
-
-                const applianceName = device.name;
-                const usageRef = ref(db, `usage/${userId}/${deviceId}/${applianceName.replace(/ /g, "_")}`);
-
-                usageRefs.push(usageRef);
-
-                const listener = onValue(usageRef, (applianceSnap) => {
-                    let latestDate = "";
-                    applianceSnap.forEach((dateSnap) => {
-                        if (!latestDate || dateSnap.key > latestDate) latestDate = dateSnap.key;
-                    });
-
-                    let power = 0;
-                    if (latestDate) {
-                        let latestTime = "";
-                        const dateSnap = applianceSnap.child(latestDate);
-                        dateSnap.forEach((timeSnap) => {
-                            if (!latestTime || timeSnap.key > latestTime) {
-                                latestTime = timeSnap.key;
-                                power = timeSnap.val().power || 0;
-                            }
-                        });
-
-                        if (latestTime) {
-                            const [h, m, s] = latestTime.split("_").map(Number);
-                            const ts = new Date(`${latestDate}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
-                            const diffSeconds = (Date.now() - ts.getTime()) / 1000;
-                            if (diffSeconds > 5) power = 0;
-                        }
+            if (!appliances || appliances.length === 0) return;
+            const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit" });
+            const unsubPowers = appliances.map(appliance =>
+                listenToLatestPower(
+                    userId,
+                    deviceId,
+                    appliance.name,
+                    today,
+                    (power) => {
+                        setAppliancePower(prev => ({
+                            ...prev,
+                            [appliance.name]: power
+                        }));
                     }
+                )
+            );
 
-                    setAppliancePower((prev) => ({
-                        ...prev,
-                        [applianceName]: power
-                    }));
-                });
-
-                const unsub = streamLiveKWh(userId, deviceId, applianceName, setApplianceKWH);
-
-                unsubKwhList.push(unsub);
-            });
+            const unsubKwhs = appliances.map(appliance =>
+                listenToLatestKwh(
+                    userId,
+                    deviceId,
+                    appliance.name,
+                    (kwh) => {
+                        setApplianceKWh(prev => ({
+                            ...prev,
+                            [appliance.name]: kwh
+                        }));
+                    }
+                )
+            );
 
             return () => {
-                usageRefs.forEach((r) => off(r));
-                unsubKwhList.forEach((unsub) => unsub());
-                console.log("Cleaned up appliance streams");
+                unsubPowers.forEach(unsub => unsub && unsub());
+                unsubKwhs.forEach(unsub => unsub && unsub());
             };
-        }, [userId, isLoading])
+        }, [appliances, userId, deviceId, setAppliancePower, setApplianceKWh])
     );
-};
+}

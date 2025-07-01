@@ -2,26 +2,25 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import { Text, View, BackHandler, Alert, ScrollView } from "react-native";
 
-import { ref, get, update, onValue } from "firebase/database";
-import { auth, db } from "../../../firebase/firebaseConfig";
-import { useApplianceStreams } from "../../../hooks/useApplianceStreams";
+import { auth } from "../../../firebase/firebaseConfig";
 import ApplianceCard from "../../../components/appliances/ApplianceCard";
 import { ActivityIndicator, RadioButton } from "react-native-paper";
-import { useDeviceStore } from "../../../store/firebaseStore";
+import { useDeviceStore, useUsageStore } from "../../../store/firebaseStore";
 import Header from "../../../components/ui/Header";
+import useApplianceStreams from "../../../hooks/useApplianceStreams";
 
 export default function DeviceDetails() {
 
-    const { devices } = useDeviceStore();
+    const { devices, userAppliances, setDeviceApplianceName, setApplianceActive, setOnlyOneActive } = useDeviceStore();
+    const { latestKwh, fetchLatestKwhOnce } = useUsageStore();
 
     const userId = auth.currentUser.uid;
     const { deviceId } = useLocalSearchParams();
 
-    const [isLoading, setIsLoading] = useState(true);
-
-    const [deviceData, setDeviceData] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const [appliances, setAppliances] = useState([]);
+    const [device, setDevice] = useState([]);
 
     const [applianceKWh, setApplianceKWh] = useState(0);
     const [appliancePower, setAppliancePower] = useState(0);
@@ -30,36 +29,44 @@ export default function DeviceDetails() {
 
     useFocusEffect(
         useCallback(() => {
-            fetchDeviceData();
-            fetchAppliances();
             BackHandler.addEventListener("hardwareBackPress", onBackPress);
             return () => {
-                BackHandler.removeEventListener("hardwareBackPress", onBackPress)
-                setDeviceData(null);
-            }
-        }, [])
+                BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+                setAppliancesInActive();
+            };
+        }, [appliances])
     );
 
-    useEffect(() => {
-        setIsLoading(false);
-    }, [appliances]);
+    useApplianceStreams({ appliances, userId, deviceId, setAppliancePower, setApplianceKWh, latestKwh });
 
-    useEffect(() => {
-        fetchSelectedAppliance();
-    }, [selectedAppliance])
-
-    const fetchSelectedAppliance = async () => {
-        const deviceRef = ref(db, `devices/${deviceId}`);
-
-        onValue(deviceRef, (snapshot) => {
-
-            if (snapshot.exists()) {
-                if (snapshot.val()) {
-                    setSelectedAppliance(snapshot.val().appliance_name || "");
-                }
-            }
+    const setAppliancesInActive = () => {
+        setAppliances([])
+        appliances.forEach(appliance => {
+            setApplianceActive(auth.currentUser.uid, deviceId, appliance.name, false);
         });
-    };
+    }
+
+    useEffect(() => {
+        setDevice(devices.find(device => device.id == deviceId));
+
+        if (userAppliances.length > 0) {
+            const device = userAppliances.find(device => device.id == deviceId);
+            if (device) {
+                device.appliances.forEach(appliance => {
+                    fetchLatestKwhOnce(auth.currentUser.uid, deviceId, appliance.name);
+                })
+                setAppliances(device.appliances);
+                setIsLoading(false);
+            }
+        }
+    }, [])
+
+    useEffect(() => {
+        if (device && device.appliance_name) {
+            setOnlyOneActive(auth.currentUser.uid, deviceId, device.appliance_name);
+            setSelectedAppliance(device.appliance_name);
+        }
+    }, [device.appliance_name])
 
     const onBackPress = () => {
         Alert.alert("Hold on!", "Are you sure you want to go back?", [
@@ -69,55 +76,15 @@ export default function DeviceDetails() {
         return true;
     };
 
-    const fetchDeviceData = async () => {
-        const snapshot = await get(ref(db, `devices/${deviceId}`));
-        if (snapshot.exists()) {
-            setDeviceData(snapshot.val());
-            setIsLoading(false);
-        }
-    };
-
-    const fetchAppliances = async () => {
-        setIsLoading(true);
-        const snapshot = await get(ref(db, `usage/${userId}/${deviceId}`));
-        let appliances = [];
-        if (snapshot.exists()) {
-            snapshot.forEach((applianceSnap) => {
-                let dateKeys = [];
-                applianceSnap.forEach((dateSnap) => {
-                    dateKeys.push(dateSnap.key);
-                });
-                dateKeys = dateKeys.sort();
-                appliances.push({
-                    ...applianceSnap.val(),
-                    name: applianceSnap.key,
-                    added_at: dateKeys[0],
-                });
-            });
-        }
-        appliances = appliances.sort((a, b) => (a.added_at > b.added_at ? 1 : -1));
-        setAppliances(appliances);
-        setIsLoading(false);
-    }
-    useApplianceStreams(isLoading, deviceId, appliances, userId, setAppliancePower, setApplianceKWh);
-
-
     const handleSelectedAppliance = async (value) => {
         setIsLoading(true);
-
-        const deviceRef = ref(db, `devices/${deviceId}`);
-
-        await update(deviceRef, {
-            appliance_name: value,
-        }).then(() => {
-            setSelectedAppliance(value);
-            setIsLoading(false);
-        }).catch((error) => {
-            console.error("Error updating appliance:", error);
-        });
+        await setDeviceApplianceName(deviceId, value);
+        setOnlyOneActive(auth.currentUser.uid, deviceId, value);
+        setSelectedAppliance(value);
+        setIsLoading(false);
     }
 
-    if (!deviceData) {
+    if (!devices) {
         return (
             <View className="flex-1 justify-center items-center">
                 <ActivityIndicator size="large" color="#166534" />
@@ -130,16 +97,14 @@ export default function DeviceDetails() {
         <View className="p-4">
             <Header />
             <Text className="text-xl font-bold text-[#2E4F4F]">Device: {deviceId}</Text>
-            <Text className="text-gray-700 mt-2">Status: {deviceData.status}</Text>
-            <Text className="text-gray-700">Paired at: {deviceData.paired_at}</Text>
-            <Text className="text-gray-700" onPress={() => {
-                console.log(devices);
-            }} >Last updated: asd</Text>
-            <ScrollView className="mt-4 p-5">
+            <Text className="text-gray-700 mt-2">Status: {device.status}</Text>
+            <Text className="text-gray-700">Paired at: {device.paired_at}</Text>
+            <Text className="text-gray-700" >Last updated: asd</Text>
+            <ScrollView className="mt-4 p-5 mb-10">
                 {(appliances.length > 0 && deviceId != null) && (
                     <View className="mb-40">
                         <RadioButton.Group
-                            onValueChange={newValue => handleSelectedAppliance(newValue)}
+                            onValueChange={handleSelectedAppliance}
                             value={selectedAppliance}
                         >
                             {isLoading ? (
@@ -153,9 +118,9 @@ export default function DeviceDetails() {
                                         editDevice={() => showEditModal(item)}
                                         resetDevice={() => openConfirmModal(item.id, "reset")}
                                         deleteDevice={() => openConfirmModal(item.id, "delete")}
-                                        applianceKWH={applianceKWh[appliance.name] || 0}
+                                        applianceKWH={latestKwh[appliance.name] || 0}
                                         selectedAppliance={selectedAppliance}
-                                        onChange={setSelectedAppliance} />
+                                        onChange={handleSelectedAppliance} />
                                 ))}
                         </RadioButton.Group>
                     </View>

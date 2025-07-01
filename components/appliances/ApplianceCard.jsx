@@ -7,7 +7,7 @@ export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, 
         <View>
             <Card className="mb-4" style={{ backgroundColor: 'white' }}>
                 <Card.Title
-                    title={appliance.name}
+                    title={appliance.name.replace(/_/, ' ')}
                     subtitle={`Added at: ${appliance.added_at || 'N/A'}`}
                     titleStyle={cardStyles.title}
                     subtitleStyle={cardStyles.subtitle}
@@ -18,7 +18,6 @@ export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, 
                             <RadioButton
                                 value={appliance.name}
                                 status={selectedAppliance === appliance.name ? 'checked' : 'unchecked'}
-                                onPress={() => onChange(appliance.name)}
                             />
                         </View>
                     )}

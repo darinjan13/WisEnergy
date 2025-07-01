@@ -44,8 +44,8 @@ export default function DeviceCard({ onPress, deviceData, editDevice, deleteDevi
                 subtitleStyle={styles.subtitle}
                 right={() => (
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <IconButton icon="pencil" iconColor="#2E4F4F" onPress={editDevice} />
-                        <IconButton icon="delete" iconColor="red" onPress={deleteDevice} />
+                        <IconButton disabled={deviceData.status === "unpaired"} icon="pencil" iconColor="#2E4F4F" onPress={editDevice} />
+                        <IconButton disabled={deviceData.status === "unpaired"} icon="delete" iconColor="red" onPress={deleteDevice} />
                     </View>
                 )}
             />

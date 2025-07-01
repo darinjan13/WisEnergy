@@ -8,13 +8,15 @@ import { auth, db } from "../../firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
 import ProgressBar from "../../components/ui/ProgressBar";
 import { ActivityIndicator } from "react-native-paper";
+import { useDeviceStore } from "../../store/firebaseStore";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
     const usagePath = `usage/${auth.currentUser.uid}`;
+    const { devices, userAppliances } = useDeviceStore();
     const [reportCategory, setReportCategory] = useState("Daily");
 
-    const [devices, setDevices] = useState([]);
+    // const [devices, setDevices] = useState([]);
     const [appliances, setAppliances] = useState([]);
 
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
@@ -26,74 +28,16 @@ export default function reports() {
 
     useFocusEffect(
         useCallback(() => {
-            fetchDevices();
-
+            if (devices.length != 0 || userAppliances.length != 0) {
+                console.log(userAppliances);
+                fetchTotalEnergyConsumption();
+            }
             return () => {
                 setTotalEnergyConsumption(0);
                 setIsLoading(true);
             };
         }, [])
     );
-
-    useEffect(() => {
-        if (devices.length != 0) {
-            fetchAppliances();
-        }
-    }, [devices]);
-
-    const fetchDevices = async () => {
-        try {
-            const usageRef = ref(db, usagePath);
-            const snapshot = await get(usageRef);
-            const devicesList = [];
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    devicesList.push(childSnapshot.key);
-                })
-            }
-            setDevices(devicesList);
-        } catch (error) {
-            console.error("Failed to fetch usage data:", error);
-            setDevices([]);
-            setAppliances([]);
-        }
-    }
-
-    const fetchAppliances = async () => {
-
-        try {
-            const promises = devices?.map(async (deviceId) => {
-                const appliancesRef = ref(db, `${usagePath}/${deviceId}`);
-                const snapshot = await get(appliancesRef);
-                if (snapshot.exists()) {
-                    const appliances = [];
-                    snapshot.forEach((childSnapshot) => {
-                        appliances.push(childSnapshot.key);
-                    });
-
-                    if (appliances.length > 0) {
-                        return { deviceId, appliances };
-                    }
-                }
-                return null;
-            });
-
-            const result = await Promise.all(promises);
-            const appliancesData = result.filter(Boolean);
-            console.log(appliancesData);
-            if (appliancesData.length != 0) {
-                setAppliances(appliancesData);
-                fetchTotalEnergyConsumption();
-                setIsLoading(false);
-            }
-        } catch (error) {
-            console.error("Failed to fetch appliances:", error);
-            setAppliances([]);
-        }
-    };
-
-
-
 
     const fetchTotalEnergyConsumption = async () => {
         const now = new Date();
@@ -105,6 +49,7 @@ export default function reports() {
         console.log(snapshot.val());
 
         setTotalEnergyConsumption(snapshot.val()?.total_energy_consumption || 0);
+        setIsLoading(false)
     }
 
     const barData = [
