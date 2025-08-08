@@ -6,9 +6,6 @@ import { BlurView } from "expo-blur";
 import { ActivityIndicator, IconButton } from "react-native-paper";
 import DropDownPicker from "react-native-dropdown-picker";
 
-import { auth, db } from "../../firebase/firebaseConfig.jsx";
-import { get, ref, set, update } from "firebase/database";
-
 import ConfirmModal from "../../components/ui/ConfirmModal.jsx";
 import DeviceCard from "../../components/appliances/DeviceCard";
 import Header from "../../components/ui/Header.jsx";
@@ -30,28 +27,33 @@ export default function devices() {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [dropDownOpen, setDropDownOpen] = useState(false);
+    const [disableDevice, setDisableDevice] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
+            if (devices.length === 0) setDevices();
+            if (userAppliances.length === 0) fetchUserAppliances();
+            const timeout = setTimeout(() => {
+                if (devices.length > 0 && userAppliances.length > 0) {
+
+                    setIsLoading(false);
+                    console.log(devices.length);
+                }
+            }, 250);
+
             return () => {
-                setModalVisible(false);
-                setDeviceId(null);
-                setAction(null);
+                clearTimeout(timeout)
+                setIsLoading(true)
+                setDisableDevice(false)
             };
-        }, [])
-    )
+
+        }, [devices.length, userAppliances.length])
+    );
 
     useEffect(() => {
-        setDevices();
-        fetchUserAppliances();
-    }, []);
+        console.log(disableDevice);
 
-    useEffect(() => {
-        if (devices.length > 0 && userAppliances.length > 0) {
-            setIsLoading(false);
-        }
-    }, [devices, userAppliances])
-
+    }, [disableDevice])
 
     const showAddDeviceModal = () => {
         setModalVisible(true);
@@ -146,11 +148,16 @@ export default function devices() {
         }
     };
 
+    const handleDecivcePressed = (userDevice) => {
+        setDisableDevice(true);
+        router.push(`/appliances/${userDevice.id}`)
+    }
+
     return (
         <View className="bg-gray-100">
             <ScrollView className=" p-4">
                 <Header />
-                {isLoading ? (
+                {isLoading || disableDevice ? (
                     <View className="h-screen -mt-36 items-center justify-center">
                         <ActivityIndicator size="large" color="#166534" />
                         <Text className="text-gray-500 mt-4 text-lg font-semibold">
@@ -166,7 +173,7 @@ export default function devices() {
                         {userDevices.length > 0 ? (
                             <View className="px-5">
                                 {userDevices.map((userDevice, index) => (
-                                    <DeviceCard key={index} onPress={() => router.push(`/appliances/${userDevice.id}`)} deviceData={userDevice} editDevice={() => showEditModal(userDevice)} deleteDevice={() => openConfirmModal(userDevice.id, "delete")} />
+                                    <DeviceCard key={index} disabled={disableDevice} onPress={() => handleDecivcePressed(userDevice)} deviceData={userDevice} editDevice={() => showEditModal(userDevice)} deleteDevice={() => openConfirmModal(userDevice.id, "delete")} />
                                 ))}
                             </View>
                         ) : (

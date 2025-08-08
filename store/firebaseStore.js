@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import * as firebaseDevicesServices from '../services/firebaseDevicesService'
 import * as firebaseUsageServices from '../services/firebaseUsageService'
-import { update } from 'firebase/database';
 
 export const useDeviceStore = create((set, get) => ({
     devices: [],
@@ -70,6 +69,19 @@ export const useDeviceStore = create((set, get) => ({
 
 export const useUsageStore = create((set, get) => ({
     latestKwh: [],
+    reportHistory: {
+        daily: {},
+        weekly: {},
+        monthly: {}
+    },
+    summaryPerDevice: {},
+    totalConsumptionByDate: {},
+    lastFetched: {
+        daily: null,
+        weekly: null,
+        monthly: null
+    },
+
     fetchLatestKwhOnce: async (userId, deviceId, applianceName) => {
         const latestKwhObj = await firebaseUsageServices.fetchLatestKwhOnce(userId, deviceId, applianceName);
         const value = latestKwhObj[applianceName];
@@ -83,4 +95,25 @@ export const useUsageStore = create((set, get) => ({
         const updatedLatestKwh = await firebaseUsageServices.updateLatestKwh(latestKwh);
         set({ latestKwh: updatedLatestKwh });
     },
+
+    fetchDailyReport: async (userId, deviceId, appliances) => {
+        const data = await firebaseUsageServices.fetchDailyReport(userId, deviceId, appliances);
+
+        set(state => ({
+            reportHistory: {
+                ...state.reportHistory,
+                daily: {
+                    ...state.reportHistory.daily,
+                    [deviceId]: data
+                }
+            }
+        }))
+    },
+
+    fetchDailyKwh: async (userId) => {
+        const dailyKwh = await firebaseUsageServices.fetchDailyKwh(userId)
+        set({
+            reports: dailyKwh
+        })
+    }
 }));

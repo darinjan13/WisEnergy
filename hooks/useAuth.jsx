@@ -85,8 +85,6 @@ export default function useAuth() {
             } else if (e.code === "auth/invalid-credential") {
                 message = "Incorrect email or password.";
             }
-            console.log(e);
-
             Toast.show({
                 type: "error",
                 text1: "Login Failed",

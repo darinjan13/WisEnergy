@@ -2,6 +2,7 @@ import { get, ref, update } from 'firebase/database';
 import { auth, db } from '../firebase/firebaseConfig';
 
 export const fetchDevices = async () => {
+
     const devicesRef = ref(db, "devices");
     const snapshot = await get(devicesRef);
     const devices = []
@@ -16,28 +17,16 @@ export const fetchDevices = async () => {
 }
 
 export const setUserDevices = (devices) => {
-    const userDevices = [];
-    devices.map((deviceData) => {
-        if (deviceData.owner == auth.currentUser.uid) {
-            userDevices.push({
-                ...deviceData
-            })
-        }
-    })
-    return userDevices;
+    return devices.filter(deviceData => deviceData.owner === auth.currentUser.uid);
 }
 
 export const setUnpairedDevices = (devices) => {
-    const unpairedDevices = [];
-    devices.map((deviceData) => {
-        if (deviceData.status === "unpaired") {
-            unpairedDevices.push({
-                label: deviceData.id,
-                value: deviceData.id
-            })
-        }
-    })
-    return unpairedDevices;
+    return devices
+        .filter(deviceData => deviceData.status === "unpaired")
+        .map(deviceData => ({
+            label: deviceData.id,
+            value: deviceData.id
+        }));
 }
 
 export const fetchUserAppliances = async () => {
