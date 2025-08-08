@@ -6,9 +6,6 @@ import { BlurView } from "expo-blur";
 import { ActivityIndicator, IconButton } from "react-native-paper";
 import DropDownPicker from "react-native-dropdown-picker";
 
-import { auth, db } from "../../firebase/firebaseConfig.jsx";
-import { get, ref, set, update } from "firebase/database";
-
 import ConfirmModal from "../../components/ui/ConfirmModal.jsx";
 import DeviceCard from "../../components/appliances/DeviceCard";
 import Header from "../../components/ui/Header.jsx";
@@ -16,7 +13,7 @@ import { useDeviceStore } from "../../store/firebaseStore.js";
 
 export default function devices() {
 
-    const { devices, userDevices, unpairedDevices, addDevice } = useDeviceStore();
+    const { devices, setDevices, userDevices, unpairedDevices, addDevice, fetchUserAppliances, userAppliances, updateDeviceNickname, deleteDevice } = useDeviceStore();
 
     const [deviceCode, setDeviceCode] = useState("");
     const [device_nickname, setDeviceNickname] = useState("");
@@ -30,30 +27,69 @@ export default function devices() {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [dropDownOpen, setDropDownOpen] = useState(false);
-
-    // const [unPaired, setUnpairedDevices] = useState([]);
-    // const [devices, setDevices] = useState([]);
+    const [disableDevice, setDisableDevice] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
+            if (devices.length === 0) setDevices();
+            if (userAppliances.length === 0) fetchUserAppliances();
+            const timeout = setTimeout(() => {
+                if (devices.length > 0 && userAppliances.length > 0) {
+
+                    setIsLoading(false);
+                    console.log(devices.length);
+                }
+            }, 250);
+
             return () => {
-                setModalVisible(false);
-                setDeviceId(null);
-                setAction(null);
+                clearTimeout(timeout)
+                setIsLoading(true)
+                setDisableDevice(false)
             };
-        }, [])
-    )
+
+        }, [devices.length, userAppliances.length])
+    );
 
     useEffect(() => {
-        setIsLoading(false);
-    }, [devices]);
+        console.log(disableDevice);
 
+    }, [disableDevice])
 
     const showAddDeviceModal = () => {
         setModalVisible(true);
     }
     const handleAddDevice = async () => {
-        addDevice(deviceCode, selectedUnpairedDevice, device_nickname);
+        setIsLoading(true);
+        try {
+            setModalVisible(false);
+            const addDeviceStatus = await addDevice(deviceCode, selectedUnpairedDevice, device_nickname);
+            if (addDeviceStatus && addDeviceStatus.success) {
+                Toast.show({
+                    type: "success",
+                    text1: "Success",
+                    text2: "Device successfully paired!",
+                });
+                setDeviceCode("");
+                setDeviceNickname("");
+                setSelectedUnpairedDevice("");
+                setAction(null);
+            } else {
+                Toast.show({
+                    type: "error",
+                    text1: "Error",
+                    text2: addDeviceStatus?.error || "Failed to add device.",
+                });
+            }
+        } catch (error) {
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: "An unexpected error occurred. Please try again.",
+            });
+            console.error("Error in handleAddDevice:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const showEditModal = (device) => {
@@ -65,28 +101,23 @@ export default function devices() {
     };
 
     const handleEditConfirmed = async () => {
-        console.log(device_nickname);
-
         if (!deviceId) return;
         try {
-            const deviceRef = ref(db, `devices/${deviceId}`);
-            await update(deviceRef, {
-                device_nickname: device_nickname,
-            }).then(async () => {
-                setShowConfirmModal(false);
-                setDeviceId(null);
-                setDeviceNickname("");
-                setAction(null);
-                Toast.show({
-                    type: "success",
-                    text1: "Success",
-                    text2: "Device name successfully updated.",
-                });
-                setModalVisible(false);
+            setIsLoading(true);
+            setModalVisible(false);
+            await updateDeviceNickname(deviceId, device_nickname);
+            Toast.show({
+                type: "success",
+                text1: "Success",
+                text2: "Device name successfully updated.",
             });
-
+            setDeviceId(null);
+            setDeviceNickname("");
+            setAction(null);
         } catch (error) {
             Alert.alert("Error", "Failed to update device name.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -98,45 +129,35 @@ export default function devices() {
     };
 
     const handleDeleteConfirmed = async () => {
-        console.log(deviceId);
-
         if (!deviceId) return;
-
         try {
-            const deviceRef = ref(db, `devices/${deviceId}`);
-            await update(deviceRef, {
-                status: "unpaired",
-                owner: "",
-                device_nickname: "",
-                paired_at: null,
-            })
-                .then(() => {
-                    setShowConfirmModal(false);
-                    setDeviceId(null);
-
-                    Toast.show({
-                        type: "success",
-                        text1: "Deleted",
-                        text2: "Device successfully unpaired.",
-                    });
-                });
-
+            setIsLoading(true);
+            setShowConfirmModal(false);
+            await deleteDevice(deviceId);
+            Toast.show({
+                type: "success",
+                text1: "Deleted",
+                text2: "Device successfully unpaired.",
+            });
+            setDeviceId(null);
+            setSelectedUnpairedDevice("");
         } catch (error) {
-            console.error("Error unpairing device:", error);
             Alert.alert("Error", "Failed to unpair device.");
+        } finally {
+            setIsLoading(false);
         }
     };
-    const handleResetConfirmed = async () => {
-        if (!deviceId) return;
-        console.log("Resetting device with ID:", deviceId);
 
+    const handleDecivcePressed = (userDevice) => {
+        setDisableDevice(true);
+        router.push(`/appliances/${userDevice.id}`)
     }
 
     return (
         <View className="bg-gray-100">
             <ScrollView className=" p-4">
                 <Header />
-                {isLoading ? (
+                {isLoading || disableDevice ? (
                     <View className="h-screen -mt-36 items-center justify-center">
                         <ActivityIndicator size="large" color="#166534" />
                         <Text className="text-gray-500 mt-4 text-lg font-semibold">
@@ -152,7 +173,7 @@ export default function devices() {
                         {userDevices.length > 0 ? (
                             <View className="px-5">
                                 {userDevices.map((userDevice, index) => (
-                                    <DeviceCard key={index} onPress={() => router.push(`/appliances/${userDevice.id}`)} deviceData={userDevice} editDevice={() => showEditModal(userDevice)} deleteDevice={() => openConfirmModal(userDevice.id, "delete")} />
+                                    <DeviceCard key={index} disabled={disableDevice} onPress={() => handleDecivcePressed(userDevice)} deviceData={userDevice} editDevice={() => showEditModal(userDevice)} deleteDevice={() => openConfirmModal(userDevice.id, "delete")} />
                                 ))}
                             </View>
                         ) : (
@@ -181,6 +202,7 @@ export default function devices() {
                     <View className="bg-white rounded-xl p-6 w-11/12">
                         <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">{action === "edit" ? "Edit Device" : "Add Device"}</Text>
                         <TextInput
+                            editable={!isLoading}
                             placeholder="Enter Device name"
                             value={device_nickname}
                             onChangeText={setDeviceNickname}
@@ -194,7 +216,6 @@ export default function devices() {
                                     items={unpairedDevices}
                                     setOpen={setDropDownOpen}
                                     setValue={setSelectedUnpairedDevice}
-                                    // setItems={setUnpairedDevices}
                                     placeholder="Select Device"
                                     style={{
                                         borderColor: "#d1d5db",
@@ -212,6 +233,7 @@ export default function devices() {
                             </View>
                             <View className="border border-gray-300 rounded-lg mb-6 px-4 bg-gray-50 flex-row items-center">
                                 <TextInput
+                                    editable={!isLoading}
                                     className="flex-1 py-4 text-base text-gray-800"
                                     placeholder="Enter Device password"
                                     secureTextEntry={!showPassword}
@@ -231,6 +253,7 @@ export default function devices() {
                                 <Text className="text-gray-700 font-semibold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
+                                disabled={isLoading}
                                 className="px-4 py-2 bg-green-700 rounded-lg"
                                 onPress={() => {
                                     if (action === "edit") {
@@ -248,7 +271,7 @@ export default function devices() {
             <ConfirmModal visible={showConfirmModal} onCancel={() => {
                 setShowConfirmModal(false);
                 setDeviceId(null);
-            }} onConfirm={action === "delete" ? handleDeleteConfirmed : handleResetConfirmed} action={action} />
+            }} onConfirm={handleDeleteConfirmed} action={action} />
         </View >
     );
 }

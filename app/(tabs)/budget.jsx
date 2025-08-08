@@ -48,7 +48,7 @@ export default function Budget() {
     if (budgetSnapshot.exists() && usedKwhSnapshot.exists()) {
       const usedKwh = usedKwhSnapshot.val();
       const budgetKwh = budgetSnapshot.val();
-      const formattedBudgetKwh = parseInt(budgetKwh * rate);
+      const formattedBudgetKwh = Math.round(budgetKwh * rate);
       setMonthlyBudget(formattedBudgetKwh);
       setUsedKWh(usedKwh);
       setLoading(false);
@@ -68,14 +68,17 @@ export default function Budget() {
   }
 
   const onClickSetBudget = () => {
-    handleSetMonthlyBudget(budgetInput);
+    handleSetMonthlyBudget(budgetInput.replace(/,/, ''));
     setBudgetInput("");
     setModalVisible(false);
   }
 
   const handleSetMonthlyBudget = async (budget) => {
+
     const budget_kwh = budget / rate;
     const budgetRef = ref(db, `users/${auth.currentUser.uid}`);
+    console.log(budget_kwh);
+
     await update(budgetRef, {
       budget_kwh: budget_kwh.toFixed(1),
     });

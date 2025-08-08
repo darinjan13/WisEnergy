@@ -1,21 +1,25 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
-import { BarChart, LineChart } from "react-native-gifted-charts";
+import { LineChart } from "react-native-gifted-charts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Header from "../../components/ui/Header";
-import { get, off, onValue, ref, set } from "firebase/database";
-import { auth, db } from "../../firebase/firebaseConfig";
+import { auth } from "../../firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
-import ProgressBar from "../../components/ui/ProgressBar";
 import { ActivityIndicator } from "react-native-paper";
+import { useDeviceStore, useUsageStore } from "../../store/firebaseStore";
+import { Picker } from "@react-native-picker/picker";
+import ApplianceUsage from "../../components/reports/ApplianceUsage"
 
 export default function reports() {
     const insets = useSafeAreaInsets();
-    const usagePath = `usage/${auth.currentUser.uid}`;
+    const { devices, setDevices, fetchUserAppliances, userAppliances, userDevices } = useDeviceStore();
+    const { reportHistory, fetchDailyReport } = useUsageStore();
     const [reportCategory, setReportCategory] = useState("Daily");
+    const [selectedDevice, setSelectedDevice] = useState();
 
-    const [devices, setDevices] = useState([]);
-    const [appliances, setAppliances] = useState([]);
+    // const [appliances, setAppliances] = useState([]);
+    const [reportData, setReportData] = useState([]);
+    const [barData, setBarData] = useState([]);
 
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
 
@@ -26,93 +30,53 @@ export default function reports() {
 
     useFocusEffect(
         useCallback(() => {
-            fetchDevices();
-
+            if (devices.length != 0 && userAppliances.length != 0 && userDevices.length != 0) {
+                const result = userDevices.map((device) => {
+                    const matched = userAppliances.find(appliance => appliance.id === device.id);
+                    if (matched) {
+                        return {
+                            device_id: device.id,
+                            device_nickname: device.device_nickname,
+                            appliances: matched.appliances
+                        }
+                    } else {
+                        return null;
+                    }
+                }).filter(Boolean);
+                setReportData(result)
+            }
             return () => {
                 setTotalEnergyConsumption(0);
-                setIsLoading(true);
+                setReportCategory("Daily")
+                setBarData(undefined)
             };
-        }, [])
+        }, [devices, userAppliances, userDevices])
     );
 
     useEffect(() => {
-        if (devices.length != 0) {
-            fetchAppliances();
-        }
-    }, [devices]);
+        if (devices.length === 0) setDevices();
+        if (userAppliances.length === 0) fetchUserAppliances();
+    }, [devices])
 
-    const fetchDevices = async () => {
-        try {
-            const usageRef = ref(db, usagePath);
-            const snapshot = await get(usageRef);
-            const devicesList = [];
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    devicesList.push(childSnapshot.key);
-                })
-            }
-            setDevices(devicesList);
-        } catch (error) {
-            console.error("Failed to fetch usage data:", error);
-            setDevices([]);
-            setAppliances([]);
-        }
-    }
-
-    const fetchAppliances = async () => {
-
-        try {
-            const promises = devices?.map(async (deviceId) => {
-                const appliancesRef = ref(db, `${usagePath}/${deviceId}`);
-                const snapshot = await get(appliancesRef);
-                if (snapshot.exists()) {
-                    const appliances = [];
-                    snapshot.forEach((childSnapshot) => {
-                        appliances.push(childSnapshot.key);
-                    });
-
-                    if (appliances.length > 0) {
-                        return { deviceId, appliances };
-                    }
+    useEffect(() => {
+        if (selectedDevice != undefined) {
+            reportData.find((device) => {
+                if (device.device_id == selectedDevice) {
+                    fetchDailyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
                 }
-                return null;
-            });
-
-            const result = await Promise.all(promises);
-            const appliancesData = result.filter(Boolean);
-            console.log(appliancesData);
-            if (appliancesData.length != 0) {
-                setAppliances(appliancesData);
-                fetchTotalEnergyConsumption();
-                setIsLoading(false);
-            }
-        } catch (error) {
-            console.error("Failed to fetch appliances:", error);
-            setAppliances([]);
+            })
         }
-    };
+    }, [selectedDevice])
 
+    useEffect(() => {
+        if (Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0) {
+            setIsLoading(false)
+        }
+    }, [reportHistory])
 
-
-
-    const fetchTotalEnergyConsumption = async () => {
-        const now = new Date();
-        const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-        const todayLocal = offsetDate.toISOString().split("T")[0];
-
-        const dailySummaryRef = ref(db, `daily_total_consumption/${auth.currentUser.uid}/${todayLocal}`);
-        const snapshot = await get(dailySummaryRef);
-        console.log(snapshot.val());
-
-        setTotalEnergyConsumption(snapshot.val()?.total_energy_consumption || 0);
-    }
-
-    const barData = [
-        { value: 80, label: 'Aircon', extraData: { kWh: 80, cost: 960 } },
-        { value: 60, label: 'Washer', extraData: { kWh: 60, cost: 720 } },
-        { value: 45, label: 'Fridge', extraData: { kWh: 45, cost: 540 } },
-        { value: 30, label: 'TV', extraData: { kWh: 30, cost: 360 } },
-    ];
+    useEffect(() => {
+        if (reportData.length > 0) setSelectedDevice(reportData[0].device_id)
+    }, [reportData])
 
     const lineData = [
         { value: 10 },
@@ -121,15 +85,6 @@ export default function reports() {
         { value: 40 },
         { value: 35 },
     ];
-
-    if (isLoading) {
-        return (
-            <View className="flex-1 justify-center items-center">
-                <ActivityIndicator size="large" color="#166534" />
-                <Text className="text-gray-500 mt-2">Loading Reports...</Text>
-            </View>
-        );
-    }
 
     return (
         <View className="flex-1 bg-gray-100">
@@ -154,23 +109,33 @@ export default function reports() {
                                 </TouchableOpacity>
                             ))}
                         </View>
+
                         <View className="flex-row justify-between mb-2 text-center">
                             <Text className="text-2xl font-bold text-[#14532d] my-auto">{reportCategory} Energy Consumption</Text>
                             <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption?.toFixed(2)} kWh</Text>
                         </View>
-                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-                            <BarChart
-                                data={barData}
-                                barWidth={20}
-                                barBorderRadius={4}
-                                frontColor="#16a34a"
-                                spacing={10}
-                                yAxisThickness={0}
-                                xAxisLabelTextStyle={{ color: "#4B5563", fontSize: 12 }}
-                                maxValue={120}
-                                noOfSections={4}
-                                width={250}
-                            />
+
+                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                            <View className="flex-row items-center justify-between">
+                                <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
+                                <View className="flex-1 border border-gray-300 rounded-xl overflow-hidden">
+                                    <Picker
+                                        selectedValue={selectedDevice}
+                                        onValueChange={(itemValue) => {
+                                            setIsLoading(true);
+                                            setSelectedDevice(itemValue);
+                                        }}
+                                    >
+                                        {reportData.map((userDevice) => (
+                                            <Picker.Item
+                                                key={userDevice.device_id}
+                                                label={userDevice.device_nickname || "Unnamed Device"}
+                                                value={userDevice.device_id}
+                                            />
+                                        ))}
+                                    </Picker>
+                                </View>
+                            </View>
                         </View>
 
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Savings Over Time</Text>
@@ -188,24 +153,10 @@ export default function reports() {
                         </View>
 
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Appliance Usage</Text>
-                        <View style={styles.cardShadow} className="p-4 rounded-2xl mb-2 bg-white shadow-sm">
-                            {barData?.map((item, index) => (
-                                <View key={index}>
-                                    <Text className="text-lg text-gray-800 font-semibold">{item.label}</Text>
-                                    <ProgressBar
-                                        value={item.value}
-                                        max={100}
-                                        height={14}
-                                        barColor="#16a34a"
-                                        bgColor="#e5e7eb"
-                                        showLabel={true}
-                                    />
-                                    <Text className="text-gray-600 text-xs -mt-4 mb-4">
-                                        {item.extraData.kWh} kWh | ₱{item.extraData.cost}
-                                    </Text>
-                                </View>
-                            ))}
-                        </View>
+                        {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 && (
+                            <ApplianceUsage data={reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]} styles={styles} />
+                        )}
+
                     </View>
                 )}
             </ScrollView>

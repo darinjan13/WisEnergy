@@ -77,7 +77,7 @@ export default function settings() {
                 </TouchableOpacity>
             ))}
 
-            <TouchableOpacity onPress={handleLogout} className="mt-6 self-center bg-red-700 px-6 py-2 rounded-md">
+            <TouchableOpacity onPress={handleLogout} disabled={isLoading} className="mt-6 self-center bg-red-700 px-6 py-2 rounded-md">
                 <View className="h-8 w-16 items-center justify-center">
                     {!isLoading ? (
                         <Text className="text-white font-semibold">Log Out</Text>
