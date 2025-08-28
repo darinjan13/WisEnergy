@@ -1,14 +1,14 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
+
+import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import '../../global.css';
 import useAuth from '@/hooks/useAuth';
-import { useDeviceStore } from '@/store/firebaseStore';
+import { useBudgetStore, useUsageStore } from "../../store/firebaseStore";
 import { auth } from '@/firebase/firebaseConfig';
 
 export default function TabLayout() {
@@ -16,10 +16,16 @@ export default function TabLayout() {
   const router = useRouter();
   const { user, checkingAuth } = useAuth();
 
+  const { subscribeToMonthlyTotalConsumption } = useUsageStore();
+  const { subscribeToBudget } = useBudgetStore();
+
 
   useEffect(() => {
     if (!checkingAuth && !user) {
       router.replace('/(auth)/login');
+    } else {
+      subscribeToMonthlyTotalConsumption(auth.currentUser.uid)
+      subscribeToBudget(auth.currentUser.uid)
     }
   }, [checkingAuth, user, router]);
 

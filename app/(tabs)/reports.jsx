@@ -13,7 +13,8 @@ import ApplianceUsage from "../../components/reports/ApplianceUsage"
 export default function reports() {
     const insets = useSafeAreaInsets();
     const { devices, setDevices, fetchUserAppliances, userAppliances, userDevices } = useDeviceStore();
-    const { reportHistory, fetchDailyReport } = useUsageStore();
+    const { reportHistory, fetchDailyReport, fetchWeeklyReport } = useUsageStore();
+
     const [reportCategory, setReportCategory] = useState("Daily");
     const [selectedDevice, setSelectedDevice] = useState();
 
@@ -63,6 +64,7 @@ export default function reports() {
             reportData.find((device) => {
                 if (device.device_id == selectedDevice) {
                     fetchDailyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
+                    fetchWeeklyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
                 }
             })
         }

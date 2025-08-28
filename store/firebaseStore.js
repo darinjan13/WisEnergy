@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as firebaseDevicesServices from '../services/firebaseDevicesService'
 import * as firebaseUsageServices from '../services/firebaseUsageService'
+import * as firebaseBudgetServices from '../services/firebaseBudgetService'
 
 export const useDeviceStore = create((set, get) => ({
     devices: [],
@@ -68,6 +69,8 @@ export const useDeviceStore = create((set, get) => ({
 }));
 
 export const useUsageStore = create((set, get) => ({
+    monthlyTotalConsumption: 0,
+    _unsubMonthly: null,
     latestKwh: [],
     reportHistory: {
         daily: {},
@@ -80,6 +83,26 @@ export const useUsageStore = create((set, get) => ({
         daily: null,
         weekly: null,
         monthly: null
+    },
+
+    subscribeToMonthlyTotalConsumption: (userId) => {
+        if (get()._unsubMonthly) return; // ✅ Avoid multiple listeners
+
+        const unsubscribe = firebaseUsageServices.fetchMonthlyTotalConsumption(userId, (currentConsumption) => {
+            set({ monthlyTotalConsumption: currentConsumption });
+        });
+
+        set({ _unsubMonthly: unsubscribe });
+    },
+
+    unsubscribeFromMonthlyTotalConsumption: () => {
+        const unsubMonthly = get()._unsubMonthly
+        if (unsubMonthly) {
+            console.log("BUDGET POTA");
+            unsubMonthly();
+            set({ _unsubMonthly: null })
+        }
+
     },
 
     fetchLatestKwhOnce: async (userId, deviceId, applianceName) => {
@@ -98,12 +121,24 @@ export const useUsageStore = create((set, get) => ({
 
     fetchDailyReport: async (userId, deviceId, appliances) => {
         const data = await firebaseUsageServices.fetchDailyReport(userId, deviceId, appliances);
-
         set(state => ({
             reportHistory: {
                 ...state.reportHistory,
                 daily: {
                     ...state.reportHistory.daily,
+                    [deviceId]: data
+                }
+            }
+        }))
+    },
+    fetchWeeklyReport: async (userId, deviceId, appliances) => {
+        const data = await firebaseUsageServices.fetchWeeklyReport(userId, deviceId, appliances);
+
+        set(state => ({
+            reportHistory: {
+                ...state.reportHistory,
+                weekly: {
+                    ...state.reportHistory.weekly,
                     [deviceId]: data
                 }
             }
@@ -115,5 +150,50 @@ export const useUsageStore = create((set, get) => ({
         set({
             reports: dailyKwh
         })
+    }
+}));
+
+export const useBudgetStore = create((set, get) => ({
+    locationRate: 0,
+    monthlyBudget: 0,
+    _unsubBudget: null,
+    percentUsed: 0,
+
+    subscribeToBudget: (userId) => {
+        if (get()._unsubBudget) return; // ✅ Avoid multiple listeners
+
+        const unsubscribe = firebaseBudgetServices.fetchMonthlyBudget(userId, (currentBudget) => {
+            set({ monthlyBudget: currentBudget });
+        });
+
+        set({ _unsubBudget: unsubscribe });
+    },
+
+    unsubscribeToBudget: () => {
+        const unsubBudget = get()._unsubBudget
+        if (unsubBudget) {
+            unsubBudget();
+            set({ _unsubBudget: null })
+        }
+
+    },
+
+    fetchPercentUsed: (usedKwh) => {
+        const { locationRate } = get();
+        const { monthlyBudget } = get();
+        const estimatedCost = usedKwh * locationRate;
+        const percentUsed = Math.min((estimatedCost / monthlyBudget) * 100, 100);
+
+        set({ percentUsed });
+    },
+    fetchLocationRate: async (userId) => {
+        const locationRate = await firebaseBudgetServices.fetchLocationRate(userId);
+
+        set({ locationRate });
+    },
+    fetchMonthlyBudget: async (userId) => {
+
+        const monthlyBudget = await firebaseBudgetServices.fetchMonthlyBudget(userId);
+        set({ monthlyBudget });
     }
 }));

@@ -43,6 +43,21 @@ export default function ApplianceUsage({ data, styles }) {
                                 barStyle={style.barStyle}
                                 showValuesAsTopLabel={true}
                                 showTextOnPress={true}
+                                renderTooltip={(item, index) => {
+                                    return (
+                                        <View
+                                            style={{
+                                                marginBottom: 10,
+                                                marginLeft: -20,
+                                                backgroundColor: "#FFFFFF",
+                                                paddingHorizontal: 6,
+                                                paddingVertical: 4,
+                                                borderRadius: 4,
+                                            }}>
+                                            <Text>{item.date}</Text>
+                                        </View>
+                                    );
+                                }}
                             />
                         </View>
                     </List.Accordion>
