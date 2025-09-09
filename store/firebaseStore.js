@@ -155,12 +155,12 @@ export const useUsageStore = create((set, get) => ({
 
 export const useBudgetStore = create((set, get) => ({
     locationRate: 0,
-    monthlyBudget: 0,
+    monthlyBudget: null,
     _unsubBudget: null,
     percentUsed: 0,
 
     subscribeToBudget: (userId) => {
-        if (get()._unsubBudget) return; // ✅ Avoid multiple listeners
+        if (get()._unsubBudget) return;
 
         const unsubscribe = firebaseBudgetServices.fetchMonthlyBudget(userId, (currentBudget) => {
             set({ monthlyBudget: currentBudget });
@@ -173,7 +173,7 @@ export const useBudgetStore = create((set, get) => ({
         const unsubBudget = get()._unsubBudget
         if (unsubBudget) {
             unsubBudget();
-            set({ _unsubBudget: null })
+            set({ _unsubBudget: null, monthlyBudget: null })
         }
 
     },
@@ -182,7 +182,7 @@ export const useBudgetStore = create((set, get) => ({
         const { locationRate } = get();
         const { monthlyBudget } = get();
         const estimatedCost = usedKwh * locationRate;
-        const percentUsed = Math.min((estimatedCost / monthlyBudget) * 100, 100);
+        const percentUsed = Math.min((estimatedCost / monthlyBudget?.budget_php) * 100, 100);
 
         set({ percentUsed });
     },

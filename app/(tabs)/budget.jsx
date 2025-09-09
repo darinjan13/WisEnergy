@@ -14,7 +14,7 @@ import { useBudgetStore, useUsageStore } from "../../store/firebaseStore";
 export default function Budget() {
   const insets = useSafeAreaInsets();
 
-  const { locationRate, fetchLocationRate, fetchMonthlyBudget, monthlyBudget, percentUsed } = useBudgetStore();
+  const { locationRate, fetchLocationRate, monthlyBudget, percentUsed } = useBudgetStore();
   const { monthlyTotalConsumption } = useUsageStore();
 
   const [rate, setRate] = useState(0);
@@ -31,23 +31,21 @@ export default function Budget() {
 
   useFocusEffect(
     useCallback(() => {
-      if (monthlyBudget == 0) {
-        fetchMonthlyBudget(auth.currentUser.uid)
-      }
       if (locationRate == 0) {
         fetchLocationRate(auth.currentUser.uid);
       }
       return () => {
         setModalVisible(false);
-        // setLoading(true);
       };
     }, [])
   )
 
   useEffect(() => {
-    if (monthlyBudget > 0) {
-      setBudget(monthlyBudget);
+    if (monthlyBudget != null) {
+      setBudget(monthlyBudget.budget_php || 0);
       setLoading(false);
+    } else {
+      setModalVisible(true)
     }
   }, [monthlyBudget]);
 
@@ -88,7 +86,7 @@ export default function Budget() {
       [`users/${auth.currentUser.uid}/budget_kwh`]: budget_kwh,
     })
 
-    setBudget(budget_php); // your local state (PHP)
+    setBudget(budget_php);
   };
 
   return (
@@ -134,8 +132,8 @@ export default function Budget() {
             {
               budgetKWh > 0 && (
                 <View className="flex-row justify-between mb-4">
-                  <Text className="text-sm text-gray-700">Set on: March 14, 2025</Text>
-                  <Text className="text-sm text-gray-700">Resets on: April 14, 2025</Text>
+                  <Text className="text-sm text-gray-700">Set on: {monthlyBudget?.set_at}</Text>
+                  <Text className="text-sm text-gray-700">Resets on: {monthlyBudget?.reset_at}</Text>
                 </View>
               )
             }

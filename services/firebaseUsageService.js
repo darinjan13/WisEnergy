@@ -80,20 +80,34 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const usageData = []
-
+    const previousMonth = String(month - 1).padStart(2, '0')
 
     for (const appliance of appliances) {
 
         const history = []
-        const weeklySummaryRef = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${month}`)
-        const snapshot = await get(weeklySummaryRef);
 
+        let foundData = false;
         let data;
         let weeks
 
-        if (snapshot.exists()) {
-            data = snapshot.val()
+        const ref1 = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${month}`)
+        const snapshot1 = await get(ref1);
+
+        if (snapshot1.exists()) {
+            data = snapshot1.val()
             weeks = Object.keys(data).sort();
+            if (weeks.length > 0) foundData = true;
+        }
+
+        if (!foundData) {
+            const ref2 = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${previousMonth}`)
+
+            const snapshot2 = await get(ref2);
+
+            if (snapshot2.exists()) {
+                data = snapshot2.val()
+                weeks = Object.keys(data).sort();
+            }
         }
 
         for (const week of weeks) {
@@ -105,9 +119,11 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
             history.push({
                 label: week.replace("0", "W"),
                 value: total,
-                date: start + " - " + end
+                date: start + " - " + end,
+                month: start.split("-")[0]
             })
         }
+
 
         usageData.push({
             applianceName: appliance.name,

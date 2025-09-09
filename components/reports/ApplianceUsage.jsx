@@ -2,13 +2,16 @@ import { List } from 'react-native-paper';
 import { BarChart } from 'react-native-gifted-charts';
 import { View, Text, StyleSheet } from 'react-native';
 import { useState } from 'react';
+import { getMonthName } from '../../utils/dateHelper';
 
-export default function ApplianceUsage({ data, styles }) {
+export default function ApplianceUsage({ category, data, styles }) {
     const [expandedIndex, setExpandedIndex] = useState(null);
 
     return (
         <View className="mt-4 mb-10">
             {data?.map((appliance, index) => {
+                const monthValue = appliance.barData[0]?.month || "";
+
                 const isExpanded = expandedIndex === index;
 
                 return (
@@ -28,7 +31,13 @@ export default function ApplianceUsage({ data, styles }) {
                         ]}
                     >
                         <View style={style.barGraph} className="bg-white p-5 rounded-b-2xl mb-4 shadow-sm">
-                            <Text className="mb-5">Power Usage for the past 5 days</Text>
+                            {category === "Daily" ? (
+                                <Text className="mb-5">Power Usage for the past 5 days</Text>
+                            ) : category === "Weekly" ? (
+                                <Text className="mb-5">Power Usage for the past weeks of {getMonthName(monthValue)}</Text>
+                            ) : (
+                                <Text className="mb-5">Power Usage for the past months</Text>
+                            )}
                             <BarChart
                                 data={appliance.barData}
                                 barWidth={25}

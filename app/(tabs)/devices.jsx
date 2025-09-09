@@ -37,7 +37,6 @@ export default function devices() {
                 if (devices.length > 0 && userAppliances.length > 0) {
 
                     setIsLoading(false);
-                    console.log(devices.length);
                 }
             }, 250);
 
@@ -49,11 +48,6 @@ export default function devices() {
 
         }, [devices.length, userAppliances.length])
     );
-
-    useEffect(() => {
-        console.log(disableDevice);
-
-    }, [disableDevice])
 
     const showAddDeviceModal = () => {
         setModalVisible(true);

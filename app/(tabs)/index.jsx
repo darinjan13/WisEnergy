@@ -35,7 +35,7 @@ export default function Dashboard() {
     }, []);
 
     useEffect(() => {
-        if (locationRate > 0 && monthlyTotalConsumption > 0 && monthlyBudget > 0) {
+        if (locationRate > 0 && monthlyTotalConsumption > 0 && monthlyBudget?.budget_php > 0) {
             fetchPercentUsed(monthlyTotalConsumption);
         }
     }, [locationRate, monthlyTotalConsumption, monthlyBudget])

@@ -156,7 +156,7 @@ export default function reports() {
 
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Appliance Usage</Text>
                         {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 && (
-                            <ApplianceUsage data={reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]} styles={styles} />
+                            <ApplianceUsage category={reportCategory} data={reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]} styles={styles} />
                         )}
 
                     </View>
