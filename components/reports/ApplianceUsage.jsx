@@ -6,7 +6,7 @@ import { getMonthName } from '../../utils/dateHelper';
 
 export default function ApplianceUsage({ category, data, styles }) {
     const [expandedIndex, setExpandedIndex] = useState(null);
-
+    
     return (
         <View className="mt-4 mb-10">
             {data?.map((appliance, index) => {
@@ -40,33 +40,36 @@ export default function ApplianceUsage({ category, data, styles }) {
                             )}
                             <BarChart
                                 data={appliance.barData}
-                                barWidth={25}
+                                barWidth={category === "Daily" ? 25 : category === "Weekly" ? 35 : 25}
                                 frontColor="#16a34a"
                                 spacing={10}
-                                initialSpacing={20}
+                                initialSpacing={7}
                                 yAxisThickness={0}
                                 xAxisLabelTextStyle={{ color: "#4B5563", fontSize: 12 }}
-                                maxValue={Math.max(...appliance.barData.map(b => b.value)) + 1}
-                                noOfSections={4}
+                                maxValue={Math.max(...appliance.barData.map(b => b.value)) + 2}
+                                topLabelTextStyle={{fontSize: 12}}
+                                noOfSections={category === "Daily" ? 3 : category === "Weekly" ? 4 : 1}
                                 width={200}
                                 barStyle={style.barStyle}
                                 showValuesAsTopLabel={true}
                                 showTextOnPress={true}
-                                renderTooltip={(item, index) => {
-                                    return (
-                                        <View
-                                            style={{
-                                                marginBottom: 10,
-                                                marginLeft: -20,
-                                                backgroundColor: "#FFFFFF",
-                                                paddingHorizontal: 6,
-                                                paddingVertical: 4,
-                                                borderRadius: 4,
-                                            }}>
-                                            <Text>{item.date}</Text>
-                                        </View>
-                                    );
-                                }}
+                                renderTooltip={category === "Weekly" ? (
+                                    (item, index) => {
+                                        return (
+                                            <View
+                                                style={{
+                                                    marginBottom: 2,
+                                                    marginLeft: 25,
+                                                    backgroundColor: "#FFFFFF",
+                                                    paddingHorizontal: 6,
+                                                    paddingVertical: 4,
+                                                    borderRadius: 4,
+                                                }}>
+                                                <Text>{item.date}</Text>
+                                            </View>
+                                        );
+                                    }
+                                ) : null}
                             />
                         </View>
                     </List.Accordion>

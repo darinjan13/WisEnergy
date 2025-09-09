@@ -24,10 +24,10 @@ export default function TabLayout() {
     if (!checkingAuth && !user) {
       router.replace('/(auth)/login');
     } else {
-      subscribeToMonthlyTotalConsumption(auth.currentUser.uid)
-      subscribeToBudget(auth.currentUser.uid)
+      subscribeToMonthlyTotalConsumption(auth.currentUser?.uid)
+      subscribeToBudget(auth.currentUser?.uid)
     }
-  }, [checkingAuth, user, router]);
+  }, [checkingAuth, user, router, auth]);
 
   if (checkingAuth || !user) {
     return (

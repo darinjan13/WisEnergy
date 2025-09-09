@@ -6,6 +6,8 @@ import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { ref, set } from "firebase/database";
 import { useBudgetStore, useUsageStore } from "@/store/firebaseStore";
+import { clearCache } from '../utils/asyncStorageUtils';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
     const userRef = ref(db, "users/" + user_id);
@@ -70,7 +72,7 @@ export default function useAuth() {
         }
     }, [router]);
 
-    const login = useCallback(async (setIsLoading, email, password) => {
+    const login = useCallback(async (setIsLoading, email, password, rememberMe) => {
         setIsLoading(true);
         try {
             await signInWithEmailAndPassword(auth, email, password);
@@ -79,6 +81,10 @@ export default function useAuth() {
                 text1: "Welcome back!",
                 text2: "You are now logged in.",
             });
+            if (rememberMe)
+                await AsyncStorage.setItem('rememberedUser', JSON.stringify({ email, password }))
+            else
+                await AsyncStorage.removeItem('rememberedUser')
             setIsLoading(false);
             router.replace("/(tabs)");
         } catch (e) {
@@ -99,6 +105,7 @@ export default function useAuth() {
 
     const logout = useCallback(async (setIsLoading) => {
         try {
+            await clearCache();
             router.replace("/(auth)/login");
             await signOut(auth);
             unsubscribeFromMonthlyTotalConsumption();

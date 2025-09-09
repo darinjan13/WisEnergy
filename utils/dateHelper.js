@@ -8,11 +8,12 @@ export const getlastNDays = (n) => {
     const dates = [];
     const today = new Date();
 
-    for (let i = 0; i < n; i++) {
+    for (let i = 1; i <= n; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
         dates.push(date.toISOString().split("T")[0])
     }
+    
     return dates.reverse();
 }
 
@@ -43,7 +44,7 @@ export const getLastNMonths = (n) => {
         const year = date.getFullYear();
         const month = `${date.getMonth() + 1}`.padStart(2, "0");
 
-        months.push(`${year}-${month}`); // e.g., "2025-07"
+        months.push(`${year}-${month}`);
     }
 
     return months.reverse();

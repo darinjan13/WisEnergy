@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     View,
     Text,
@@ -12,6 +12,7 @@ import AuthHeader from "../../components/ui/AuthHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAuth from "../../hooks/useAuth";
 import { Checkbox, IconButton } from "react-native-paper";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function LoginForm() {
     const router = useRouter();
@@ -24,6 +25,21 @@ export default function LoginForm() {
     const [rememberMe, setRememberMe] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({ email: "", password: "" });
+
+    useEffect(() => {
+        const checkRememberedUser = async () => {
+            const rememberedUser = await AsyncStorage.getItem('rememberedUser')
+
+            if (rememberedUser) {
+                setIsLoading(true)
+                const { email, password } = JSON.parse(rememberedUser)
+                login(setIsLoading, email, password)
+            } else {
+                setIsLoading(false)
+            }
+        }
+        checkRememberedUser()
+    }, [])
 
     const validateForm = () => {
         let isValid = true;
@@ -65,7 +81,7 @@ export default function LoginForm() {
     const handleSubmit = () => {
         setIsLoading(true);
         if (!validateForm()) return;
-        login(setIsLoading, email, password);
+        login(setIsLoading, email, password, rememberMe);
     };
 
     return (
@@ -73,7 +89,7 @@ export default function LoginForm() {
             <View className="h-full md:w-1/3 md:mx-auto bg-white px-6">
                 <AuthHeader textHeader="Login" />
                 <View className="flex-1">
-                    <View className="mb-4 w-full max-w-sm">
+                    <View className="mb-4">
                         <View className="flex-row items-center border border-gray-300 rounded-md px-3 py-2">
                             <Feather name="user" size={18} color="gray" />
                             <TextInput
@@ -90,7 +106,7 @@ export default function LoginForm() {
                         )}
                     </View>
 
-                    <View className="mb-4 w-full max-w-sm">
+                    <View className="mb-4">
                         <View className="flex-row items-center border border-gray-300 rounded-md px-3">
                             <Feather name="lock" size={18} color="gray" />
                             <TextInput
@@ -114,10 +130,10 @@ export default function LoginForm() {
 
                     <TouchableOpacity
                         onPress={handleSubmit}
-                        className="bg-green-700 py-5 rounded-md w-full max-w-sm mb-4"
+                        className="bg-green-700 py-5 rounded-md mb-4"
                         disabled={isLoading}
                     >
-                        <View className="h-5 items-center justify-center">
+                        <View className="h-5">
                             {!isLoading ? (
                                 <Text className="text-white text-center font-semibold">Log in</Text>
                             ) : (
@@ -129,7 +145,7 @@ export default function LoginForm() {
                         <Text className="text-green-700 text-sm mb-4 text-center">Forgot password?</Text>
                     </TouchableOpacity>
 
-                    <View className="flex-row items-center my-3 w-full max-w-sm">
+                    <View className="flex-row items-center">
                         <View className="flex-1 h-px bg-gray-300" />
                         <Text className="mx-2 text-gray-500">or</Text>
                         <View className="flex-1 h-px bg-gray-300" />

@@ -86,7 +86,7 @@ export const useUsageStore = create((set, get) => ({
     },
 
     subscribeToMonthlyTotalConsumption: (userId) => {
-        if (get()._unsubMonthly) return; // ✅ Avoid multiple listeners
+        if (get()._unsubMonthly) return;
 
         const unsubscribe = firebaseUsageServices.fetchMonthlyTotalConsumption(userId, (currentConsumption) => {
             set({ monthlyTotalConsumption: currentConsumption });
@@ -98,7 +98,6 @@ export const useUsageStore = create((set, get) => ({
     unsubscribeFromMonthlyTotalConsumption: () => {
         const unsubMonthly = get()._unsubMonthly
         if (unsubMonthly) {
-            console.log("BUDGET POTA");
             unsubMonthly();
             set({ _unsubMonthly: null })
         }
@@ -120,7 +119,7 @@ export const useUsageStore = create((set, get) => ({
     },
 
     fetchDailyReport: async (userId, deviceId, appliances) => {
-        const data = await firebaseUsageServices.fetchDailyReport(userId, deviceId, appliances);
+        const data = await firebaseUsageServices.getCachedDailyReport(userId, deviceId, appliances);
         set(state => ({
             reportHistory: {
                 ...state.reportHistory,
@@ -132,7 +131,7 @@ export const useUsageStore = create((set, get) => ({
         }))
     },
     fetchWeeklyReport: async (userId, deviceId, appliances) => {
-        const data = await firebaseUsageServices.fetchWeeklyReport(userId, deviceId, appliances);
+        const data = await firebaseUsageServices.getCacheWeeklyReport(userId, deviceId, appliances);
 
         set(state => ({
             reportHistory: {

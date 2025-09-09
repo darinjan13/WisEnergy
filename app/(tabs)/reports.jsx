@@ -18,7 +18,6 @@ export default function reports() {
     const [reportCategory, setReportCategory] = useState("Daily");
     const [selectedDevice, setSelectedDevice] = useState();
 
-    // const [appliances, setAppliances] = useState([]);
     const [reportData, setReportData] = useState([]);
     const [barData, setBarData] = useState([]);
 
@@ -155,9 +154,12 @@ export default function reports() {
                         </View>
 
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Appliance Usage</Text>
-                        {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 && (
+                        {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 ? (
                             <ApplianceUsage category={reportCategory} data={reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]} styles={styles} />
-                        )}
+                        ) : <View className="h-screen -mt-36 items-center justify-center">
+                            <ActivityIndicator size="large" color="#166534" />
+                            <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                        </View>}
 
                     </View>
                 )}

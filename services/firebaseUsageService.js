@@ -1,6 +1,10 @@
 import { get, limitToLast, off, onValue, orderByKey, query, ref } from 'firebase/database';
 import { db } from '../firebase/firebaseConfig';
 import { getlastNDays, getLastNWeeks, getLastNMonths } from '../utils/dateHelper'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as predictionServices from '../services/predictionsService'
+import { format } from "date-fns-tz";
+import { getDailyReportCache, saveDailyReportCache } from '../utils/asyncStorageUtils';
 
 export const listenToLatestPower = (userId, deviceId, applianceName, date, callback, latestKwh) => {
     const powerRef = ref(db, `usage/${userId}/${deviceId}/${applianceName}/${date}`);
@@ -44,10 +48,41 @@ export const fetchMonthlyTotalConsumption = (userId, callback) => {
     return () => off(monthlyTotalConsumptionRef, 'value');
 }
 
+export const getCachedDailyReport = async (userId, deviceId, appliances) => {
+    await getDailyReportCache(userId, deviceId)
+    const fresh = await fetchDailyReport(userId, deviceId, appliances)
+
+    const updatedData = await Promise.all(
+        fresh.map(async (item) => {
+            const predicted_kwh = await predictionServices.predidct_daily(
+                userId,
+                deviceId,
+                item.applianceName
+            );
+            if (predicted_kwh === null || isNaN(predicted_kwh)) {
+                return item
+            }
+
+            return {
+                ...item,
+                barData: [
+                    ...item.barData,
+                    {
+                        label: 'Prediction',
+                        value: Number(predicted_kwh.toFixed(2)),
+                        frontColor: "#f59e0b"
+                    }
+                ]
+            }
+        })
+    )
+    await saveDailyReportCache(userId, deviceId, updatedData)
+    return updatedData
+}
+
 export const fetchDailyReport = async (userId, deviceId, appliances) => {
     const dates = getlastNDays(5)
     const usageData = []
-
     for (const appliance of appliances) {
         const history = []
 
@@ -72,7 +107,32 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
             barData: history
         })
     }
+
     return usageData;
+}
+
+export const getCacheWeeklyReport = async (userId, deviceId, appliances) => {
+    const key = `@weekly_report:${userId}:${deviceId}`;
+    const cacheStr = await AsyncStorage.getItem(key)
+
+    const now = Date.now()
+    const todayStr = format(now, "yyyy-MM-dd", { timeZone: "Asia/Manila" })
+
+    if (cacheStr) {
+        const cached = JSON.parse(cacheStr)
+        if (cached.timestamp === todayStr) {
+            return cached.data
+        }
+    }
+
+    const fresh = await fetchWeeklyReport(userId, deviceId, appliances);
+
+    await AsyncStorage.setItem(key, JSON.stringify({
+        timestamp: todayStr,
+        data: fresh
+    }))
+
+    return fresh;
 }
 
 export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
