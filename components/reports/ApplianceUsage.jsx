@@ -6,7 +6,7 @@ import { getMonthName } from '../../utils/dateHelper';
 
 export default function ApplianceUsage({ category, data, styles }) {
     const [expandedIndex, setExpandedIndex] = useState(null);
-    
+
     return (
         <View className="mt-4 mb-10">
             {data?.map((appliance, index) => {
@@ -45,11 +45,11 @@ export default function ApplianceUsage({ category, data, styles }) {
                                 spacing={10}
                                 initialSpacing={7}
                                 yAxisThickness={0}
-                                xAxisLabelTextStyle={{ color: "#4B5563", fontSize: 12 }}
+                                xAxisLabelTextStyle={{ color: "#4B5563", fontSize: 10 }}
                                 maxValue={Math.max(...appliance.barData.map(b => b.value)) + 2}
-                                topLabelTextStyle={{fontSize: 12}}
+                                topLabelTextStyle={{ fontSize: 12 }}
                                 noOfSections={category === "Daily" ? 3 : category === "Weekly" ? 4 : 1}
-                                width={200}
+                                width={250}
                                 barStyle={style.barStyle}
                                 showValuesAsTopLabel={true}
                                 showTextOnPress={true}
@@ -71,6 +71,16 @@ export default function ApplianceUsage({ category, data, styles }) {
                                     }
                                 ) : null}
                             />
+                            <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
+                                    <View style={{ width: 14, height: 14, backgroundColor: '#16a34a', borderRadius: 2, marginRight: 6 }} />
+                                    <Text style={{ fontSize: 12, color: '#374151' }}>Historical</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ width: 14, height: 14, backgroundColor: '#f59e0b', borderRadius: 2, marginRight: 6 }} />
+                                    <Text style={{ fontSize: 12, color: '#374151' }}>Predicted</Text>
+                                </View>
+                            </View>
                         </View>
                     </List.Accordion>
                 );

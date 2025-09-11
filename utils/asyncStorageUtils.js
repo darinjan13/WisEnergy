@@ -16,33 +16,42 @@ export const saveDailyReportCache = async (userId, deviceId, data) => {
 export const getDailyReportCache = async (userId, deviceId) => {
     const todayStr = format(new Date(), 'yyyy-MM-dd', { timeZone: PH_TZ });
     const key = `@daily_report:${userId}:${deviceId}`;
-    const cacheStr = await AsyncStorage.getItem(key);
 
-    if (cacheStr) {
-        const cached = JSON.parse(cacheStr);
-        if (cached.timestamp === todayStr) {
-            return cached.data;
+    try {
+        const cacheStr = await AsyncStorage.getItem(key);
+        if (cacheStr) {
+            const cached = JSON.parse(cacheStr);
+            if (cached.timestamp === todayStr && cached.data) {
+                return cached.data;
+            } else {
+                console.log("Expired");
+                
+                await AsyncStorage.removeItem(key);
+            }
         }
-    }
 
-    return null;
+        return null;
+    } catch (error) {
+        console.log("Error reading daily report cache: ", error);
+        
+    }
 };
 
-export const clearCache = async () => {
-    try {
-        const keys = await AsyncStorage.getAllKeys();
-        const keysToRemove = keys.filter(key =>
-            key.startsWith('@daily_report:') ||
-            key === 'rememberedUser'
-        );
+// export const clearCache = async () => {
+//     try {
+//         const keys = await AsyncStorage.getAllKeys();
+//         const keysToRemove = keys.filter(key =>
+//             key.startsWith('@daily_report:') ||
+//             key === 'rememberedUser'
+//         );
 
-        if (keysToRemove.length > 0) {
-            await AsyncStorage.multiRemove(keysToRemove);
-            console.log('🧹 Cache cleared:', keysToRemove);
-        } else {
-            console.log('✅ No cache keys to clear.');
-        }
-    } catch (error) {
-        console.error('❌ Failed to clear cache:', error);
-    }
-}
+//         if (keysToRemove.length > 0) {
+//             await AsyncStorage.multiRemove(keysToRemove);
+//             console.log('🧹 Cache cleared:', keysToRemove);
+//         } else {
+//             console.log('✅ No cache keys to clear.');
+//         }
+//     } catch (error) {
+//         console.error('❌ Failed to clear cache:', error);
+//     }
+// }

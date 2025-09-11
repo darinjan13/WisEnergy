@@ -6,7 +6,6 @@ import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { ref, set } from "firebase/database";
 import { useBudgetStore, useUsageStore } from "@/store/firebaseStore";
-import { clearCache } from '../utils/asyncStorageUtils';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
@@ -105,7 +104,7 @@ export default function useAuth() {
 
     const logout = useCallback(async (setIsLoading) => {
         try {
-            await clearCache();
+            await AsyncStorage.clear();
             router.replace("/(auth)/login");
             await signOut(auth);
             unsubscribeFromMonthlyTotalConsumption();

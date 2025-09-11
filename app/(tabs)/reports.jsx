@@ -123,8 +123,12 @@ export default function reports() {
                                     <Picker
                                         selectedValue={selectedDevice}
                                         onValueChange={(itemValue) => {
-                                            setIsLoading(true);
-                                            setSelectedDevice(itemValue);
+                                            if (selectedDevice === itemValue) {
+                                                return
+                                            } else {
+                                                setIsLoading(true);
+                                                setSelectedDevice(itemValue);
+                                            }
                                         }}
                                     >
                                         {reportData.map((userDevice) => (

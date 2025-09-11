@@ -49,7 +49,14 @@ export const fetchMonthlyTotalConsumption = (userId, callback) => {
 }
 
 export const getCachedDailyReport = async (userId, deviceId, appliances) => {
-    await getDailyReportCache(userId, deviceId)
+    const isCached = await getDailyReportCache(userId, deviceId)
+    const todayStr = format(new Date(), 'yyyy-MM-dd', { timeZone: 'Asia/Manila' });
+
+    if (isCached) {
+        return isCached;
+    }
+    console.log("No Cached!");
+
     const fresh = await fetchDailyReport(userId, deviceId, appliances)
 
     const updatedData = await Promise.all(
@@ -59,16 +66,16 @@ export const getCachedDailyReport = async (userId, deviceId, appliances) => {
                 deviceId,
                 item.applianceName
             );
+
             if (predicted_kwh === null || isNaN(predicted_kwh)) {
                 return item
             }
-
             return {
                 ...item,
                 barData: [
                     ...item.barData,
                     {
-                        label: 'Prediction',
+                        label: todayStr.replace("2025-", ""),
                         value: Number(predicted_kwh.toFixed(2)),
                         frontColor: "#f59e0b"
                     }

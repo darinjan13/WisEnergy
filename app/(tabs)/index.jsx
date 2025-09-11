@@ -13,7 +13,7 @@ export default function Dashboard() {
     const insets = useSafeAreaInsets();
     const { monthlyTotalConsumption } = useUsageStore();
     const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed } = useBudgetStore();
-
+    const [efficiency, setEfficiency] = useState(0);
 
     const [userName, setUserName] = useState("");
 
@@ -37,23 +37,13 @@ export default function Dashboard() {
     useEffect(() => {
         if (locationRate > 0 && monthlyTotalConsumption > 0 && monthlyBudget?.budget_php > 0) {
             fetchPercentUsed(monthlyTotalConsumption);
+            setEfficiency(Math.max(0, 100 - ((monthlyTotalConsumption / (monthlyBudget?.budget_php / locationRate)) * 100)))
         }
     }, [locationRate, monthlyTotalConsumption, monthlyBudget])
-
-    const efficiencyData = [
-        {
-            value: 82,
-            color: '#10b981',
-        },
-        {
-            value: 18,
-            color: '#e5e7eb',
-        },
-    ];
     return (
         <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
             <Header />
-            {percentUsed > 0 && (
+            {(percentUsed > 0 && efficiency > 0) && (
                 <View className="flex-1">
                     <View style={styles.cardShadow} className="flex-row justify-between items-center bg-white mb-4 rounded-2xl p-5">
                         <View>
@@ -67,19 +57,22 @@ export default function Dashboard() {
                             <Text className="text-lg font-bold mb-2 text-[#23403A]">Energy Efficiency</Text>
                             <PieChart
                                 donut
-                                innerRadius={35}
                                 radius={50}
-                                data={efficiencyData}
+                                innerRadius={35}
+                                data={[
+                                    { value: efficiency, color: '#10b981' },
+                                    { value: 100 - efficiency, color: '#E5E7EB' },
+                                ]}
                                 showText
                                 textColor="#111827"
                                 textSize={22}
                                 textBackgroundColor="transparent"
                                 centerLabelComponent={() => (
-                                    <Text className="text-2xl font-bold text-gray-900">82%</Text>
+                                    <Text className="text-2xl font-bold text-gray-900">{efficiency.toFixed(0)}%</Text>
                                 )}
                             />
                             <Text className="text-sm text-green-600 mt-2">Efficient</Text>
-                            <Text className="text-center text-gray-600 mt-2">Your household is 82% energy efficient this week.</Text>
+                            <Text className="text-center text-gray-600 mt-2">Your household is {efficiency.toFixed(0)}% energy efficient this week.</Text>
                         </View>
 
                         <View className="flex-1 items-center ">

@@ -122,12 +122,19 @@ export default function LoginForm() {
                             <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>
                         )}
                     </View>
-
-                    <TouchableOpacity className="flex-row items-center mb-4 -ml-2.5" onPress={() => setRememberMe(!rememberMe)}>
-                        <Checkbox color="#15803d" status={rememberMe ? "checked" : "unchecked"} />
-                        <Text className="text-sm text-gray-700">Remember me</Text>
-                    </TouchableOpacity>
-
+                    <View className="flex-row items-center mb-4 -ml-2.5">
+                        <TouchableOpacity onPress={() => setRememberMe(!rememberMe)}>
+                            <Checkbox color="#15803d" status={rememberMe ? "checked" : "unchecked"} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setRememberMe(!rememberMe)}>
+                            <Text className="text-sm text-gray-700">Remember me</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View className="flex-row justify-end">
+                        <TouchableOpacity onPress={() => router.push("/forgotPassword")}>
+                            <Text className="text-green-700 text-sm mb-4 text-center">Forgot password?</Text>
+                        </TouchableOpacity>
+                    </View>
                     <TouchableOpacity
                         onPress={handleSubmit}
                         className="bg-green-700 py-5 rounded-md mb-4"
@@ -140,9 +147,6 @@ export default function LoginForm() {
                                 <ActivityIndicator size="small" color="white" />
                             )}
                         </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                        <Text className="text-green-700 text-sm mb-4 text-center">Forgot password?</Text>
                     </TouchableOpacity>
 
                     <View className="flex-row items-center">
