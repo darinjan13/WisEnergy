@@ -2,7 +2,7 @@ import { get, limitToLast, off, onValue, orderByKey, query, ref } from 'firebase
 import { db } from '../firebase/firebaseConfig';
 import { getlastNDays, getLastNWeeks, getLastNMonths } from '../utils/dateHelper'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as predictionServices from '../services/predictionsService'
+import * as predictionServices from './apiService'
 import { format } from "date-fns-tz";
 import { getDailyReportCache, saveDailyReportCache } from '../utils/asyncStorageUtils';
 
@@ -101,6 +101,8 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
 
             if (snapshot.exists()) {
                 data = snapshot.val();
+                console.log(data?.total_kWh.toFixed(2));
+
             }
 
             history.push({

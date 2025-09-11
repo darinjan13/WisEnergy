@@ -25,7 +25,6 @@ export const getDailyReportCache = async (userId, deviceId) => {
                 return cached.data;
             } else {
                 console.log("Expired");
-                
                 await AsyncStorage.removeItem(key);
             }
         }
@@ -33,7 +32,7 @@ export const getDailyReportCache = async (userId, deviceId) => {
         return null;
     } catch (error) {
         console.log("Error reading daily report cache: ", error);
-        
+
     }
 };
 

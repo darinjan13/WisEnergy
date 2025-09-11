@@ -10,6 +10,9 @@ export default function AuthLayout() {
             <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name='login' />
                 <Stack.Screen name='register' />
+                <Stack.Screen name="forgotPassword/index" />
+                <Stack.Screen name="forgotPassword/verification" />
+                <Stack.Screen name="forgotPassword/resetpassword" />
             </Stack>
         </SafeAreaView>
     )

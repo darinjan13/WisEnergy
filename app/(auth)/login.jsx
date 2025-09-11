@@ -131,7 +131,7 @@ export default function LoginForm() {
                         </TouchableOpacity>
                     </View>
                     <View className="flex-row justify-end">
-                        <TouchableOpacity onPress={() => router.push("/forgotPassword")}>
+                        <TouchableOpacity onPress={() => router.push("/(auth)/forgotPassword")}>
                             <Text className="text-green-700 text-sm mb-4 text-center">Forgot password?</Text>
                         </TouchableOpacity>
                     </View>
