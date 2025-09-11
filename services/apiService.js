@@ -2,8 +2,8 @@ import axios from "axios"
 import { Alert } from "react-native";
 
 const api = axios.create({
-    // baseURL: 'https://wisenergy-backend.onrender.com',
-    baseURL: 'http://192.168.1.4:8000',
+    baseURL: 'https://wisenergy-backend.onrender.com',
+    // baseURL: 'http://192.168.1.4:8000',
     timeout: 5000,
     headers: {
         'Content-Type': 'application/json'
