@@ -66,6 +66,13 @@ export const useDeviceStore = create((set, get) => ({
             };
         });
     },
+    reset: () =>
+        set({
+            devices: [],
+            userDevices: [],
+            unpairedDevices: [],
+            userAppliances: [],
+        }),
 }));
 
 export const useUsageStore = create((set, get) => ({
@@ -149,7 +156,22 @@ export const useUsageStore = create((set, get) => ({
         set({
             reports: dailyKwh
         })
-    }
+    },
+    reset: () => {
+        // cleanup listener if still active
+        const unsubMonthly = get()._unsubMonthly;
+        if (unsubMonthly) unsubMonthly();
+
+        set({
+            monthlyTotalConsumption: 0,
+            _unsubMonthly: null,
+            latestKwh: [],
+            reportHistory: { daily: {}, weekly: {}, monthly: {} },
+            summaryPerDevice: {},
+            totalConsumptionByDate: {},
+            lastFetched: { daily: null, weekly: null, monthly: null },
+        });
+    },
 }));
 
 export const useBudgetStore = create((set, get) => ({
@@ -194,5 +216,21 @@ export const useBudgetStore = create((set, get) => ({
 
         const monthlyBudget = await firebaseBudgetServices.fetchMonthlyBudget(userId);
         set({ monthlyBudget });
+    },
+    reset: () => {
+        const unsubBudget = get()._unsubBudget;
+        if (unsubBudget) unsubBudget();
+        set({
+            locationRate: 0,
+            monthlyBudget: null,
+            _unsubBudget: null,
+            percentUsed: 0,
+        })
     }
 }));
+
+export const clearStates = () => {
+    useDeviceStore.getState().reset();
+    useUsageStore.getState().reset();
+    useBudgetStore.getState().reset();
+};

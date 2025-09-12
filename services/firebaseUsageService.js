@@ -1,6 +1,6 @@
 import { get, limitToLast, off, onValue, orderByKey, query, ref } from 'firebase/database';
 import { db } from '../firebase/firebaseConfig';
-import { getlastNDays, getLastNWeeks, getLastNMonths } from '../utils/dateHelper'
+import { getLastNDays, getLastNWeeks, getLastNMonths } from '../utils/dateHelper'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as predictionServices from './apiService'
 import { format } from "date-fns-tz";
@@ -40,7 +40,6 @@ export const fetchMonthlyTotalConsumption = (userId, callback) => {
     const month = String(now.getMonth() + 1).padStart(2, "0");
 
     const monthlyTotalConsumptionRef = ref(db, `monthly_total_consumption/${userId}/${year}/${month}/total_energy_consumption`);
-    // const monthlyTotalConsumptionSnapshot = await get(monthlyTotalConsumptionRef);
     const listener = onValue(monthlyTotalConsumptionRef, (snapshot) => {
         callback(snapshot.val());
     })
@@ -55,8 +54,6 @@ export const getCachedDailyReport = async (userId, deviceId, appliances) => {
     if (isCached) {
         return isCached;
     }
-    console.log("No Cached!");
-
     const fresh = await fetchDailyReport(userId, deviceId, appliances)
 
     const updatedData = await Promise.all(
@@ -88,7 +85,7 @@ export const getCachedDailyReport = async (userId, deviceId, appliances) => {
 }
 
 export const fetchDailyReport = async (userId, deviceId, appliances) => {
-    const dates = getlastNDays(5)
+    const dates = getLastNDays(5)
     const usageData = []
     for (const appliance of appliances) {
         const history = []
@@ -101,7 +98,6 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
 
             if (snapshot.exists()) {
                 data = snapshot.val();
-                console.log(data?.total_kWh.toFixed(2));
 
             }
 

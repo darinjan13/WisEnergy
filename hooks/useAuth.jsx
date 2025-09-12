@@ -4,8 +4,8 @@ import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndP
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
-import { ref, set } from "firebase/database";
-import { useBudgetStore, useUsageStore } from "@/store/firebaseStore";
+import { get, ref, set } from "firebase/database";
+import { clearStates, useBudgetStore, useUsageStore } from "@/store/firebaseStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
@@ -46,7 +46,7 @@ export default function useAuth() {
     const register = useCallback(async (setIsLoading, location, firstName, lastName, email, password) => {
         try {
             const res = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(res.user, { displayName: firstName });
+            await updateProfile(res.user, { displayName: firstName + " " + lastName });
 
             await saveUserDetails(res.user.uid, location, email, firstName, lastName, "user");
             Toast.show({
@@ -75,17 +75,28 @@ export default function useAuth() {
         setIsLoading(true);
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            Toast.show({
-                type: "success",
-                text1: "Welcome back!",
-                text2: "You are now logged in.",
-            });
-            if (rememberMe)
-                await AsyncStorage.setItem('rememberedUser', JSON.stringify({ email, password }))
-            else
-                await AsyncStorage.removeItem('rememberedUser')
-            setIsLoading(false);
-            router.replace("/(tabs)");
+            const userRef = ref(db, 'users/' + auth.currentUser.uid);
+
+            const snapshot = await get(userRef);
+            if (!snapshot.exists()) {
+                throw new Error("User data not found.");
+            }
+            const userData = snapshot.val();
+            if (userData.role === 'admin') {
+                router.replace("/(admin)/dashboard");
+            } else {
+                Toast.show({
+                    type: "success",
+                    text1: "Welcome back!",
+                    text2: "You are now logged in.",
+                });
+                if (rememberMe)
+                    await AsyncStorage.setItem('rememberedUser', JSON.stringify({ email, password }))
+                else
+                    await AsyncStorage.removeItem('rememberedUser')
+                setIsLoading(false);
+                router.replace("/(tabs)");
+            }
         } catch (e) {
             let message = "An error occurred. Please try again.";
             if (e.code === "auth/user-not-found") {
@@ -104,9 +115,10 @@ export default function useAuth() {
 
     const logout = useCallback(async (setIsLoading) => {
         try {
-            await AsyncStorage.clear();
             router.replace("/(auth)/login");
             await signOut(auth);
+            await AsyncStorage.clear();
+            clearStates();
             unsubscribeFromMonthlyTotalConsumption();
             unsubscribeToBudget();
             Toast.show({

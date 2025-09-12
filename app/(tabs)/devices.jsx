@@ -35,11 +35,10 @@ export default function devices() {
             if (userAppliances.length === 0) fetchUserAppliances();
             const timeout = setTimeout(() => {
                 if (devices.length > 0 && userAppliances.length > 0) {
-
                     setIsLoading(false);
                 }
             }, 250);
-
+            setIsLoading(false);
             return () => {
                 clearTimeout(timeout)
                 setIsLoading(true)
@@ -174,7 +173,7 @@ export default function devices() {
                             <View className="flex-1 justify-center items-center">
                                 <IconButton icon="lightning-bolt-outline" size={64} iconColor="#9CA3AF" />
                                 <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                                    No appliances added yet
+                                    No devices added yet
                                 </Text>
                                 <Text className="text-gray-400 mt-1 text-sm">
                                     Tap the plus icon to add one

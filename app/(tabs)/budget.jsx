@@ -10,15 +10,14 @@ import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
 import { BlurView } from "expo-blur";
 import { useBudgetStore, useUsageStore } from "../../store/firebaseStore";
+import BudgetModal from "../../components/budget/SetBudget";
 
 export default function Budget() {
   const insets = useSafeAreaInsets();
-
   const { locationRate, fetchLocationRate, monthlyBudget, percentUsed } = useBudgetStore();
   const { monthlyTotalConsumption } = useUsageStore();
 
   const [rate, setRate] = useState(0);
-  const [budgetInput, setBudgetInput] = useState("");
   const [budget, setBudget] = useState(0);
   const [usedKWh, setUsedKWh] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
@@ -41,10 +40,11 @@ export default function Budget() {
   )
 
   useEffect(() => {
-    if (monthlyBudget != null) {
-      setBudget(monthlyBudget.budget_php || 0);
+    if (monthlyBudget?.budget_php > 0) {
+      setBudget(monthlyBudget?.budget_php || 0);
       setLoading(false);
     } else {
+      console.log(monthlyBudget?.budget_php);
       setModalVisible(true)
     }
   }, [monthlyBudget]);
@@ -60,35 +60,6 @@ export default function Budget() {
       setRate(locationRate)
     }
   }, [locationRate])
-
-  const onClickSetBudget = () => {
-    handleSetMonthlyBudget(Number(budgetInput.replace(/,/g, "")));
-    setBudgetInput("");
-    setModalVisible(false);
-  }
-
-  const handleSetMonthlyBudget = async (budget_php) => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-
-    const budget_kwh = Number((budget_php / rate).toFixed(2));
-
-    const budgetRef = ref(db, `user_monthly_budget/${auth.currentUser.uid}/${year}/${month}`);
-    await set(budgetRef, {
-      budget_php,
-      budget_kwh,
-      rate,
-      set_at: serverTimestamp(),
-    });
-
-    await update(ref(db), {
-      [`users/${auth.currentUser.uid}/budget_kwh`]: budget_kwh,
-    })
-
-    setBudget(budget_php);
-  };
-
   return (
     <View className="bg-gray-100">
       <ScrollView className="p-4" scrollEnabled={loading ? false : true} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
@@ -180,26 +151,11 @@ export default function Budget() {
           </View>
         )}
       </ScrollView >
-      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
-          <View className="bg-white rounded-xl p-6 w-11/12">
-            <Text className="text-lg font-semibold mb-2">Set Monthly Budget</Text>
-            <TextInput
-              className="border border-gray-300 rounded-md p-2 mb-4"
-              placeholder="Enter budget amount"
-              keyboardType="numeric"
-              value={budgetInput}
-              onChangeText={setBudgetInput}
-            />
-            <TouchableOpacity
-              onPress={onClickSetBudget}
-              className="bg-green-700 py-3 rounded-md"
-            >
-              <Text className="text-white font-semibold text-center">Set Budget</Text>
-            </TouchableOpacity>
-          </View>
-        </BlurView>
-      </Modal>
+      <BudgetModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        rate={locationRate}
+      />
     </View>
   );
 }

@@ -9,6 +9,7 @@ import { ActivityIndicator } from "react-native-paper";
 import { useDeviceStore, useUsageStore } from "../../store/firebaseStore";
 import { Picker } from "@react-native-picker/picker";
 import ApplianceUsage from "../../components/reports/ApplianceUsage"
+import { Ionicons } from "@expo/vector-icons";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
@@ -23,14 +24,19 @@ export default function reports() {
 
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
 
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
 
     const category = ["Monthly", "Weekly", "Daily"];
 
     useFocusEffect(
         useCallback(() => {
-            if (devices.length != 0 && userAppliances.length != 0 && userDevices.length != 0) {
+            setIsLoading(true)
+            const timeout = setTimeout(() => {
+                if (reportHistory !== null)
+                    setIsLoading(false);
+            }, 500);
+            if (userAppliances.length != 0 && userDevices.length != 0) {
                 const result = userDevices.map((device) => {
                     const matched = userAppliances.find(appliance => appliance.id === device.id);
                     if (matched) {
@@ -49,6 +55,8 @@ export default function reports() {
                 setTotalEnergyConsumption(0);
                 setReportCategory("Daily")
                 setBarData(undefined)
+                clearTimeout(timeout)
+                setIsLoading(true)
             };
         }, [devices, userAppliances, userDevices])
     );
@@ -79,22 +87,34 @@ export default function reports() {
         if (reportData.length > 0) setSelectedDevice(reportData[0].device_id)
     }, [reportData])
 
+    if (isLoading) {
+        return (
+            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
+                <Header />
+                <View className="h-screen -mt-36 items-center justify-center">
+                    <ActivityIndicator size="large" color="#166534" />
+                    <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                </View>
+            </ScrollView>
+        )
+    }
+
     const lineData = [
         { value: 10 },
         { value: 20 },
         { value: 25 },
         { value: 40 },
         { value: 35 },
-    ];
+    ]
 
     return (
         <View className="flex-1 bg-gray-100">
             <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
                 <Header />
-                {isLoading ? (
+                {reportData.length === 0 ? (
                     <View className="h-screen -mt-36 items-center justify-center">
-                        <ActivityIndicator size="large" color="#166534" />
-                        <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                        <Ionicons name="bar-chart-outline" size={64} color="#9CA3AF" />
+                        <Text className="text-gray-500 mt-4 text-lg font-semibold">You have no devices added yet. Please add a device to view reports.</Text>
                     </View>
                 ) : (
                     <View className="flex-1">

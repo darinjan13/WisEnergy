@@ -1,21 +1,26 @@
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+const timeZone = "Asia/Manila"
 export const getMonthName = (monthNumber) => {
     const date = new Date()
     date.setMonth(monthNumber - 1);
     return date.toLocaleString('en-US', { month: 'long' })
 }
 
-export const getlastNDays = (n) => {
+export const getLastNDays = (n) => {
     const dates = [];
     const today = new Date();
+    const zonedToday = toZonedTime(today, timeZone);
 
-    for (let i = 0; i <= n; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        dates.push(date.toISOString().split("T")[0])
+    for (let i = 0; i < n; i++) {
+        const pastDate = new Date(zonedToday);
+        pastDate.setDate(zonedToday.getDate() - (i + 1));
+
+        const formatted = formatInTimeZone(pastDate, timeZone, "yyyy-MM-dd");
+        dates.push(formatted);
     }
 
     return dates.reverse();
-}
+};
 
 export const getLastNWeeks = (n) => {
     const weeks = []

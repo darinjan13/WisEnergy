@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Switch, ScrollView, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useAuth from "../../hooks/useAuth";
+import useAuth from "../../../hooks/useAuth";
 
 export default function settings() {
     const router = useRouter();
@@ -32,18 +32,20 @@ export default function settings() {
             <View className="border-t border-gray-300 mb-4" />
 
             {[
-                { label: "Edit Profile", route: "/edit-profile" },
-                { label: "Change password", route: "/change-password" },
+                { label: "Edit Profile", route: "/(tabs)/settings/editProfile" },
+                { label: "Change password", route: "/(tabs)/settings/changePassword" },
                 { label: "Delete account", route: "/delete-account" },
             ].map(({ label, route }) => (
-                <TouchableOpacity
-                    key={label}
-                    onPress={() => router.push(route)}
-                    className="flex-row justify-between items-center py-3 border-b border-gray-100"
-                >
-                    <Text className="text-gray-800">{label}</Text>
-                    <Feather name="chevron-right" size={20} color="#6B7280" />
-                </TouchableOpacity>
+                <Link asChild key={route} href={route}>
+                    <TouchableOpacity
+                        key={label}
+                        className="flex-row justify-between items-center py-3 border-b border-gray-100"
+                    >
+                        <Text className="text-gray-800">{label}</Text>
+                        <Feather name="chevron-right" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                </Link>
+
             ))}
 
             <Text className="text-lg font-semibold text-[#23403A] mt-6 mb-2">Notification</Text>

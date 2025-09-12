@@ -70,10 +70,7 @@ export default function ForgotPasswordScreen() {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="bg-gray-200 py-5 rounded-md"
-        >
+        <TouchableOpacity onPress={() => router.back()} className="border border-gray-400 py-5 rounded-md">
           <Text className="text-gray-700 text-center font-semibold">Cancel</Text>
         </TouchableOpacity>
       </View>

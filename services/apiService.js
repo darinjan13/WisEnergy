@@ -1,14 +1,31 @@
 import axios from "axios"
-import { Alert } from "react-native";
 
 const api = axios.create({
-    // baseURL: 'https://wisenergy-backend.onrender.com',
-    baseURL: 'http://192.168.1.4:8000',
+    baseURL: 'https://wisenergy-backend.onrender.com',
+    // baseURL: 'http://192.168.1.4:10000',
     timeout: 5000,
     headers: {
         'Content-Type': 'application/json'
     }
 })
+
+export const fetchTotalUsers = async () => {
+    try {
+        const response = await api.get('/users')
+        return response.data
+    } catch (error) {
+        console.error("Error fetching total users:", error);
+    }
+};
+
+export const fetchTotalDevices = async () => {
+    try {
+        const response = await api.get('/devices')
+        return response.data
+    } catch (error) {
+        console.error("Error fetching total devices:", error);
+    }
+};
 
 export const predidct_daily = async (userId, deviceId, appliance_name) => {
     try {
