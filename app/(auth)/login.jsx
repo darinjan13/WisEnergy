@@ -90,7 +90,7 @@ export default function LoginForm() {
                 <AuthHeader textHeader="Login" />
                 <View className="flex-1">
                     <View className="mb-4">
-                        <View className="flex-row items-center border border-gray-300 rounded-md px-3 py-2">
+                        <View className="flex-row items-center border border-gray-300 rounded-md p-3">
                             <Feather name="user" size={18} color="gray" />
                             <TextInput
                                 className="ml-2 flex-1"
@@ -105,7 +105,6 @@ export default function LoginForm() {
                             <Text className="text-red-500 text-xs mt-1">{errors.email}</Text>
                         )}
                     </View>
-
                     <View className="mb-4">
                         <View className="flex-row items-center border border-gray-300 rounded-md px-3">
                             <Feather name="lock" size={18} color="gray" />
@@ -161,7 +160,7 @@ export default function LoginForm() {
                         </Text>
                         <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
                             <Text className="text-md text-green-700 font-semibold">
-                                Sign up
+                                Register
                             </Text>
                         </TouchableOpacity>
                     </View>

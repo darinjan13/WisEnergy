@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import useAuth from "../../hooks/useAuth";
 import DropDownPicker from "react-native-dropdown-picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Checkbox } from "react-native-paper";
 
 export default function RegisterForm() {
     const router = useRouter();
@@ -42,7 +43,6 @@ export default function RegisterForm() {
         { label: "Mandaue City", value: "Mandaue City" }
     ]);
 
-
     const handleChange = (field, value) => {
         setForm({ ...form, [field]: value });
     };
@@ -67,7 +67,7 @@ export default function RegisterForm() {
     };
 
     const handleSubmit = () => {
-        // if (!validateForm()) return;
+        if (!validateForm()) return;
         // Alert.alert(form.firstName, form.lastName);
         setIsLoading(true);
         register(setIsLoading, location, form.firstName, form.lastName, form.email, form.password);
@@ -146,6 +146,15 @@ export default function RegisterForm() {
                         secureTextEntry
                         className={`mb-4 border px-3 py-4 rounded-md bg-white ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
                     />
+
+                    <View className="flex-row items-center mb-4 -ml-2.5">
+                        <TouchableOpacity onPress={() => setAcceptTerms(!acceptTerms)}>
+                            <Checkbox color="#15803d" status={acceptTerms ? "checked" : "unchecked"} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setAcceptTerms(!acceptTerms)}>
+                            <Text className="text-sm text-gray-700">Remember me</Text>
+                        </TouchableOpacity>
+                    </View>
 
                     <Text className="text-xs text-gray-600 text-center mb-4">
                         By clicking continue, you agree to our{" "}

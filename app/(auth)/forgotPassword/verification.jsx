@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import AuthHeader from '../../../components/ui/AuthHeader';
 import { fs } from '../../../firebase/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { router, useLocalSearchParams } from 'expo-router';
+import { generate_otp } from '../../../services/apiService';
 
 export default function CodeVerificationScreen() {
     const { email } = useLocalSearchParams();
@@ -30,9 +31,9 @@ export default function CodeVerificationScreen() {
         }
     };
 
-    const handleResend = () => {
+    const handleResend = async () => {
         setTimer(300);
-        // Call FastAPI or Firebase to resend OTP
+        const result = await generate_otp(email)
     };
 
     const verifyCode = async () => {
@@ -47,6 +48,8 @@ export default function CodeVerificationScreen() {
                 pathname: "/forgotPassword/resetpassword",
                 params: { email }
             })
+        } else {
+            Alert.alert("Error", "OTP is incorrect.")
         }
         setIsLoading(false)
     }
