@@ -153,6 +153,7 @@ export const useUsageStore = create((set, get) => ({
 
     fetchDailyKwh: async (userId) => {
         const dailyKwh = await firebaseUsageServices.fetchDailyKwh(userId)
+        
         set({
             reports: dailyKwh
         })

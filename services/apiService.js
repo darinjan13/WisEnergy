@@ -1,8 +1,8 @@
 import axios from "axios"
 
 const api = axios.create({
-    baseURL: 'https://wisenergy-backend.onrender.com',
-    // baseURL: 'http://192.168.1.4:8000',
+    // baseURL: 'https://wisenergy-backend.onrender.com',
+    baseURL: 'http://192.168.0.113:10000',
     timeout: 5000,
     headers: {
         'Content-Type': 'application/json'
@@ -14,7 +14,7 @@ export const fetchTotalUsers = async () => {
         const response = await api.get('/users')
         return response.data
     } catch (error) {
-        console.error("Error fetching total users:", error);
+        return null
     }
 };
 
@@ -23,14 +23,15 @@ export const fetchTotalDevices = async () => {
         const response = await api.get('/devices')
         return response.data
     } catch (error) {
-        console.error("Error fetching total devices:", error);
+        return null
     }
 };
 
 export const predidct_daily = async (userId, deviceId, appliance_name) => {
     try {
         const response = await api.get(`/predict/${userId}/${deviceId}/${appliance_name}`)
-        return Number(response.data);
+
+        return response.data.predictions;
     } catch (error) {
         return null
     }

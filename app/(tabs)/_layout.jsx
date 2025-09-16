@@ -18,7 +18,7 @@ export default function TabLayout() {
   const { user, checkingAuth } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { subscribeToMonthlyTotalConsumption } = useUsageStore();
+  const { subscribeToMonthlyTotalConsumption, fetchDailyKwh } = useUsageStore();
   const { subscribeToBudget } = useBudgetStore();
 
   const getUserRole = async (uid) => {
@@ -44,6 +44,7 @@ export default function TabLayout() {
     const fetchUserRole = async () => {
       await getUserRole(auth.currentUser?.uid);
     };
+    fetchDailyKwh(auth.currentUser.uid)
     fetchUserRole();
     if (!checkingAuth && !user) {
       router.replace('/(auth)/login');

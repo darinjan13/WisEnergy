@@ -13,7 +13,7 @@ export const getLastNDays = (n) => {
 
     for (let i = 0; i < n; i++) {
         const pastDate = new Date(zonedToday);
-        pastDate.setDate(zonedToday.getDate() - (i + 1));
+        pastDate.setDate(zonedToday.getDate() - i);
 
         const formatted = formatInTimeZone(pastDate, timeZone, "yyyy-MM-dd");
         dates.push(formatted);

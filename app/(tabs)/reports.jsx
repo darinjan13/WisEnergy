@@ -100,11 +100,19 @@ export default function reports() {
     }
 
     const lineData = [
-        { value: 10 },
-        { value: 20 },
-        { value: 25 },
-        { value: 40 },
-        { value: 35 },
+        { value: 10, dataPointText: "Jholmer" },
+        { value: 20, dataPointText: "Jholmer" },
+        { value: 25, dataPointText: "Jholmer" },
+        { value: 40, dataPointText: "Jholmer" },
+        { value: 35, dataPointText: "Jholmer" },
+    ]
+
+    const lineData2 = [
+        { value: 5, dataPointText: "Jholmer" },
+        { value: 10, dataPointText: "Jholmer" },
+        { value: 15, dataPointText: "Jholmer" },
+        { value: 20, dataPointText: "Jholmer" },
+        { value: 15, dataPointText: "Jholmer" },
     ]
 
     return (
@@ -167,6 +175,7 @@ export default function reports() {
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
                             <LineChart
                                 data={lineData}
+                                data2={lineData2}
                                 thickness={2}
                                 color="#16a34a"
                                 areaChart

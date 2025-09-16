@@ -1,5 +1,5 @@
 import { List } from 'react-native-paper';
-import { BarChart } from 'react-native-gifted-charts';
+import { BarChart, LineChart } from 'react-native-gifted-charts';
 import { View, Text, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { getMonthName } from '../../utils/dateHelper';
@@ -7,9 +7,12 @@ import { getMonthName } from '../../utils/dateHelper';
 export default function ApplianceUsage({ category, data, styles }) {
     const [expandedIndex, setExpandedIndex] = useState(null);
 
+
     return (
         <View className="mt-4 mb-10">
             {data?.map((appliance, index) => {
+                console.log(appliance.barData);
+                
                 const monthValue = appliance.barData[0]?.month || "";
 
                 const isExpanded = expandedIndex === index;
@@ -38,7 +41,7 @@ export default function ApplianceUsage({ category, data, styles }) {
                             ) : (
                                 <Text className="mb-5">Power Usage for the past months</Text>
                             )}
-                            <BarChart
+                            {/* <BarChart
                                 data={appliance.barData}
                                 barWidth={category === "Daily" ? 25 : category === "Weekly" ? 35 : 25}
                                 frontColor="#16a34a"
@@ -70,14 +73,76 @@ export default function ApplianceUsage({ category, data, styles }) {
                                         );
                                     }
                                 ) : null}
+                            /> */}
+
+                            {/* <LineChart
+                                data={appliance.barData}     // historical
+                                data2={appliance.barData2}   // predicted
+
+                                height={260}
+                                width={250}
+                                spacing={50}
+                                initialSpacing={30}
+
+                                curved
+                                thickness={3}
+                                color1="#095333"
+                                color2="#40cc65"
+
+                                focusEnabled
+                                showDataPointOnFocus
+                                showStripOnFocus
+                                showTextOnFocus
+
+                                showVerticalLines
+                                showXAxisIndices
+                                xAxisColor="#d1d5db"
+                                yAxisColor="#d1d5db"
+                                textColor="#111827"
+                                xAxisIndicesColor="#e5e7eb"
+                                yAxisIndicesColor="#e5e7eb"
+
+                                showLegends
+                                legendTextColor="#111827"
+                                legend1="Historical"
+                                legend2="Predicted"
+                            /> */}
+
+                            <LineChart
+                                data={appliance.barData}
+                                data2={appliance.barData2}
+                                endSpacing={30}
+                                curved
+                                height={260}
+                                width={250}
+                                spacing={50}
+                                thickness={3}
+                                color1="#064e3b"
+                                color2="#10b981"
+                                dataPointsHeight={10}
+                                dataPointsWidth={10}
+                                textColor1="#064e3b"
+                                textColor2="#10b981"
+                                dataPointsRadius={6}
+                                dataPointsStrokeWidth={2}
+                                dataPointsStrokeColor="white"
+                                focusEnabled
+                                showDataPointOnFocus
+                                showStripOnFocus
+                                showLegends
+                                legend1="Historical"
+                                legend2="Predicted"
+                                legendTextColor="#111827"
                             />
+
+
                             <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center', justifyContent: 'center' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
-                                    <View style={{ width: 14, height: 14, backgroundColor: '#16a34a', borderRadius: 2, marginRight: 6 }} />
+                                    <View style={{ width: 14, height: 14, backgroundColor: '#095333', borderRadius: 2, marginRight: 6 }} />
                                     <Text style={{ fontSize: 12, color: '#374151' }}>Historical</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{ width: 14, height: 14, backgroundColor: '#f59e0b', borderRadius: 2, marginRight: 6 }} />
+                                    <View style={{ width: 14, height: 14, backgroundColor: '#40cc65', borderRadius: 2, marginRight: 6 }} />
                                     <Text style={{ fontSize: 12, color: '#374151' }}>Predicted</Text>
                                 </View>
                             </View>
