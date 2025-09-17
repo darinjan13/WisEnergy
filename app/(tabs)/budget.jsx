@@ -103,8 +103,16 @@ export default function Budget() {
             {
               budgetKWh > 0 && (
                 <View className="flex-row justify-between mb-4">
-                  <Text className="text-sm text-gray-700">Set on: {monthlyBudget?.set_at}</Text>
-                  <Text className="text-sm text-gray-700">Resets on: {monthlyBudget?.reset_at}</Text>
+                  <Text className="text-sm text-gray-700">Set on: {monthlyBudget?.set_at?.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}</Text>
+                  <Text className="text-sm text-gray-700">Resets on: {monthlyBudget?.reset_at?.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}</Text>
                 </View>
               )
             }

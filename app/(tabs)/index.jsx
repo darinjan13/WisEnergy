@@ -13,8 +13,8 @@ import BudgetModal from '../../components/budget/SetBudget';
 export default function Dashboard() {
     const insets = useSafeAreaInsets();
     const [modalVisible, setModalVisible] = useState(false);
-    const { monthlyTotalConsumption } = useUsageStore();
-    const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed } = useBudgetStore();
+    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption } = useUsageStore();
+    const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget } = useBudgetStore();
     const [efficiency, setEfficiency] = useState(0);
     const [daysRemaining, setDaysRemaining] = useState(0);
 
@@ -22,8 +22,10 @@ export default function Dashboard() {
 
     useFocusEffect(
         useCallback(() => {
-            if (locationRate == 0) {
+            if (locationRate == 0 || monthlyBudget === null) {
                 fetchLocationRate(auth.currentUser?.uid);
+                subscribeToBudget(auth.currentUser?.uid);
+                subscribeToMonthlyTotalConsumption(auth.currentUser?.uid);
             }
             return () => {
             }
@@ -37,12 +39,11 @@ export default function Dashboard() {
             return;
         }
 
-        const setAt = monthlyBudget?.set_at ? new Date(monthlyBudget?.set_at) : null;
         const resetAt = monthlyBudget?.reset_at ? new Date(monthlyBudget?.reset_at) : null;
 
         if (resetAt && !isNaN(resetAt.getTime())) {
             const now = new Date();
-            const diffMs = resetAt - setAt;
+            const diffMs = resetAt - now;
             const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
             setDaysRemaining(days);
         }

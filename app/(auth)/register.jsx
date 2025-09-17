@@ -27,6 +27,7 @@ export default function RegisterForm() {
         firstName: "",
         lastName: "",
         email: "",
+        location: "",
         password: "",
         confirmPassword: "",
     });
@@ -53,8 +54,10 @@ export default function RegisterForm() {
         if (!form.firstName.trim()) newErrors.firstName = "First name is required";
         if (!form.lastName.trim()) newErrors.lastName = "Last name is required";
         if (!form.email.trim()) newErrors.email = "Email is required";
+        if (!form.location.trim()) newErrors.location = "Location is required"
         else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "Email is invalid";
         if (!form.password) newErrors.password = "Password is required";
+        if (!form.confirmPassword) newErrors.confirmPassword = "Confirm Password is required";
         else if (form.password.length < 6) newErrors.password = "Min. 8 characters";
         if (form.password !== form.confirmPassword)
             newErrors.confirmPassword = "Passwords do not match";
@@ -67,58 +70,74 @@ export default function RegisterForm() {
     };
 
     const handleSubmit = () => {
+        setIsLoading(true);
         if (!validateForm()) return;
         // Alert.alert(form.firstName, form.lastName);
-        setIsLoading(true);
-        register(setIsLoading, location, form.firstName, form.lastName, form.email, form.password);
+        register(setIsLoading, form.location, form.firstName, form.lastName, form.email, form.password);
     };
 
     return (
-        <SafeAreaView className="h-full">
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="h-full md:w-1/3 md:mx-auto bg-white px-6">
+        <SafeAreaView>
+            <AuthHeader />
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="h-full bg-white rounded-t-[40px] p-6">
                 <ScrollView>
-                    <AuthHeader textHeader="Create and account" />
-
-                    <View className="flex-row justify-between mb-4">
-                        <View className="flex-1 mr-2">
+                    <Text className="text-2xl font-bold text-center text-gray-800 mb-10">
+                        Create A New Account
+                    </Text>
+                    <View className="flex-row justify-between mb-4 gap-2">
+                        <View className="flex-1">
                             <TextInput
                                 placeholder="First Name"
                                 value={form.firstName}
                                 onChangeText={(text) => handleChange("firstName", text)}
                                 className={`border px-3 py-4 rounded-md bg-white ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
                             />
+                            {errors.firstName && (
+                                <Text className="text-red-500 text-xs mt-1">{errors.firstName}</Text>
+                            )}
                         </View>
-                        <View className="flex-1 ml-2">
+
+                        <View className="flex-1 mr-1">
                             <TextInput
                                 placeholder="Last Name"
                                 value={form.lastName}
                                 onChangeText={(text) => handleChange("lastName", text)}
                                 className={`border px-3 py-4 rounded-md bg-white ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
                             />
+                            {errors.lastName && (
+                                <Text className="text-red-500 text-xs mt-1">{errors.lastName}</Text>
+                            )}
                         </View>
                     </View>
 
-                    <TextInput
-                        placeholder="Email"
-                        value={form.email}
-                        onChangeText={(text) => handleChange("email", text)}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        className={`mb-4 border px-3 py-4 rounded-md bg-white ${errors.email ? "border-red-500" : "border-gray-300"}`}
-                    />
+                    <View className="mb-4 mr-1">
+                        <TextInput
+                            placeholder="Email"
+                            value={form.email}
+                            onChangeText={(text) => handleChange("email", text)}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            className={`border px-3 py-4 rounded-md bg-white ${errors.email ? "border-red-500" : "border-gray-300"}`}
+                        />
+                        {errors.email && (
+                            <Text className="text-red-500 text-xs mt-1">{errors.email}</Text>
+                        )}
+                    </View>
 
-                    <View className="mb-4 max-h-14">
+                    <View className={`${!errors.location ? "mb-4" : "mb-9"} mr-1 max-h-14`}>
                         <DropDownPicker
+                            listMode="SCROLLVIEW"
                             open={open}
-                            value={location}
+                            value={form.location}
                             items={items}
                             setOpen={setOpen}
-                            setValue={setLocation}
+                            setValue={(callback) => {
+                                const value = callback(form.location);
+                                handleChange("location", value);
+                            }}
                             setItems={setItems}
                             placeholder="Select Location"
-                            style={{
-                                borderColor: "#d1d5db",
-                            }}
+                            style={errors.location ? { borderColor: "#eF4444" } : { borderColor: "#d1d5db" }}
                             placeholderStyle={{
                                 color: "#6b7280",
                             }}
@@ -129,38 +148,55 @@ export default function RegisterForm() {
                                 color: '#36a25e',
                             }}
                         />
+                        {errors.location && (
+                            <Text className="text-red-500 text-xs mt-1">{errors.location}</Text>
+                        )}
                     </View>
 
-                    <TextInput
-                        placeholder="Password"
-                        value={form.password}
-                        onChangeText={(text) => handleChange("password", text)}
-                        secureTextEntry={!showPassword}
-                        className={`mb-4 border px-3 py-4 rounded-md bg-white ${errors.password ? "border-red-500" : "border-gray-300"}`}
-                    />
-
-                    <TextInput
-                        placeholder="Confirm Password"
-                        value={form.confirmPassword}
-                        onChangeText={(text) => handleChange("confirmPassword", text)}
-                        secureTextEntry
-                        className={`mb-4 border px-3 py-4 rounded-md bg-white ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
-                    />
-
-                    <View className="flex-row items-center mb-4 -ml-2.5">
-                        <TouchableOpacity onPress={() => setAcceptTerms(!acceptTerms)}>
-                            <Checkbox color="#15803d" status={acceptTerms ? "checked" : "unchecked"} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setAcceptTerms(!acceptTerms)}>
-                            <Text className="text-sm text-gray-700">Remember me</Text>
-                        </TouchableOpacity>
+                    <View className="mb-4 mr-1">
+                        <TextInput
+                            placeholder="Password"
+                            value={form.password}
+                            onChangeText={(text) => handleChange("password", text)}
+                            secureTextEntry={!showPassword}
+                            className={`border px-3 py-4 rounded-md bg-white ${errors.password ? "border-red-500" : "border-gray-300"}`}
+                        />
+                        {errors.password && (
+                            <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>
+                        )}
                     </View>
 
-                    <Text className="text-xs text-gray-600 text-center mb-4">
-                        By clicking continue, you agree to our{" "}
-                        <Text className="text-green-700 font-semibold">Terms of Service</Text>{" "}
-                        and <Text className="text-green-700 font-semibold">Privacy Policy</Text>
-                    </Text>
+                    <View className="mb-4 mr-1">
+                        <TextInput
+                            placeholder="Confirm Password"
+                            value={form.confirmPassword}
+                            onChangeText={(text) => handleChange("confirmPassword", text)}
+                            secureTextEntry
+                            className={`border px-3 py-4 rounded-md bg-white ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
+                        />
+                        {errors.confirmPassword && (
+                            <Text className="text-red-500 text-xs mt-1">{errors.confirmPassword}</Text>
+                        )}
+                    </View>
+
+                    <View className="mb-4">
+                        <View className="flex-row items-center -ml-2.5">
+                            <TouchableOpacity onPress={() => setAcceptTerms(!acceptTerms)}>
+                                <Checkbox color="#15803d" status={acceptTerms ? "checked" : "unchecked"} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setAcceptTerms(!acceptTerms)}>
+                                <Text className="text-gray-600 text-center">
+                                    Accept{" "}
+                                    <Text className="text-green-700 font-semibold">Terms of Service</Text>{" "}
+                                    and <Text className="text-green-700 font-semibold">Privacy Policy</Text>
+                                </Text>
+                            </TouchableOpacity>
+
+                        </View>
+                        {errors.terms && (
+                            <Text className="text-red-500 text-xs mt-1">{errors.terms}</Text>
+                        )}
+                    </View>
 
                     <TouchableOpacity
                         onPress={handleSubmit}

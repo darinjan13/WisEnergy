@@ -23,26 +23,13 @@ export const fetchMonthlyBudget = (userId, callback) => {
                 budget_php: data.budget_php,
                 budget_kwh: data.budget_kwh,
                 rate: data.rate,
-                set_at: null,
-                reset_at: null
+                set_at: data?.set_at ? new Date(data.set_at) : null,
+                reset_at: data?.set_at ? (() => {
+                    const d = new Date(data.set_at);
+                    d.setMonth(d.getMonth() + 1);
+                    return d;
+                })() : null
             };
-
-            if (data?.set_at) {
-                const date = new Date(data.set_at);
-                const resetDate = new Date(date);
-                resetDate.setMonth(resetDate.getMonth() + 1);
-                formattedData.set_at = date.toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                });
-                formattedData.reset_at = resetDate.toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                })
-            }
-
             callback(formattedData);
         } else {
             callback(null);

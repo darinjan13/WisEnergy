@@ -7,14 +7,10 @@ import { getMonthName } from '../../utils/dateHelper';
 export default function ApplianceUsage({ category, data, styles }) {
     const [expandedIndex, setExpandedIndex] = useState(null);
 
-
     return (
         <View className="mt-4 mb-10">
             {data?.map((appliance, index) => {
-                console.log(appliance.barData);
-                
                 const monthValue = appliance.barData[0]?.month || "";
-
                 const isExpanded = expandedIndex === index;
 
                 return (
@@ -75,40 +71,37 @@ export default function ApplianceUsage({ category, data, styles }) {
                                 ) : null}
                             /> */}
 
-                            {/* <LineChart
+                            <LineChart
                                 data={appliance.barData}     // historical
                                 data2={appliance.barData2}   // predicted
 
-                                height={260}
                                 width={250}
-                                spacing={50}
+                                maxValue={Math.max(...appliance.barData.map(b => b.value)) + 2}
+                                spacing={55}
                                 initialSpacing={30}
+                                noOfSections={Math.max(...appliance.barData.map(b => b.value)) + 2}
 
                                 curved
                                 thickness={3}
                                 color1="#095333"
                                 color2="#40cc65"
 
-                                focusEnabled
-                                showDataPointOnFocus
-                                showStripOnFocus
-                                showTextOnFocus
+                                // focusEnabled
+                                // showDataPointOnFocus
+                                // showStripOnFocus
+                                // showTextOnFocus
 
                                 showVerticalLines
                                 showXAxisIndices
                                 xAxisColor="#d1d5db"
                                 yAxisColor="#d1d5db"
                                 textColor="#111827"
+                                textShiftX={10}
                                 xAxisIndicesColor="#e5e7eb"
                                 yAxisIndicesColor="#e5e7eb"
+                            />
 
-                                showLegends
-                                legendTextColor="#111827"
-                                legend1="Historical"
-                                legend2="Predicted"
-                            /> */}
-
-                            <LineChart
+                            {/* <LineChart
                                 data={appliance.barData}
                                 data2={appliance.barData2}
                                 endSpacing={30}
@@ -133,9 +126,7 @@ export default function ApplianceUsage({ category, data, styles }) {
                                 legend1="Historical"
                                 legend2="Predicted"
                                 legendTextColor="#111827"
-                            />
-
-
+                            /> */}
                             <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center', justifyContent: 'center' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
                                     <View style={{ width: 14, height: 14, backgroundColor: '#095333', borderRadius: 2, marginRight: 6 }} />

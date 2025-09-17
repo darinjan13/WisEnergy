@@ -49,6 +49,7 @@
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-gifted-charts": "^1.4.58",
+    "react-native-otp-textinput": "^1.1.7",
     "react-native-paper": "^5.13.1",
     "react-native-reanimated": "^3.16.2",
     "react-native-safe-area-context": "4.12.0",
