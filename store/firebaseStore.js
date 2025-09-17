@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as firebaseDevicesServices from '../services/firebaseDevicesService'
 import * as firebaseUsageServices from '../services/firebaseUsageService'
+import * as firebaseBudgetServices from '../services/firebaseBudgetService'
 
 export const useDeviceStore = create((set, get) => ({
     devices: [],
@@ -65,9 +66,18 @@ export const useDeviceStore = create((set, get) => ({
             };
         });
     },
+    reset: () =>
+        set({
+            devices: [],
+            userDevices: [],
+            unpairedDevices: [],
+            userAppliances: [],
+        }),
 }));
 
 export const useUsageStore = create((set, get) => ({
+    monthlyTotalConsumption: 0,
+    _unsubMonthly: null,
     latestKwh: [],
     reportHistory: {
         daily: {},
@@ -80,6 +90,25 @@ export const useUsageStore = create((set, get) => ({
         daily: null,
         weekly: null,
         monthly: null
+    },
+
+    subscribeToMonthlyTotalConsumption: (userId) => {
+        if (get()._unsubMonthly) return;
+
+        const unsubscribe = firebaseUsageServices.fetchMonthlyTotalConsumption(userId, (currentConsumption) => {
+            set({ monthlyTotalConsumption: currentConsumption });
+        });
+
+        set({ _unsubMonthly: unsubscribe });
+    },
+
+    unsubscribeFromMonthlyTotalConsumption: () => {
+        const unsubMonthly = get()._unsubMonthly
+        if (unsubMonthly) {
+            unsubMonthly();
+            set({ _unsubMonthly: null })
+        }
+
     },
 
     fetchLatestKwhOnce: async (userId, deviceId, applianceName) => {
@@ -97,8 +126,7 @@ export const useUsageStore = create((set, get) => ({
     },
 
     fetchDailyReport: async (userId, deviceId, appliances) => {
-        const data = await firebaseUsageServices.fetchDailyReport(userId, deviceId, appliances);
-
+        const data = await firebaseUsageServices.getCachedDailyReport(userId, deviceId, appliances);
         set(state => ({
             reportHistory: {
                 ...state.reportHistory,
@@ -109,11 +137,101 @@ export const useUsageStore = create((set, get) => ({
             }
         }))
     },
+    fetchWeeklyReport: async (userId, deviceId, appliances) => {
+        const data = await firebaseUsageServices.getCacheWeeklyReport(userId, deviceId, appliances);
+
+        set(state => ({
+            reportHistory: {
+                ...state.reportHistory,
+                weekly: {
+                    ...state.reportHistory.weekly,
+                    [deviceId]: data
+                }
+            }
+        }))
+    },
 
     fetchDailyKwh: async (userId) => {
         const dailyKwh = await firebaseUsageServices.fetchDailyKwh(userId)
+
         set({
             reports: dailyKwh
         })
+    },
+    reset: () => {
+        // cleanup listener if still active
+        const unsubMonthly = get()._unsubMonthly;
+        if (unsubMonthly) unsubMonthly();
+
+        set({
+            monthlyTotalConsumption: 0,
+            _unsubMonthly: null,
+            latestKwh: [],
+            reportHistory: { daily: {}, weekly: {}, monthly: {} },
+            summaryPerDevice: {},
+            totalConsumptionByDate: {},
+            lastFetched: { daily: null, weekly: null, monthly: null },
+        });
+    },
+}));
+
+export const useBudgetStore = create((set, get) => ({
+    locationRate: 0,
+    monthlyBudget: null,
+    _unsubBudget: null,
+    percentUsed: 0,
+
+    subscribeToBudget: (userId) => {
+        if (get()._unsubBudget) return;
+
+        const unsubscribe = firebaseBudgetServices.fetchMonthlyBudget(userId, (currentBudget) => {
+            set({ monthlyBudget: currentBudget });
+        });
+
+        set({ _unsubBudget: unsubscribe });
+    },
+
+    unsubscribeToBudget: () => {
+        const unsubBudget = get()._unsubBudget
+        if (unsubBudget) {
+            unsubBudget();
+            set({ _unsubBudget: null, monthlyBudget: null })
+        }
+
+    },
+
+    fetchPercentUsed: (usedKwh) => {
+        const { locationRate } = get();
+        const { monthlyBudget } = get();
+        const estimatedCost = usedKwh * locationRate;
+        const percentUsed = Math.min((estimatedCost / monthlyBudget?.budget_php) * 100, 100);
+
+        set({ percentUsed });
+    },
+    fetchLocationRate: async (userId) => {
+        const locationRate = await firebaseBudgetServices.fetchLocationRate(userId);
+
+        set({ locationRate });
+    },
+    fetchMonthlyBudget: async (userId) => {
+
+        const monthlyBudget = await firebaseBudgetServices.fetchMonthlyBudget(userId);
+        set({ monthlyBudget });
+    },
+    reset: () => {
+        const unsubBudget = get()._unsubBudget;
+        if (unsubBudget) unsubBudget();
+        set({
+            locationRate: 0,
+            monthlyBudget: null,
+            _unsubBudget: null,
+            percentUsed: 0,
+        })
     }
 }));
+
+export const clearStates = () => {
+    useDeviceStore.getState().reset();
+    useUsageStore.getState().reset();
+    useBudgetStore.getState().reset();
+};

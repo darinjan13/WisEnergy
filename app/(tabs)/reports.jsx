@@ -9,28 +9,34 @@ import { ActivityIndicator } from "react-native-paper";
 import { useDeviceStore, useUsageStore } from "../../store/firebaseStore";
 import { Picker } from "@react-native-picker/picker";
 import ApplianceUsage from "../../components/reports/ApplianceUsage"
+import { Ionicons } from "@expo/vector-icons";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
     const { devices, setDevices, fetchUserAppliances, userAppliances, userDevices } = useDeviceStore();
-    const { reportHistory, fetchDailyReport } = useUsageStore();
+    const { reportHistory, fetchDailyReport, fetchWeeklyReport } = useUsageStore();
+
     const [reportCategory, setReportCategory] = useState("Daily");
     const [selectedDevice, setSelectedDevice] = useState();
 
-    // const [appliances, setAppliances] = useState([]);
     const [reportData, setReportData] = useState([]);
     const [barData, setBarData] = useState([]);
 
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
 
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
 
     const category = ["Monthly", "Weekly", "Daily"];
 
     useFocusEffect(
         useCallback(() => {
-            if (devices.length != 0 && userAppliances.length != 0 && userDevices.length != 0) {
+            setIsLoading(true)
+            const timeout = setTimeout(() => {
+                if (reportHistory !== null)
+                    setIsLoading(false);
+            }, 500);
+            if (userAppliances.length != 0 && userDevices.length != 0) {
                 const result = userDevices.map((device) => {
                     const matched = userAppliances.find(appliance => appliance.id === device.id);
                     if (matched) {
@@ -49,6 +55,8 @@ export default function reports() {
                 setTotalEnergyConsumption(0);
                 setReportCategory("Daily")
                 setBarData(undefined)
+                clearTimeout(timeout)
+                setIsLoading(true)
             };
         }, [devices, userAppliances, userDevices])
     );
@@ -63,6 +71,7 @@ export default function reports() {
             reportData.find((device) => {
                 if (device.device_id == selectedDevice) {
                     fetchDailyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
+                    fetchWeeklyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
                 }
             })
         }
@@ -78,22 +87,42 @@ export default function reports() {
         if (reportData.length > 0) setSelectedDevice(reportData[0].device_id)
     }, [reportData])
 
+    if (isLoading) {
+        return (
+            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
+                <Header />
+                <View className="h-screen -mt-36 items-center justify-center">
+                    <ActivityIndicator size="large" color="#166534" />
+                    <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                </View>
+            </ScrollView>
+        )
+    }
+
     const lineData = [
-        { value: 10 },
-        { value: 20 },
-        { value: 25 },
-        { value: 40 },
-        { value: 35 },
-    ];
+        { value: 10, dataPointText: "Jholmer" },
+        { value: 20, dataPointText: "Jholmer" },
+        { value: 25, dataPointText: "Jholmer" },
+        { value: 40, dataPointText: "Jholmer" },
+        { value: 35, dataPointText: "Jholmer" },
+    ]
+
+    const lineData2 = [
+        { value: 5, dataPointText: "Jholmer" },
+        { value: 10, dataPointText: "Jholmer" },
+        { value: 15, dataPointText: "Jholmer" },
+        { value: 20, dataPointText: "Jholmer" },
+        { value: 15, dataPointText: "Jholmer" },
+    ]
 
     return (
         <View className="flex-1 bg-gray-100">
             <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
                 <Header />
-                {isLoading ? (
+                {reportData.length === 0 ? (
                     <View className="h-screen -mt-36 items-center justify-center">
-                        <ActivityIndicator size="large" color="#166534" />
-                        <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                        <Ionicons name="bar-chart-outline" size={64} color="#9CA3AF" />
+                        <Text className="text-gray-500 mt-4 text-lg font-semibold">You have no devices added yet. Please add a device to view reports.</Text>
                     </View>
                 ) : (
                     <View className="flex-1">
@@ -122,8 +151,12 @@ export default function reports() {
                                     <Picker
                                         selectedValue={selectedDevice}
                                         onValueChange={(itemValue) => {
-                                            setIsLoading(true);
-                                            setSelectedDevice(itemValue);
+                                            if (selectedDevice === itemValue) {
+                                                return
+                                            } else {
+                                                setIsLoading(true);
+                                                setSelectedDevice(itemValue);
+                                            }
                                         }}
                                     >
                                         {reportData.map((userDevice) => (
@@ -142,6 +175,7 @@ export default function reports() {
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
                             <LineChart
                                 data={lineData}
+                                data2={lineData2}
                                 thickness={2}
                                 color="#16a34a"
                                 areaChart
@@ -153,9 +187,12 @@ export default function reports() {
                         </View>
 
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Appliance Usage</Text>
-                        {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 && (
-                            <ApplianceUsage data={reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]} styles={styles} />
-                        )}
+                        {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 ? (
+                            <ApplianceUsage category={reportCategory} data={reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]} styles={styles} />
+                        ) : <View className="h-screen -mt-36 items-center justify-center">
+                            <ActivityIndicator size="large" color="#166534" />
+                            <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                        </View>}
 
                     </View>
                 )}

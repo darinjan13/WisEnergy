@@ -4,87 +4,62 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PieChart } from 'react-native-gifted-charts';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Header from "../../components/ui/Header";
-import { get, ref, set, update } from "firebase/database";
+import { get, ref, serverTimestamp, set, update } from "firebase/database";
 import { db, auth } from "../../firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
 import { BlurView } from "expo-blur";
+import { useBudgetStore, useUsageStore } from "../../store/firebaseStore";
+import BudgetModal from "../../components/budget/SetBudget";
 
 export default function Budget() {
   const insets = useSafeAreaInsets();
+  const { locationRate, fetchLocationRate, monthlyBudget, percentUsed } = useBudgetStore();
+  const { monthlyTotalConsumption } = useUsageStore();
 
   const [rate, setRate] = useState(0);
-  const [budgetInput, setBudgetInput] = useState("");
-  const [monthlyBudget, setMonthlyBudget] = useState(0);
+  const [budget, setBudget] = useState(0);
   const [usedKWh, setUsedKWh] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const estimatedCost = usedKWh * rate;
-  const remaining = monthlyBudget - estimatedCost;
-  const budgetKWh = monthlyBudget / rate;
+  const remaining = budget - estimatedCost;
+  const budgetKWh = budget / rate;
   const remainingKWh = budgetKWh - usedKWh;
-  const percentUsed = Math.min((estimatedCost / monthlyBudget) * 100, 100);
 
   useFocusEffect(
     useCallback(() => {
-      getUserLocationRate();
-      if (rate > 0) {
-        getUserMonthlyBudget();
+      if (locationRate == 0) {
+        fetchLocationRate(auth.currentUser.uid);
       }
       return () => {
         setModalVisible(false);
-        setLoading(true);
       };
-    }, [rate])
+    }, [])
   )
 
-  const getUserMonthlyBudget = async () => {
-    const budgetRef = ref(db, `users/${auth.currentUser.uid}/budget_kwh`);
-    const budgetSnapshot = await get(budgetRef);
-
-    const usedKwhRef = ref(db, `users/${auth.currentUser.uid}/total_energy_consumption`);
-    const usedKwhSnapshot = await get(usedKwhRef);
-    if (budgetSnapshot.exists() && usedKwhSnapshot.exists()) {
-      const usedKwh = usedKwhSnapshot.val();
-      const budgetKwh = budgetSnapshot.val();
-      const formattedBudgetKwh = Math.round(budgetKwh * rate);
-      setMonthlyBudget(formattedBudgetKwh);
-      setUsedKWh(usedKwh);
+  useEffect(() => {
+    if (monthlyBudget?.budget_php > 0) {
+      setBudget(monthlyBudget?.budget_php || 0);
       setLoading(false);
     } else {
-      setMonthlyBudget(0);
-      setUsedKWh(0);
+      console.log(monthlyBudget?.budget_php);
+      setModalVisible(true)
     }
-  }
+  }, [monthlyBudget]);
 
-  const getUserLocationRate = async () => {
-    const userRef = ref(db, `users/${auth.currentUser.uid}/location`);
-    const location = await get(userRef);
-    const formattedLocation = location.val().replace(/ /g, "_");
-    const rateRef = ref(db, `city/${formattedLocation}/rate`);
-    const getRate = await get(rateRef);
-    setRate(getRate.val());
-  }
+  useEffect(() => {
+    if (monthlyTotalConsumption > 0) {
+      setUsedKWh(monthlyTotalConsumption)
+    }
+  }, [monthlyTotalConsumption]);
 
-  const onClickSetBudget = () => {
-    handleSetMonthlyBudget(budgetInput.replace(/,/, ''));
-    setBudgetInput("");
-    setModalVisible(false);
-  }
-
-  const handleSetMonthlyBudget = async (budget) => {
-
-    const budget_kwh = budget / rate;
-    const budgetRef = ref(db, `users/${auth.currentUser.uid}`);
-    console.log(budget_kwh);
-
-    await update(budgetRef, {
-      budget_kwh: budget_kwh.toFixed(1),
-    });
-    setMonthlyBudget(budget);
-  }
-
+  useEffect(() => {
+    if (locationRate > 0) {
+      setRate(locationRate)
+    }
+  }, [locationRate])
   return (
     <View className="bg-gray-100">
       <ScrollView className="p-4" scrollEnabled={loading ? false : true} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
@@ -128,8 +103,16 @@ export default function Budget() {
             {
               budgetKWh > 0 && (
                 <View className="flex-row justify-between mb-4">
-                  <Text className="text-sm text-gray-700">Set on: March 14, 2025</Text>
-                  <Text className="text-sm text-gray-700">Resets on: April 14, 2025</Text>
+                  <Text className="text-sm text-gray-700">Set on: {monthlyBudget?.set_at?.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}</Text>
+                  <Text className="text-sm text-gray-700">Resets on: {monthlyBudget?.reset_at?.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}</Text>
                 </View>
               )
             }
@@ -141,17 +124,17 @@ export default function Budget() {
             <View className="flex-row justify-between mb-6">
               <View style={styles.cardShadow} className="flex-1 bg-white px-4 py-3 rounded-xl mr-2">
                 <Text className="text-xs text-gray-500">Budget</Text>
-                <Text className="text-green-700 font-bold text-lg">₱{monthlyBudget.toLocaleString()}</Text>
+                <Text className="text-green-700 font-bold text-lg">₱{budget.toLocaleString()}</Text>
                 <Text className="text-xs text-gray-400">{budgetKWh.toFixed(1)} kWh</Text>
               </View>
               <View style={styles.cardShadow} className="flex-1 bg-white px-4 py-3 rounded-xl mx-1">
                 <Text className="text-xs text-gray-500">Used</Text>
-                <Text className="text-orange-600 font-bold text-lg">₱{estimatedCost.toLocaleString()}</Text>
+                <Text className="text-orange-600 font-bold text-lg">₱{estimatedCost.toFixed(2)}</Text>
                 <Text className="text-xs text-gray-400">{usedKWh.toFixed(1)} kWh</Text>
               </View>
               <View style={styles.cardShadow} className="flex-1 bg-white px-4 py-3 rounded-xl ml-2">
                 <Text className="text-xs text-gray-500">Remaining</Text>
-                <Text className="text-blue-700 font-bold text-lg">₱{remaining.toLocaleString()}</Text>
+                <Text className="text-blue-700 font-bold text-lg">₱{remaining.toFixed(2)}</Text>
                 <Text className="text-xs text-gray-400">{remainingKWh.toFixed(1)} kWh</Text>
               </View>
             </View>
@@ -176,26 +159,11 @@ export default function Budget() {
           </View>
         )}
       </ScrollView >
-      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
-          <View className="bg-white rounded-xl p-6 w-11/12">
-            <Text className="text-lg font-semibold mb-2">Set Monthly Budget</Text>
-            <TextInput
-              className="border border-gray-300 rounded-md p-2 mb-4"
-              placeholder="Enter budget amount"
-              keyboardType="numeric"
-              value={budgetInput}
-              onChangeText={setBudgetInput}
-            />
-            <TouchableOpacity
-              onPress={onClickSetBudget}
-              className="bg-green-700 py-3 rounded-md"
-            >
-              <Text className="text-white font-semibold text-center">Set Budget</Text>
-            </TouchableOpacity>
-          </View>
-        </BlurView>
-      </Modal>
+      <BudgetModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        rate={locationRate}
+      />
     </View>
   );
 }

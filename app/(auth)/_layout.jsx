@@ -1,16 +1,20 @@
-import React from 'react'
 import { Stack } from 'expo-router'
 import '../../global.css';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
+import { DefaultTheme, PaperProvider, ThemeProvider } from 'react-native-paper';
 export default function AuthLayout() {
     return (
-        <SafeAreaView style={{ flex: 1 }}>
-            <StatusBar barStyle='dark-content' backgroundColor='white' />
-            <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name='login' />
-                <Stack.Screen name='register' />
-            </Stack>
-        </SafeAreaView>
+        <PaperProvider>
+            <ThemeProvider theme={DefaultTheme}>
+                <StatusBar barStyle='dark-content' backgroundColor='white' />
+                <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name='login' />
+                    <Stack.Screen name='register' />
+                    <Stack.Screen name="forgotPassword/index" />
+                    <Stack.Screen name="forgotPassword/verification" />
+                    <Stack.Screen name="forgotPassword/resetpassword" />
+                </Stack>
+            </ThemeProvider>
+        </PaperProvider>
     )
 }

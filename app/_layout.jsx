@@ -15,6 +15,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!checkingAuth && navigationRef.isReady()) {
+      // router.replace(user ? "/(tabs)" : "/(admin)");
       router.replace(user ? "/(tabs)" : "/(auth)/login");
     }
   }, [checkingAuth, user, navigationRef]);
@@ -32,6 +33,7 @@ export default function RootLayout() {
       <ThemeProvider value={DefaultTheme}>
         <Stack>
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="appliances/[deviceId]/index"

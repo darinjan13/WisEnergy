@@ -1,29 +1,55 @@
 import { Tabs, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
+
+import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import '../../global.css';
 import useAuth from '@/hooks/useAuth';
-import { useDeviceStore } from '@/store/firebaseStore';
-import { auth } from '@/firebase/firebaseConfig';
+import { useBudgetStore, useUsageStore } from "../../store/firebaseStore";
+import { auth, db } from '@/firebase/firebaseConfig';
+import { get, ref } from 'firebase/database';
 
 export default function TabLayout() {
 
   const router = useRouter();
   const { user, checkingAuth } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
+  const getUserRole = async (uid) => {
+    setIsLoading(true);
+    try {
+      const userRef = ref(db, 'users/' + uid);
+      const snapshot = await get(userRef);
+      if (snapshot.exists()) {
+        const userData = snapshot.val()
+        if (userData.role === 'admin')
+          router.replace('/(admin)/dashboard');
+        setIsLoading(false);
+        return;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      return null;
+    }
+  };
 
   useEffect(() => {
+
     if (!checkingAuth && !user) {
       router.replace('/(auth)/login');
+    } else {
+      const fetchUserRole = async () => {
+        await getUserRole(auth.currentUser?.uid);
+      };
+      fetchUserRole();
     }
-  }, [checkingAuth, user, router]);
+  }, [checkingAuth, user, router, auth]);
 
-  if (checkingAuth || !user) {
+  if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color="#166534" />
