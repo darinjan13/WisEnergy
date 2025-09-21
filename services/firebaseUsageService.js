@@ -221,3 +221,23 @@ export const fetchDailyKwh = async (userId) => {
         return 0;
     }
 };
+
+export const fetchAllMonthlyTotalConsumption = async (userId) => {
+    const monthlyTotalConsumptionRef = ref(db, `monthly_total_consumption/${userId}`);
+    const monthlyTotalConsumptionSnapshot = await get(monthlyTotalConsumptionRef);
+    const monthlyTotalConsumption = monthlyTotalConsumptionSnapshot.val() || {};
+
+    const monthlyTotals = [];
+
+    for (const year in monthlyTotalConsumption) {
+        for (const month in monthlyTotalConsumption[year]) {
+            monthlyTotals.push({
+                month,
+                value: monthlyTotalConsumption[year][month].total_energy_consumption || 0,
+                dataPointText: monthlyTotalConsumption[year][month].total_energy_consumption || 0
+            });
+        }
+    }
+
+    return monthlyTotals;
+}

@@ -1,37 +1,45 @@
 import { useCallback, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Header from "../../components/ui/Header";
 import { auth } from "../../firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
-import { useDeviceStore, useUsageStore } from "../../store/firebaseStore";
+import { useBudgetStore, useDeviceStore, useUsageStore } from "../../store/firebaseStore";
 import { Picker } from "@react-native-picker/picker";
 import ApplianceUsage from "../../components/reports/ApplianceUsage"
 import { Ionicons } from "@expo/vector-icons";
+import CustomProgressBar from "../../components/reports/CustomProgressBar";
+import { BlurView } from "expo-blur";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
     const { devices, setDevices, fetchUserAppliances, userAppliances, userDevices } = useDeviceStore();
-    const { reportHistory, fetchDailyReport, fetchWeeklyReport } = useUsageStore();
+    const { reportHistory, fetchDailyReport, fetchWeeklyReport, monthlyTotalConsumption, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption } = useUsageStore();
+    const { monthlyBudget, allBudget, fetchAllBudget } = useBudgetStore();
 
     const [reportCategory, setReportCategory] = useState("Daily");
     const [selectedDevice, setSelectedDevice] = useState();
 
     const [reportData, setReportData] = useState([]);
     const [barData, setBarData] = useState([]);
+    const [lineData1, setLineData1] = useState([]);
+    const [lineData2, setLineData2] = useState([]);
 
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
 
     const [isLoading, setIsLoading] = useState(false);
-
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedAppliance, setSelectedAppliance] = useState(null);
 
     const category = ["Monthly", "Weekly", "Daily"];
 
     useFocusEffect(
         useCallback(() => {
             setIsLoading(true)
+            fetchAllMonthlyTotalConsumption(auth.currentUser?.uid)
+            fetchAllBudget(auth.currentUser?.uid)
             const timeout = setTimeout(() => {
                 if (reportHistory !== null)
                     setIsLoading(false);
@@ -78,6 +86,11 @@ export default function reports() {
     }, [selectedDevice])
 
     useEffect(() => {
+        setLineData1(allMonthlyTotalConsumption)
+        setLineData2(allBudget)
+    }, [allMonthlyTotalConsumption, allBudget])
+
+    useEffect(() => {
         if (Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0) {
             setIsLoading(false)
         }
@@ -99,20 +112,12 @@ export default function reports() {
         )
     }
 
-    const lineData = [
-        { value: 10, dataPointText: "Jholmer" },
-        { value: 20, dataPointText: "Jholmer" },
-        { value: 25, dataPointText: "Jholmer" },
-        { value: 40, dataPointText: "Jholmer" },
-        { value: 35, dataPointText: "Jholmer" },
-    ]
+    // const lineData2 = [
+    //     { value: monthlyBudget?.budget_kwh / monthlyBudget?.rate, dataPointText: "Budget" },
+    // ]
 
-    const lineData2 = [
-        { value: 5, dataPointText: "Jholmer" },
-        { value: 10, dataPointText: "Jholmer" },
-        { value: 15, dataPointText: "Jholmer" },
-        { value: 20, dataPointText: "Jholmer" },
-        { value: 15, dataPointText: "Jholmer" },
+    const lineData = [
+        { value: monthlyTotalConsumption, dataPointText: "Used" },
     ]
 
     return (
@@ -127,6 +132,37 @@ export default function reports() {
                 ) : (
                     <View className="flex-1">
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Usage Report</Text>
+                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Savings Over Time</Text>
+                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
+                            {/* <LineChart
+                                data={lineData1}
+                                data2={lineData2}
+                                thickness={2}
+                                color="#16a34a"
+                                areaChart
+                                yAxisThickness={0}
+                                xAxisThickness={0}
+                            /> */}
+                            <LineChart
+                                data={lineData1}
+                                data2={lineData2}
+                                height={250}
+                                showVerticalLines
+                                spacing={44}
+                                initialSpacing={30}
+                                width={300}
+                                color1="skyblue"
+                                color2="orange"
+                                textColor1="green"
+                                dataPointsHeight={6}
+                                dataPointsWidth={6}
+                                dataPointsColor1="blue"
+                                dataPointsColor2="red"
+                                textShiftY={-2}
+                                textShiftX={-5}
+                                textFontSize={13}
+                            />
+                        </View>
                         <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl shadow-sm justify-between items-center">
                             {category?.map((label, index) => (
                                 <TouchableOpacity
@@ -171,33 +207,61 @@ export default function reports() {
                             </View>
                         </View>
 
-                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Savings Over Time</Text>
-                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-                            <LineChart
-                                data={lineData}
-                                data2={lineData2}
-                                thickness={2}
-                                color="#16a34a"
-                                areaChart
-                                startFillColor="#bbf7d0"
-                                endFillColor="#bbf7d0"
-                                yAxisThickness={0}
-                                xAxisThickness={0}
-                            />
-                        </View>
-
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Appliance Usage</Text>
                         {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 ? (
-                            <ApplianceUsage category={reportCategory} data={reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]} styles={styles} />
-                        ) : <View className="h-screen -mt-36 items-center justify-center">
-                            <ActivityIndicator size="large" color="#166534" />
-                            <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
-                        </View>}
+                            <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                                {reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]?.map((item, index) => {
+                                    // Ensure barData exists and has values
+                                    let powerUsed = item?.barData?.reduce((total, current) => total + current.value, 0) || 0;
+
+                                    // Adjust maxProgress based on your data. You may want to calculate it dynamically.
+                                    let maxProgress = 10;  // You can adjust this as needed, maybe based on a threshold.
+
+                                    // If powerUsed exceeds the maxProgress, set it to maxProgress to avoid overflow.
+                                    if (powerUsed > maxProgress) {
+                                        powerUsed = maxProgress;
+                                    }
+
+                                    return (
+                                        <TouchableOpacity onPress={() => {
+                                            setModalVisible(true); setSelectedAppliance(item);
+                                        }}>
+                                            <View className="w-full flex flex-row flex-wrap items-center mb-5" key={item.applianceName + index}>
+                                                <Text className="mr-5 w-24">{item.applianceName}</Text>
+                                                <CustomProgressBar
+                                                    key={index}
+                                                    progress={powerUsed}
+                                                    maxProgress={maxProgress}
+                                                    color="#4CAF50"
+                                                />
+                                            </View>
+                                        </TouchableOpacity>
+
+                                    );
+                                })}
+                            </View>
+                        ) : (
+                            <View className="h-screen -mt-36 items-center justify-center">
+                                <ActivityIndicator size="large" color="#166534" />
+                                <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                            </View>
+                        )}
+
 
                     </View>
                 )}
             </ScrollView>
-        </View>
+            <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+                <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
+                    <View className="bg-white rounded-xl p-6 w-11/12">
+                        <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
+                        <ApplianceUsage category={reportCategory} data={selectedAppliance} />
+                    </View>
+                </BlurView>
+            </Modal>
+        </View >
     );
 }
 
@@ -209,4 +273,18 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
         elevation: 10,
     },
+    closeButton: {
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        backgroundColor: '#FF0000',
+        padding: 10,
+        borderRadius: 50,
+        zIndex: 1,
+    },
+    closeButtonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: 'bold',
+    }
 });

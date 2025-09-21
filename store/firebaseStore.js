@@ -77,6 +77,7 @@ export const useDeviceStore = create((set, get) => ({
 
 export const useUsageStore = create((set, get) => ({
     monthlyTotalConsumption: 0,
+    allMonthlyTotalConsumption: [],
     _unsubMonthly: null,
     latestKwh: [],
     reportHistory: {
@@ -158,6 +159,11 @@ export const useUsageStore = create((set, get) => ({
             reports: dailyKwh
         })
     },
+    fetchAllMonthlyTotalConsumption: async (userId) => {
+        const allMonthlyTotalConsumption = await firebaseUsageServices.fetchAllMonthlyTotalConsumption(userId)
+        
+        set({ allMonthlyTotalConsumption })
+    },
     reset: () => {
         // cleanup listener if still active
         const unsubMonthly = get()._unsubMonthly;
@@ -177,6 +183,7 @@ export const useUsageStore = create((set, get) => ({
 
 export const useBudgetStore = create((set, get) => ({
     locationRate: 0,
+    allBudget: [],
     monthlyBudget: null,
     _unsubBudget: null,
     percentUsed: 0,
@@ -217,6 +224,10 @@ export const useBudgetStore = create((set, get) => ({
 
         const monthlyBudget = await firebaseBudgetServices.fetchMonthlyBudget(userId);
         set({ monthlyBudget });
+    },
+    fetchAllBudget: async (userId) => {
+        const allBudget = await firebaseBudgetServices.fetchAllBudget(userId);
+        set({ allBudget });
     },
     reset: () => {
         const unsubBudget = get()._unsubBudget;
