@@ -10,8 +10,10 @@ import ConfirmModal from "../../components/ui/ConfirmModal.jsx";
 import DeviceCard from "../../components/appliances/DeviceCard";
 import Header from "../../components/ui/Header.jsx";
 import { useDeviceStore } from "../../store/firebaseStore.js";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function devices() {
+    const insets = useSafeAreaInsets();
 
     const { devices, setDevices, userDevices, unpairedDevices, addDevice, fetchUserAppliances, userAppliances, updateDeviceNickname, deleteDevice } = useDeviceStore();
 
@@ -148,7 +150,7 @@ export default function devices() {
 
     return (
         <View className="bg-gray-100">
-            <ScrollView className=" p-4">
+            <ScrollView className=" p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
                 <Header />
                 {isLoading || disableDevice ? (
                     <View className="h-screen -mt-36 items-center justify-center">
@@ -164,7 +166,7 @@ export default function devices() {
                             <IconButton onPress={showAddDeviceModal} icon="plus-circle-outline" size={30} iconColor="#2E4F4F" />
                         </View>
                         {userDevices.length > 0 ? (
-                            <View className="px-5">
+                            <View>
                                 {userDevices.map((userDevice, index) => (
                                     <DeviceCard key={index} disabled={disableDevice} onPress={() => handleDecivcePressed(userDevice)} deviceData={userDevice} editDevice={() => showEditModal(userDevice)} deleteDevice={() => openConfirmModal(userDevice.id, "delete")} />
                                 ))}

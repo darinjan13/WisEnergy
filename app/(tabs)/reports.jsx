@@ -12,6 +12,7 @@ import ApplianceUsage from "../../components/reports/ApplianceUsage"
 import { Ionicons } from "@expo/vector-icons";
 import CustomProgressBar from "../../components/reports/CustomProgressBar";
 import { BlurView } from "expo-blur";
+import { set } from "date-fns";
 
 export default function reports() {
     const insets = useSafeAreaInsets();
@@ -23,7 +24,7 @@ export default function reports() {
     const [selectedDevice, setSelectedDevice] = useState();
 
     const [reportData, setReportData] = useState([]);
-    const [barData, setBarData] = useState([]);
+    const [reports, setReports] = useState([]);
     const [lineData1, setLineData1] = useState([]);
     const [lineData2, setLineData2] = useState([]);
 
@@ -31,7 +32,10 @@ export default function reports() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
+    const [reportLoading, setReportLoading] = useState(true);
     const [selectedAppliance, setSelectedAppliance] = useState(null);
+
+    const [maxProgress, setMaxProgress] = useState(10);
 
     const category = ["Monthly", "Weekly", "Daily"];
 
@@ -62,7 +66,6 @@ export default function reports() {
             return () => {
                 setTotalEnergyConsumption(0);
                 setReportCategory("Daily")
-                setBarData(undefined)
                 clearTimeout(timeout)
                 setIsLoading(true)
             };
@@ -74,16 +77,59 @@ export default function reports() {
         if (userAppliances.length === 0) fetchUserAppliances();
     }, [devices])
 
+    const fetchDailyReport1 = async (user_id, selectedDevice, appliances) => {
+        console.log("Fetching Daily Report");
+        setReportLoading(true);
+        await fetchDailyReport(user_id, selectedDevice, appliances);
+        console.log("Fetched Daily Report");
+    }
+    const fetchWeeklyReport1 = async (user_id, selectedDevice, appliances) => {
+        console.log("Fetching Weekly Report");
+        setReportLoading(true);
+        await fetchWeeklyReport(user_id, selectedDevice, appliances);
+        console.log("Fetched Weekly Report");
+    }
+
     useEffect(() => {
         if (selectedDevice != undefined) {
-            reportData.find((device) => {
-                if (device.device_id == selectedDevice) {
-                    fetchDailyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
-                    fetchWeeklyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
-                }
-            })
+
+            if (reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] == undefined) {
+                // console.log(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice]);
+                reportData.find((device) => {
+                    if (device.device_id == selectedDevice) {
+                        fetchDailyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                        fetchWeeklyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                    }
+                })
+            } else {
+                setReportLoading(false);
+                setReports(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] || []);
+            }
         }
-    }, [selectedDevice])
+    }, [selectedDevice, reportCategory])
+
+    useEffect(() => {
+        setReportLoading(true);
+        switch (reportCategory) {
+            case "Weekly":
+                setMaxProgress(50);
+                break;
+            case "Daily":
+                setMaxProgress(10);
+                break;
+            default:
+                break;
+        }
+
+    }, [reportCategory])
+
+    useEffect(() => {
+        if (reports.length > 0) {
+            setReportLoading(false)
+        } else {
+            setReportLoading(true)
+        }
+    }, [reports])
 
     useEffect(() => {
         setLineData1(allMonthlyTotalConsumption)
@@ -92,7 +138,8 @@ export default function reports() {
 
     useEffect(() => {
         if (Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0) {
-            setIsLoading(false)
+            setReports(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] || []);
+            // setIsLoading(false)
         }
     }, [reportHistory])
 
@@ -112,17 +159,9 @@ export default function reports() {
         )
     }
 
-    // const lineData2 = [
-    //     { value: monthlyBudget?.budget_kwh / monthlyBudget?.rate, dataPointText: "Budget" },
-    // ]
-
-    const lineData = [
-        { value: monthlyTotalConsumption, dataPointText: "Used" },
-    ]
-
     return (
         <View className="flex-1 bg-gray-100">
-            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
+            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
                 <Header />
                 {reportData.length === 0 ? (
                     <View className="h-screen -mt-36 items-center justify-center">
@@ -134,15 +173,6 @@ export default function reports() {
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Usage Report</Text>
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Savings Over Time</Text>
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-                            {/* <LineChart
-                                data={lineData1}
-                                data2={lineData2}
-                                thickness={2}
-                                color="#16a34a"
-                                areaChart
-                                yAxisThickness={0}
-                                xAxisThickness={0}
-                            /> */}
                             <LineChart
                                 data={lineData1}
                                 data2={lineData2}
@@ -190,7 +220,7 @@ export default function reports() {
                                             if (selectedDevice === itemValue) {
                                                 return
                                             } else {
-                                                setIsLoading(true);
+                                                setReportLoading(true);
                                                 setSelectedDevice(itemValue);
                                             }
                                         }}
@@ -208,46 +238,86 @@ export default function reports() {
                         </View>
 
                         <Text className="text-2xl font-bold text-[#14532d] mb-4">Appliance Usage</Text>
-                        {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 ? (
-                            <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
-                                {reportHistory?.[reportCategory.toLowerCase()]?.[selectedDevice]?.map((item, index) => {
-                                    // Ensure barData exists and has values
+                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                            {!reportLoading ? (
+                                reports.map((item, index) => {
                                     let powerUsed = item?.barData?.reduce((total, current) => total + current.value, 0) || 0;
 
-                                    // Adjust maxProgress based on your data. You may want to calculate it dynamically.
-                                    let maxProgress = 10;  // You can adjust this as needed, maybe based on a threshold.
-
-                                    // If powerUsed exceeds the maxProgress, set it to maxProgress to avoid overflow.
                                     if (powerUsed > maxProgress) {
                                         powerUsed = maxProgress;
                                     }
 
                                     return (
-                                        <TouchableOpacity onPress={() => {
-                                            setModalVisible(true); setSelectedAppliance(item);
-                                        }}>
-                                            <View className="w-full flex flex-row flex-wrap items-center mb-5" key={item.applianceName + index}>
-                                                <Text className="mr-5 w-24">{item.applianceName}</Text>
+                                        <TouchableOpacity
+                                            key={item.applianceName + index}
+                                            onPress={() => {
+                                                setModalVisible(true);
+                                                setSelectedAppliance(item);
+                                            }}
+                                        // className="mb-4"
+                                        >
+                                            <View className="w-full flex flex-row flex-wrap items-center">
+                                                <Text className="w-20">{item.applianceName}</Text>
                                                 <CustomProgressBar
-                                                    key={index}
                                                     progress={powerUsed}
                                                     maxProgress={maxProgress}
                                                     color="#4CAF50"
                                                 />
                                             </View>
                                         </TouchableOpacity>
-
                                     );
-                                })}
+                                })
+                            ) : (
+                                <View className="h-full p-4 flex-1 items-center justify-center">
+                                    <ActivityIndicator size="large" color="#166534" />
+                                    <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                                </View>
+                            )}
+                        </View>
+                        {/* {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 ? (
+                            <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                                {reportLoading ? (
+                                    reports?.map((item, index) => {
+                                        let powerUsed = item?.barData?.reduce((total, current) => total + current.value, 0) || 0;
+
+                                        let maxProgress = 10;
+
+                                        if (powerUsed > maxProgress) {
+                                            powerUsed = maxProgress;
+                                        }
+
+                                        return (
+                                            <TouchableOpacity
+                                                key={item.applianceName + index}
+                                                onPress={() => {
+                                                    setModalVisible(true);
+                                                    setSelectedAppliance(item);
+                                                }}
+                                                className="mb-4"
+                                            >
+                                                <View className="w-full flex flex-row flex-wrap items-center mb-5">
+                                                    <Text className="mr-5 w-24">{item.applianceName}</Text>
+                                                    <CustomProgressBar
+                                                        progress={powerUsed}
+                                                        maxProgress={maxProgress}
+                                                        color="#4CAF50"
+                                                    />
+                                                </View>
+                                            </TouchableOpacity>
+                                        );
+                                    })
+                                ) : (
+                                    <View className="h-full flex-1 items-center justify-center">
+                                        <ActivityIndicator size="large" color="#166534" />
+                                        <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                                    </View>
+                                )}
                             </View>
                         ) : (
-                            <View className="h-screen -mt-36 items-center justify-center">
-                                <ActivityIndicator size="large" color="#166534" />
-                                <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                            <View className="h-full flex-1 items-center justify-center">
+                                <Text className="text-gray-500 mt-4 text-lg font-semibold">No reports data...</Text>
                             </View>
-                        )}
-
-
+                        )} */}
                     </View>
                 )}
             </ScrollView>

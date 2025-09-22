@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
-import { auth } from "../../../firebase/firebaseConfig";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView } from "react-native";
+import { auth } from "../../firebase/firebaseConfig";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 
 export default function ChangePassword() {
     const router = useRouter();
@@ -52,48 +53,49 @@ export default function ChangePassword() {
     };
 
     return (
-        <View className="flex-1 bg-white px-6 pt-10">
-            <Text className="text-xl font-bold text-gray-800 mb-6">Change your Password</Text>
+        <KeyboardAvoidingView behavior="padding" className="flex-1 bg-white p-10">
+            <TouchableOpacity
+                onPress={() => router.back()}
+                className="w-10 -ml-5 mb-10"
+            >
+                <Feather name='arrow-left' size={30} color="#095333" />
+            </TouchableOpacity>
+            <Text className="text-3xl font-extrabold text-gray-800 mb-10">Change your Password</Text>
 
+            <Text className="mb-2 text-gray-700 font-bold">Current Password</Text>
             <TextInput
-                placeholder="Current Password"
+                placeholder="Enter Current Password"
                 secureTextEntry
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
-                className="border border-gray-300 rounded-md px-4 py-3 mb-4 text-gray-800"
+                className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
             />
+            <Text className="mb-2 text-gray-700 font-bold">New Password</Text>
             <TextInput
-                placeholder="New Password"
+                placeholder="Enter New Password"
                 secureTextEntry
                 value={newPassword}
                 onChangeText={setNewPassword}
-                className="border border-gray-300 rounded-md px-4 py-3 mb-4 text-gray-800"
+                className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
             />
+            <Text className="mb-2 text-gray-700 font-bold">Confirm Password</Text>
             <TextInput
                 placeholder="Confirm Password"
                 secureTextEntry
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                className="border border-gray-300 rounded-md px-4 py-3 mb-6 text-gray-800"
+                className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
             />
 
-            <TouchableOpacity
-                disabled={isLoading}
-                onPress={handleUpdatePassword}
-                className={`py-5 rounded-md mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}
-            >
-                <View className="h-5">
+            <View className="flex-1 justify-end mb-8">
+                <TouchableOpacity disabled={isLoading} onPress={handleUpdatePassword} className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}>
                     {!isLoading ? (
-                        <Text className="text-white text-center font-semibold">Update</Text>
+                        <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
                     ) : (
                         <ActivityIndicator size="small" color="white" />
                     )}
-                </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => router.back()} className="border border-gray-400 py-5 rounded-md">
-                <Text className="text-gray-700 text-center font-semibold">Cancel</Text>
-            </TouchableOpacity>
-        </View>
+                </TouchableOpacity>
+            </View>
+        </KeyboardAvoidingView>
     );
 }

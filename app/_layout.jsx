@@ -35,6 +35,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(admin)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(settings)" options={{ headerShown: false }} />
           <Stack.Screen
             name="appliances/[deviceId]/index"
             options={{ headerShown: false }}

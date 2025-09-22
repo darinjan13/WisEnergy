@@ -8,7 +8,7 @@ import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import '../../global.css';
 import useAuth from '@/hooks/useAuth';
-import { useBudgetStore, useUsageStore } from "../../store/firebaseStore";
+import TabBar from '@/components/ui/TabBar';
 import { auth, db } from '@/firebase/firebaseConfig';
 import { get, ref } from 'firebase/database';
 
@@ -60,7 +60,8 @@ export default function TabLayout() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
-      <Tabs
+      {/* <Tabs
+        tabBar={(props) => <TabBar {...props} />}
         screenOptions={{
           tabBarActiveTintColor: 'black',
           headerShown: false,
@@ -118,6 +119,12 @@ export default function TabLayout() {
             ),
           }}
         />
+      </Tabs> */}
+      <Tabs tabBar={(props) => <TabBar {...props} />}>
+        <Tabs.Screen name="index" options={{ title: 'Home', headerShown: false }} key={1} />
+        <Tabs.Screen name="devices" options={{ title: 'Devices', headerShown: false }} key={2} />
+        <Tabs.Screen name="reports" options={{ title: 'Reports', headerShown: false }} key={3} />
+        <Tabs.Screen name="budget" options={{ title: 'Budget', headerShown: false }} key={4} />
       </Tabs>
     </>
   );

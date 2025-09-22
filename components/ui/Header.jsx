@@ -1,8 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, TouchableWithoutFeedback } from 'react-native';
 import { Portal } from 'react-native-paper';
+import { auth } from '../../firebase/firebaseConfig';
 
 const Header = () => {
     const [notificationDropdownVisible, setNotificationDropdownVisible] = useState(false);
@@ -30,24 +31,48 @@ const Header = () => {
                 />
             </View>
 
-            <View className="">
+            <View className="flex-row items-center">
+                {/* Notification Bell */}
                 <TouchableOpacity
                     onPress={() => {
                         setNotificationDropdownVisible(!notificationDropdownVisible);
                         setHasUnread(false);
                     }}
                 >
-                    <Ionicons name="notifications-outline" size={24} color="black" />
-                    {/* {hasUnread && (
-                        <View className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full" />
-                    )} */}
+                    <View
+                        className="w-12 h-12 rounded-2xl bg-white items-center justify-center"
+                        style={{
+                            shadowColor: '#136B1E', // green glow
+                            shadowOffset: { width: 0, height: 3 },
+                            shadowOpacity: 0.35,
+                            shadowRadius: 5,
+                            elevation: 6,
+                        }}
+                    >
+                        <Ionicons name="notifications-outline" size={24} color="black" />
+                    </View>
                 </TouchableOpacity>
 
+                {/* User Avatar */}
+                <TouchableOpacity
+                    onPress={() => router.replace('/(settings)/settings')}
+                    className="ml-3"
+                >
+                    <View className="w-12 h-12 rounded-2xl bg-[#136B1E] items-center justify-center">
+                        <Text className="text-white text-lg font-bold">
+                            {auth.currentUser?.displayName
+                                ? auth.currentUser.displayName.substring(0, 2).toUpperCase()
+                                : "U"}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+
+                {/* Notification Dropdown */}
                 <Portal>
                     {notificationDropdownVisible && (
                         <TouchableWithoutFeedback onPress={handleCloseDropdown}>
                             <View className="absolute inset-0 z-40">
-                                <View className="absolute top-[60px] right-4 bg-white border border-gray-300 rounded shadow w-64 p-3 z-50">
+                                <View className="absolute top-[60px] right-4 bg-white border border-gray-300 rounded-xl shadow-md w-64 p-3 z-50">
                                     <Text className="text-sm text-gray-800">🔌 New usage report is ready!</Text>
                                     <Text className="text-sm text-gray-800 mt-2">⚡ You saved 12% this week!</Text>
                                 </View>
