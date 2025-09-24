@@ -9,24 +9,6 @@ const api = axios.create({
     }
 })
 
-export const fetchTotalUsers = async () => {
-    try {
-        const response = await api.get('/users')
-        return response.data
-    } catch (error) {
-        return null
-    }
-};
-
-export const fetchTotalDevices = async () => {
-    try {
-        const response = await api.get('/devices')
-        return response.data
-    } catch (error) {
-        return null
-    }
-};
-
 export const predidct_daily = async (userId, deviceId, appliance_name) => {
     try {
         const response = await api.get(`/predict/${userId}/${deviceId}/${appliance_name}`)

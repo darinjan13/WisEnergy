@@ -1,6 +1,6 @@
-import { ScrollView, Text } from 'react-native'
+import { ScrollView, Text, TouchableOpacity } from 'react-native'
 
-export default function Privacy() {
+export default function Privacy({ source, close }) {
     return (
         <ScrollView showsVerticalScrollIndicator={false}>
             {/* Effective Date + Version */}
@@ -64,6 +64,11 @@ export default function Privacy() {
                 information, as well as other rights provided under applicable data
                 protection laws.
             </Text>
+            {source && (
+                <TouchableOpacity onPress={close} className="mt-2 self-center bg-[#BE4949] px-6 py-2 rounded-md">
+                    <Text className="text-white">Close</Text>
+                </TouchableOpacity>
+            )}
         </ScrollView>
     )
 }

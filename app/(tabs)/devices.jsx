@@ -1,21 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import Toast from 'react-native-toast-message';
 import { BlurView } from "expo-blur";
+import { Feather } from "@expo/vector-icons";
 import { ActivityIndicator, IconButton } from "react-native-paper";
-import DropDownPicker from "react-native-dropdown-picker";
 
 import ConfirmModal from "../../components/ui/ConfirmModal.jsx";
 import DeviceCard from "../../components/appliances/DeviceCard";
 import Header from "../../components/ui/Header.jsx";
 import { useDeviceStore } from "../../store/firebaseStore.js";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Picker } from "@react-native-picker/picker";
 
 export default function devices() {
     const insets = useSafeAreaInsets();
 
-    const { devices, setDevices, userDevices, unpairedDevices, addDevice, fetchUserAppliances, userAppliances, updateDeviceNickname, deleteDevice } = useDeviceStore();
+    const { devices, setDevices, userDevices, unpairedDevices, addDevice, userAppliances, updateDeviceNickname, deleteDevice } = useDeviceStore();
 
     const [deviceCode, setDeviceCode] = useState("");
     const [device_nickname, setDeviceNickname] = useState("");
@@ -34,7 +35,7 @@ export default function devices() {
     useFocusEffect(
         useCallback(() => {
             if (devices.length === 0) setDevices();
-            if (userAppliances.length === 0) fetchUserAppliances();
+            // if (userAppliances.length === 0) fetchUserAppliances();
             const timeout = setTimeout(() => {
                 if (devices.length > 0 && userAppliances.length > 0) {
                     setIsLoading(false);
@@ -150,7 +151,7 @@ export default function devices() {
 
     return (
         <View className="bg-gray-100">
-            <ScrollView className=" p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
+            <ScrollView className="p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
                 <Header />
                 {isLoading || disableDevice ? (
                     <View className="h-screen -mt-36 items-center justify-center">
@@ -161,9 +162,12 @@ export default function devices() {
                     </View>
                 ) : (
                     <>
-                        < View className="flex-row items-center justify-between mb-5">
+                        < View className="flex-row items-center justify-between mb-10">
                             <Text className="text-2xl font-bold text-[#2E4F4F]">Devices</Text>
-                            <IconButton onPress={showAddDeviceModal} icon="plus-circle-outline" size={30} iconColor="#2E4F4F" />
+                            <TouchableOpacity className=" rounded-3xl bg-white items-center justify-center">
+                                <Feather className="p-1" onPress={showAddDeviceModal} name="plus" size={20} color="#2E4F4F" />
+
+                            </TouchableOpacity>
                         </View>
                         {userDevices.length > 0 ? (
                             <View>
@@ -204,38 +208,32 @@ export default function devices() {
                             className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50"
                         />
                         {action !== "edit" ? (<>
-                            <View className="mb-4">
-                                <DropDownPicker
-                                    open={dropDownOpen}
-                                    value={selectedUnpairedDevice}
-                                    items={unpairedDevices}
-                                    setOpen={setDropDownOpen}
-                                    setValue={setSelectedUnpairedDevice}
-                                    placeholder="Select Device"
-                                    style={{
-                                        borderColor: "#d1d5db",
-                                    }}
-                                    placeholderStyle={{
-                                        color: "#6b7280",
-                                    }}
-                                    dropDownContainerStyle={{
-                                        borderColor: "#d1d5db",
-                                    }}
-                                    selectedItemLabelStyle={{
-                                        color: '#36a25e',
-                                    }}
-                                />
+                            <View className="border border-gray-300 rounded-xl mb-4 overflow-hidden">
+                                <Picker
+                                    selectedValue={selectedUnpairedDevice}
+                                    onValueChange={(itemValue) => setSelectedUnpairedDevice(itemValue)}
+                                >
+                                    <Picker.Item label="Select Device" value={null} />
+                                    {unpairedDevices.map((device, idx) => (
+                                        <Picker.Item
+                                            key={idx}
+                                            label={device.label || device.name || `Device ${idx + 1}`}
+                                            value={device.value || device.id || device}
+                                        />
+                                    ))}
+                                </Picker>
+
                             </View>
-                            <View className="border border-gray-300 rounded-lg mb-6 px-4 bg-gray-50 flex-row items-center">
+                            <View className="border border-gray-300 rounded-lg mb-6 bg-gray-50 flex-row items-center">
                                 <TextInput
                                     editable={!isLoading}
-                                    className="flex-1 py-4 text-base text-gray-800"
+                                    className="flex-1 p-4 text-base text-gray-800"
                                     placeholder="Enter Device password"
                                     secureTextEntry={!showPassword}
                                     value={deviceCode}
                                     onChangeText={setDeviceCode}
                                 />
-                                <IconButton style={{ marginRight: -15 }} onPress={() => setShowPassword(!showPassword)} icon={showPassword ? "eye-off" : "eye-outline"} iconColor="gray" />
+                                <IconButton className="" onPress={() => setShowPassword(!showPassword)} icon={showPassword ? "eye-off" : "eye-outline"} iconColor="gray" />
 
                             </View></>
                         ) : null}

@@ -5,7 +5,7 @@ import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { get, ref, set } from "firebase/database";
-import { clearStates, useBudgetStore, useUsageStore } from "@/store/firebaseStore";
+import { clearStates, useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
@@ -32,6 +32,7 @@ export default function useAuth() {
     const [user, setUser] = useState(null);
     const [checkingAuth, setCheckingAuth] = useState(true);
     const router = useRouter();
+    const { unsubscribeFromUserAppliances } = useDeviceStore();
     const { unsubscribeFromMonthlyTotalConsumption } = useUsageStore();
     const { unsubscribeToBudget } = useBudgetStore();
 
@@ -121,6 +122,7 @@ export default function useAuth() {
             clearStates();
             unsubscribeFromMonthlyTotalConsumption();
             unsubscribeToBudget();
+            unsubscribeFromUserAppliances()
             Toast.show({
                 type: "success",
                 text1: "Logged out",

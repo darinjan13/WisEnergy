@@ -1,6 +1,6 @@
-import { Text, ScrollView } from "react-native";
+import { Text, ScrollView, TouchableOpacity } from "react-native";
 
-export default function TermsOfService() {
+export default function TermsOfService({ source, close }) {
 
     return (
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -102,6 +102,11 @@ export default function TermsOfService() {
             <Text className="text-gray-700">
                 🏢 WisEnergy Support Office, Mandaue City, Cebu, Philippines
             </Text>
+            {source && (
+                <TouchableOpacity onPress={close} className="mt-2 self-center bg-[#BE4949] px-6 py-2 rounded-md">
+                    <Text className="text-white">Close</Text>
+                </TouchableOpacity>
+            )}
         </ScrollView>
     );
 }

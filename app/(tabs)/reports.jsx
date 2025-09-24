@@ -74,27 +74,22 @@ export default function reports() {
 
     useEffect(() => {
         if (devices.length === 0) setDevices();
-        if (userAppliances.length === 0) fetchUserAppliances();
+        // if (userAppliances.length === 0) fetchUserAppliances();
     }, [devices])
 
     const fetchDailyReport1 = async (user_id, selectedDevice, appliances) => {
-        console.log("Fetching Daily Report");
         setReportLoading(true);
         await fetchDailyReport(user_id, selectedDevice, appliances);
-        console.log("Fetched Daily Report");
     }
     const fetchWeeklyReport1 = async (user_id, selectedDevice, appliances) => {
-        console.log("Fetching Weekly Report");
         setReportLoading(true);
         await fetchWeeklyReport(user_id, selectedDevice, appliances);
-        console.log("Fetched Weekly Report");
     }
 
     useEffect(() => {
         if (selectedDevice != undefined) {
 
             if (reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] == undefined) {
-                // console.log(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice]);
                 reportData.find((device) => {
                     if (device.device_id == selectedDevice) {
                         fetchDailyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
@@ -254,15 +249,20 @@ export default function reports() {
                                                 setModalVisible(true);
                                                 setSelectedAppliance(item);
                                             }}
-                                        // className="mb-4"
+                                            className="mb-4"
                                         >
-                                            <View className="w-full flex flex-row flex-wrap items-center">
+                                            <View className="w-full flex-row items-center">
+                                                {/* Appliance name */}
                                                 <Text className="w-20">{item.applianceName}</Text>
-                                                <CustomProgressBar
-                                                    progress={powerUsed}
-                                                    maxProgress={maxProgress}
-                                                    color="#4CAF50"
-                                                />
+
+                                                {/* Progress bar takes remaining space */}
+                                                <View className="flex-1 ml-2">
+                                                    <CustomProgressBar
+                                                        progress={powerUsed}
+                                                        maxProgress={maxProgress}
+                                                        color="#4CAF50"
+                                                    />
+                                                </View>
                                             </View>
                                         </TouchableOpacity>
                                     );

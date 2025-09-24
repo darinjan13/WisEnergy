@@ -8,6 +8,8 @@ export const useDeviceStore = create((set, get) => ({
     userDevices: [],
     unpairedDevices: [],
     userAppliances: [],
+    todayTrend: null,
+    _unsubUserAppliances: null,
     setDevices: async () => {
         const data = await firebaseDevicesServices.fetchDevices();
         const userDevices = firebaseDevicesServices.setUserDevices(data);
@@ -23,9 +25,26 @@ export const useDeviceStore = create((set, get) => ({
         const updatedDevices = await firebaseDevicesServices.setDeviceApplianceName(devices, deviceId, applianceName);
         set({ devices: updatedDevices });
     },
-    fetchUserAppliances: async () => {
-        const userAppliances = await firebaseDevicesServices.fetchUserAppliances();
-        set({ userAppliances });
+    // fetchUserAppliances: async () => {
+    //     const userAppliances = await firebaseDevicesServices.fetchUserAppliances();
+    //     set({ userAppliances });
+    // },
+    listenToUserAppliances: (userId) => {
+        const unsubscribe = firebaseDevicesServices.listenToUserAppliances(userId,
+            (userAppliances) => {
+                set({ userAppliances });
+            }
+        );
+
+        set({ _unsubUserAppliances: unsubscribe });
+    },
+
+    unsubscribeFromUserAppliances: () => {
+        const unsubUserAppliances = get()._unsubUserAppliances
+        if (unsubUserAppliances) {
+            unsubMonthly();
+            set({ _unsubUserAppliances: null })
+        }
     },
     setApplianceActive: async (userId, deviceId, applianceName, active) => {
         await firebaseDevicesServices.setApplianceActive(userId, deviceId, applianceName, active);
@@ -66,12 +85,15 @@ export const useDeviceStore = create((set, get) => ({
             };
         });
     },
+
+
     reset: () =>
         set({
             devices: [],
             userDevices: [],
             unpairedDevices: [],
             userAppliances: [],
+            _unsubUserAppliances: null,
         }),
 }));
 
@@ -92,7 +114,7 @@ export const useUsageStore = create((set, get) => ({
         weekly: null,
         monthly: null
     },
-
+    todayTrend: null,
     subscribeToMonthlyTotalConsumption: (userId) => {
         if (get()._unsubMonthly) return;
 
@@ -161,8 +183,14 @@ export const useUsageStore = create((set, get) => ({
     },
     fetchAllMonthlyTotalConsumption: async (userId) => {
         const allMonthlyTotalConsumption = await firebaseUsageServices.fetchAllMonthlyTotalConsumption(userId)
-        
+
         set({ allMonthlyTotalConsumption })
+    },
+    fetchTodayTrend: async (userId) => {
+        const todayTrend = await firebaseUsageServices.fetchTodayTrend(userId);
+        set({
+            todayTrend
+        })
     },
     reset: () => {
         // cleanup listener if still active
@@ -177,6 +205,7 @@ export const useUsageStore = create((set, get) => ({
             summaryPerDevice: {},
             totalConsumptionByDate: {},
             lastFetched: { daily: null, weekly: null, monthly: null },
+            todayTrend: null
         });
     },
 }));

@@ -18,34 +18,10 @@ export default function TabLayout() {
   const { user, checkingAuth } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  const getUserRole = async (uid) => {
-    setIsLoading(true);
-    try {
-      const userRef = ref(db, 'users/' + uid);
-      const snapshot = await get(userRef);
-      if (snapshot.exists()) {
-        const userData = snapshot.val()
-        if (userData.role === 'admin')
-          router.replace('/(admin)/dashboard');
-        setIsLoading(false);
-        return;
-      } else {
-        return null;
-      }
-    } catch (error) {
-      return null;
-    }
-  };
-
   useEffect(() => {
 
     if (!checkingAuth && !user) {
       router.replace('/(auth)/login');
-    } else {
-      const fetchUserRole = async () => {
-        await getUserRole(auth.currentUser?.uid);
-      };
-      fetchUserRole();
     }
   }, [checkingAuth, user, router, auth]);
 

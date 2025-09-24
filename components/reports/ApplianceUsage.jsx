@@ -1,11 +1,12 @@
 import { List } from 'react-native-paper';
-import { LineChart } from 'react-native-gifted-charts';
+import { BarChart, LineChart } from 'react-native-gifted-charts';
 import { View, Text, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { getMonthName } from '../../utils/dateHelper';
 
-export default function ApplianceUsage({ category, data, styles }) {
-    const monthValue = data[0]?.month || "";
+export default function ApplianceUsage({ category, data }) {
+    const monthValue = data.barData[0]?.month || "";
+
     // const isExpanded = expandedIndex === index;
     return (
         <View /*style={style.barGraph}*/ className="bg-white p-5 rounded-2xl mt-20 mb-4 shadow-xl">
@@ -25,9 +26,9 @@ export default function ApplianceUsage({ category, data, styles }) {
                 width={250}             // Adjust width as needed
                 height={250}            // Adjust height for better visualization
                 maxValue={Math.max(...data.barData.map(b => b.value)) + 2}  // Ensure dynamic max value
-                spacing={40}            // Adjust spacing between points
+                spacing={50}            // Adjust spacing between points
                 initialSpacing={30}     // Adjust initial spacing for better readability
-                noOfSections={5}        // You can adjust this based on your data
+                noOfSections={category === "Daily" ? 3 : 5}        // You can adjust this based on your data
 
                 curved
                 thickness={3}
@@ -43,33 +44,58 @@ export default function ApplianceUsage({ category, data, styles }) {
                 xAxisIndicesColor="#e5e7eb"
                 yAxisIndicesColor="#e5e7eb"
             />
+            {/* <BarChart
+                data={data.barData}
+                barWidth={category === "Daily" ? 25 : category === "Weekly" ? 35 : 25}
+                frontColor="#16a34a"
+                spacing={10}
+                initialSpacing={7}
+                yAxisThickness={0}
+                xAxisLabelTextStyle={{ color: "#4B5563", fontSize: 10 }}
+                maxValue={Math.max(...data.barData.map(b => b.value)) + 2}
+                topLabelTextStyle={{ fontSize: 12 }}
+                noOfSections={category === "Daily" ? 3 : category === "Weekly" ? 4 : 1}
+                width={250}
+                barStyle={style.barStyle}
+                showValuesAsTopLabel={true}
+                showTextOnPress={true}
+                renderTooltip={category === "Weekly" ? (
+                    (item, index) => {
+                        return (
+                            <View
+                                style={{
+                                    marginBottom: 2,
+                                    marginLeft: 25,
+                                    backgroundColor: "#FFFFFF",
+                                    paddingHorizontal: 6,
+                                    paddingVertical: 4,
+                                    borderRadius: 4,
+                                }}>
+                                <Text>{item.date}</Text>
+                            </View>
+                        );
+                    }
+                ) : null}
+            /> */}
 
             {/* <LineChart
-                                data={appliance.barData}
-                                data2={appliance.barData2}
-                                endSpacing={30}
-                                curved
-                                height={260}
-                                width={250}
-                                spacing={50}
-                                thickness={3}
-                                color1="#064e3b"
-                                color2="#10b981"
-                                dataPointsHeight={10}
-                                dataPointsWidth={10}
-                                textColor1="#064e3b"
-                                textColor2="#10b981"
-                                dataPointsRadius={6}
-                                dataPointsStrokeWidth={2}
-                                dataPointsStrokeColor="white"
-                                focusEnabled
-                                showDataPointOnFocus
-                                showStripOnFocus
-                                showLegends
-                                legend1="Historical"
-                                legend2="Predicted"
-                                legendTextColor="#111827"
-                            /> */}
+                data={data.barData}     // historical data
+                data2={data.barData2}   // predicted data
+                width={250}             // Adjust width as needed
+                height={250}            // Adjust height for better visualization
+                maxValue={Math.max(...data.barData.map(b => b.value)) + 2}  // Ensure dynamic max value
+                spacing={40}            // Adjust spacing between points
+                initialSpacing={30}     // Adjust initial spacing for better readability
+                noOfSections={5}
+                thickness={3}
+                color1="#064e3b"
+                color2="#10b981"
+                dataPointsHeight={10}
+                dataPointsWidth={10}
+                textColor1="#064e3b"
+                textColor2="#10b981"
+                showDataPointOnFocus
+            /> */}
             <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
                     <View style={{ width: 14, height: 14, backgroundColor: '#095333', borderRadius: 2, marginRight: 6 }} />

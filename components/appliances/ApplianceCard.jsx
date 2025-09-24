@@ -1,5 +1,6 @@
-import { Card, Text, IconButton, RadioButton } from 'react-native-paper';
-import { StyleSheet, View } from 'react-native';
+import { Card, Text, RadioButton } from 'react-native-paper';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, onDelete, selectedAppliance, onChange }) {
 
@@ -12,9 +13,15 @@ export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, 
                     titleStyle={cardStyles.title}
                     subtitleStyle={cardStyles.subtitle}
                     right={(props) => (
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <IconButton iconColor='#2E4F4F' icon="pencil" onPress={onEdit} />
-                            <IconButton iconColor='red' icon="delete" onPress={onDelete} />
+                        <View className="flex-row justify-between items-center pr-4">
+                            <View className="flex-row justify-between items-center gap-8 pr-5">
+                                <TouchableOpacity onPress={onEdit} >
+                                    <Feather name="edit" color="#2E4F4F" size={20} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={onDelete} >
+                                    <MaterialCommunityIcons name="trash-can" color="red" size={20} />
+                                </TouchableOpacity>
+                            </View>
                             <RadioButton
                                 value={appliance.name}
                                 status={selectedAppliance === appliance.name ? 'checked' : 'unchecked'}

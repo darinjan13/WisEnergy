@@ -1,22 +1,24 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
     ScrollView,
-    Image,
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
+    Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AuthHeader from "../../components/ui/AuthHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAuth from "../../hooks/useAuth";
-import DropDownPicker from "react-native-dropdown-picker";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Checkbox } from "react-native-paper";
+import { Picker } from "@react-native-picker/picker";
+import { BlurView } from "expo-blur";
+import TermsOfService from "../../components/ui/Terms";
+import Privacy from "../../components/ui/Privacy";
 
 export default function RegisterForm() {
     const router = useRouter();
@@ -36,9 +38,9 @@ export default function RegisterForm() {
 
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
     const [errors, setErrors] = useState({});
-    const [location, setLocation] = useState();
-    const [open, setOpen] = useState(false);
+    const [choice, setChoice] = useState("")
     const [items, setItems] = useState([
         { label: "Lapu-Lapu City", value: "Lapu-Lapu City" },
         { label: "Mandaue City", value: "Mandaue City" }
@@ -125,29 +127,24 @@ export default function RegisterForm() {
                     </View>
 
                     <View className={`${!errors.location ? "mb-4" : "mb-9"} mr-1 max-h-14`}>
-                        <DropDownPicker
-                            listMode="SCROLLVIEW"
-                            open={open}
-                            value={form.location}
-                            items={items}
-                            setOpen={setOpen}
-                            setValue={(callback) => {
-                                const value = callback(form.location);
-                                handleChange("location", value);
-                            }}
-                            setItems={setItems}
-                            placeholder="Select Location"
-                            style={errors.location ? { borderColor: "#eF4444" } : { borderColor: "#d1d5db" }}
-                            placeholderStyle={{
-                                color: "#6b7280",
-                            }}
-                            dropDownContainerStyle={{
-                                borderColor: "#d1d5db",
-                            }}
-                            selectedItemLabelStyle={{
-                                color: '#36a25e',
-                            }}
-                        />
+                        <View
+                            className="rounded-xl overflow-hidden"
+                            style={errors.location ? { borderColor: "#eF4444", borderWidth: 1 } : { borderColor: "#d1d5db", borderWidth: 1 }}
+                        >
+                            <Picker
+                                selectedValue={form.location}
+                                onValueChange={(value) => handleChange("location", value)}
+                            >
+                                <Picker.Item label="Select Location" value={""} color="#6b7280" />
+                                {items.map((item, index) => (
+                                    <Picker.Item
+                                        key={index}
+                                        label={item.label}
+                                        value={item.value}
+                                    />
+                                ))}
+                            </Picker>
+                        </View>
                         {errors.location && (
                             <Text className="text-red-500 text-xs mt-1">{errors.location}</Text>
                         )}
@@ -187,11 +184,16 @@ export default function RegisterForm() {
                             <TouchableOpacity onPress={() => setAcceptTerms(!acceptTerms)}>
                                 <Text className="text-gray-600 text-center">
                                     Accept{" "}
-                                    <Text className="text-green-700 font-semibold">Terms of Service</Text>{" "}
-                                    and <Text className="text-green-700 font-semibold">Privacy Policy</Text>
+
                                 </Text>
                             </TouchableOpacity>
-
+                            <TouchableOpacity onPress={() => { setModalVisible(true); setChoice("terms") }}>
+                                <Text className="text-green-700 font-semibold">Terms of Service</Text>
+                            </TouchableOpacity>
+                            <Text> and </Text>
+                            <TouchableOpacity onPress={() => { setModalVisible(true); setChoice("privacy") }}>
+                                <Text className="text-green-700 font-semibold">Privacy Policy</Text>
+                            </TouchableOpacity>
                         </View>
                         {errors.terms && (
                             <Text className="text-red-500 text-xs mt-1">{errors.terms}</Text>
@@ -228,6 +230,22 @@ export default function RegisterForm() {
                     </Text>
                 </ScrollView>
             </KeyboardAvoidingView>
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
+                    <View className="bg-white rounded-xl p-6 w-11/12 m-10">
+                        {choice === "terms" ? (
+                            <TermsOfService source={"register"} close={() => setModalVisible(false)} />
+                        ) : (
+                            <Privacy source={"register"} close={() => setModalVisible(false)} />
+                        )}
+                    </View>
+                </BlurView>
+            </Modal>
         </SafeAreaView >
     );
 }

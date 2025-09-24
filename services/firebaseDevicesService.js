@@ -1,4 +1,4 @@
-import { get, ref, update } from 'firebase/database';
+import { get, off, onValue, ref, update } from 'firebase/database';
 import { auth, db } from '../firebase/firebaseConfig';
 
 export const fetchDevices = async () => {
@@ -28,6 +28,69 @@ export const setUnpairedDevices = (devices) => {
             value: deviceData.id
         }));
 }
+
+export const listenToUserAppliances = (userId, callback) => {
+    const appliancesRef = ref(db, `appliances/${userId}`);
+
+    const handler = (snapshot) => {
+
+        if (!snapshot.exists()) {
+            callback([]);
+            return;
+        }
+
+        const userAppliances = [];
+
+        snapshot.forEach((deviceSnap) => {
+            const deviceId = deviceSnap.key;
+
+            const appliances = [];
+            deviceSnap.forEach((applianceSnap) => {
+                const data = applianceSnap.val();
+
+                appliances.push({
+                    name: applianceSnap.key,
+                    added_at: data.added_at,
+                });
+            });
+
+            userAppliances.push({ id: deviceId, appliances });
+        });
+
+        callback(userAppliances);
+    };
+
+    onValue(appliancesRef, handler);
+
+    // Proper unsubscribe
+    return () => off(appliancesRef, "value", handler);
+};
+
+
+// export const listenToUserAppliances = (callback) => {
+//     const appliancesRef = ref(db, `appliances/${auth.currentUser?.uid}`);
+
+//     const unsubscribe = onValue(appliancesRef, (snapshot) => {
+//         const userAppliances = [];
+
+//         snapshot.forEach((deviceSnap) => {
+//             const deviceId = deviceSnap.key;
+//             const appliances = [];
+//             deviceSnap.forEach((applianceSnap) => {
+//                 appliances.push({
+//                     name: applianceSnap.key,
+//                     added_at: applianceSnap.val().added_at,
+//                 });
+//             });
+//             userAppliances.push({ id: deviceId, appliances });
+//         });
+
+//         callback(userAppliances);
+//     });
+
+//     // return unsubscribe function
+//     return () => off(appliancesRef, "value", unsubscribe);
+// };
 
 export const fetchUserAppliances = async () => {
     const appliancesRef = ref(db, `appliances/${auth.currentUser?.uid}`);
@@ -66,7 +129,13 @@ export const setDeviceApplianceName = async (devices, deviceId, applianceName) =
 
 export const setApplianceActive = async (userId, deviceId, applianceName, active) => {
     const appliancesRef = ref(db, `appliances/${userId}/${deviceId}/${applianceName.replace(/ /g, "_")}`);
-    await update(appliancesRef, { is_active: active });
+    const applianceSnapshot = await get(appliancesRef)
+    if (applianceSnapshot.exists()) {
+        if (applianceSnapshot.val().added_at !== undefined) {
+            await update(appliancesRef, { is_active: active });
+        }
+
+    }
 }
 
 export const setOnlyOneActive = async (userId, deviceId, newActiveAppliance) => {

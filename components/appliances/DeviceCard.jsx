@@ -1,5 +1,6 @@
 import { Card, Text, IconButton } from "react-native-paper";
 import { View, StyleSheet } from "react-native";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function DeviceCard({ disabled, onPress, deviceData, editDevice, deleteDevice }) {
     return (
@@ -9,9 +10,9 @@ export default function DeviceCard({ disabled, onPress, deviceData, editDevice, 
                 titleStyle={styles.title}
                 subtitleStyle={styles.subtitle}
                 right={() => (
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <IconButton disabled={deviceData.status === "unpaired"} icon="pencil" iconColor="#2E4F4F" onPress={editDevice} />
-                        <IconButton disabled={deviceData.status === "unpaired"} icon="delete" iconColor="red" onPress={deleteDevice} />
+                    <View className="flex-row justify-between items-center gap-8 pr-5">
+                        <Feather disabled={deviceData.status === "unpaired"} name="edit" color="#2E4F4F" size={24} onPress={editDevice} />
+                        <MaterialCommunityIcons disabled={deviceData.status === "unpaired"} name="trash-can" color="red" size={24} onPress={deleteDevice} />
                     </View>
                 )}
             />

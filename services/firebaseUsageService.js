@@ -27,6 +27,55 @@ export const listenToLatestKwh = (userId, deviceId, applianceName, callback) => 
     return () => off(kwhRef, 'value', unsubscribe);
 };
 
+export const fetchTodayTrend = async (userId) => {
+    try {
+        const today = format(new Date(), "yyyy-MM-dd", { timeZone: "Asia/Manila" });
+
+        const summaryRef = ref(db, `daily_summary/${userId}`);
+        const snapshot = await get(summaryRef);
+
+        if (!snapshot.exists()) {
+            console.log("⚠️ No daily summary found.");
+            return null;
+        }
+
+        // prepare 6 groups of 4 hours
+        const buckets = {
+            "12am-4am": 0,
+            "4am-8am": 0,
+            "8am-12pm": 0,
+            "12pm-4pm": 0,
+            "4pm-8pm": 0,
+            "8pm-12am": 0,
+        };
+
+        snapshot.forEach((deviceSnap) => {
+            deviceSnap.forEach((applianceSnap) => {
+                const todayData = applianceSnap.child(today);
+                if (!todayData.exists()) return;
+
+                const hourly = todayData.child("hourly");
+                hourly.forEach((hourSnap) => {
+                    const hour = parseInt(hourSnap.key.split(":")[0]); // "18:00" -> 18
+                    const value = parseFloat(hourSnap.val()) || 0;
+
+                    if (hour >= 0 && hour < 4) buckets["12am-4am"] += value;
+                    else if (hour >= 4 && hour < 8) buckets["4am-8am"] += value;
+                    else if (hour >= 8 && hour < 12) buckets["8am-12pm"] += value;
+                    else if (hour >= 12 && hour < 16) buckets["12pm-4pm"] += value;
+                    else if (hour >= 16 && hour < 20) buckets["4pm-8pm"] += value;
+                    else if (hour >= 20 && hour < 24) buckets["8pm-12am"] += value;
+                });
+            });
+        });
+
+        return buckets;
+    } catch (error) {
+        return null;
+    }
+};
+
+
 export const fetchLatestKwhOnce = async (userId, deviceId, applianceName) => {
     const kwhRef = ref(db, `appliances/${userId}/${deviceId}/${applianceName}/latest_kwh`)
     const kwhSnapshot = await get(kwhRef);

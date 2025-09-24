@@ -6,7 +6,7 @@ export default function ConfirmModal({ visible, onCancel, onConfirm, action }) {
     const isReset = action === 'reset';
     return (
         <Modal
-            transparent
+            transparent={true}
             visible={visible}
             animationType="fade"
             onRequestClose={onCancel}
