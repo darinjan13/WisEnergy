@@ -161,7 +161,7 @@ export const useUsageStore = create((set, get) => ({
         }))
     },
     fetchWeeklyReport: async (userId, deviceId, appliances) => {
-        const data = await firebaseUsageServices.getCacheWeeklyReport(userId, deviceId, appliances);
+        const data = await firebaseUsageServices.getCachedWeeklyReport(userId, deviceId, appliances);
 
         set(state => ({
             reportHistory: {

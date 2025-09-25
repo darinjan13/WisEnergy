@@ -4,7 +4,7 @@ import { getLastNDays, getLastNWeeks, getLastNMonths } from '../utils/dateHelper
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as predictionServices from './apiService'
 import { format } from "date-fns-tz";
-import { getDailyReportCache, saveDailyReportCache } from '../utils/asyncStorageUtils';
+import { getDailyReportCache, getReportCache, saveDailyReportCache, saveReportCache } from '../utils/asyncStorageUtils';
 
 export const listenToLatestPower = (userId, deviceId, applianceName, date, callback, latestKwh) => {
     const powerRef = ref(db, `usage/${userId}/${deviceId}/${applianceName}/${date}`);
@@ -97,10 +97,10 @@ export const fetchMonthlyTotalConsumption = (userId, callback) => {
 }
 
 export const getCachedDailyReport = async (userId, deviceId, appliances) => {
-    const isCached = await getDailyReportCache(userId, deviceId)
+    const dailyApplianceReport = await getReportCache("appliance", "daily", userId, deviceId);
 
-    if (isCached) {
-        return isCached;
+    if (dailyApplianceReport) {
+        return dailyApplianceReport;
     }
     const fresh = await fetchDailyReport(userId, deviceId, appliances)
 
@@ -113,6 +113,8 @@ export const getCachedDailyReport = async (userId, deviceId, appliances) => {
             );
 
             if (!predictions) {
+                console.log(item.applianceName);
+                
                 return item
             }
 
@@ -128,9 +130,99 @@ export const getCachedDailyReport = async (userId, deviceId, appliances) => {
             }
         })
     )
-    await saveDailyReportCache(userId, deviceId, updatedData)
+    
+    await saveReportCache("appliance", "daily", userId, deviceId, updatedData);
     return updatedData
 }
+
+export const fetchDailyTotalReports = async (userId, days = 5) => {
+    const dates = getLastNDays(days);
+    const usageData = [];
+
+    for (const date of dates) {
+        const usageRef = ref(db, `daily_total_consumption/${userId}/${date}`);
+        const snapshot = await get(usageRef);
+
+        if (snapshot.exists()) {
+            usageData.push({
+                date,
+                total_kWh: snapshot.val().total_kWh || 0
+            });
+        } else {
+            usageData.push({
+                date,
+                total_kWh: 0 // ensure continuity
+            });
+        }
+    }
+
+    return usageData;
+};
+
+export const getCachedDeviceDailyReport = async (userId, deviceId) => {
+    const dailyDeviceReport = await getReportCache("device", "daily", userId, deviceId);
+    if (dailyDeviceReport) {
+        return dailyDeviceReport;
+    }
+
+    const fresh = await fetchDeviceDailyReport(userId, deviceId);
+
+    const predictions = await predictionServices.predict_device_daily(userId, deviceId);
+
+    let barData2 = [];
+    if (predictions) {
+        barData2 = Object.entries(predictions).map(([date, obj]) => ({
+            label: date.slice(5), // MM-DD
+            value: Number(obj.predicted_kWh.toFixed(2)),
+            dataPointText: Number(obj.predicted_kWh.toFixed(2))
+        }));
+    }
+
+    const updatedData = {
+        ...fresh,
+        barData2
+    };
+
+    await saveReportCache("device", "daily", userId, deviceId, freshData);
+
+    return updatedData;
+};
+
+export const fetchDeviceDailyReport = async (userId, deviceId, days = 5) => {
+    const dates = getLastNDays(days);
+    const usageData = [];
+
+    for (const date of dates) {
+        const dailyRef = ref(db, `daily_summary/${userId}/${deviceId}`);
+        const deviceSnap = await get(dailyRef);
+
+        let totalForDate = 0;
+
+        if (deviceSnap.exists()) {
+            deviceSnap.forEach((applianceSnap) => {
+                const dateNode = applianceSnap.child(date);
+                if (dateNode.exists()) {
+                    const total_kWh = dateNode.val().total_kWh || 0;
+                    totalForDate += total_kWh;
+                }
+            });
+        }
+
+        const rounded = Number(totalForDate.toFixed(2));
+
+        usageData.push({
+            label: date.slice(5),
+            value: rounded,
+            dataPointText: rounded
+        });
+    }
+
+    return {
+        deviceId,
+        barData: usageData
+    };
+};
+
 
 export const fetchDailyReport = async (userId, deviceId, appliances) => {
     const dates = getLastNDays(5)
@@ -163,6 +255,43 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
     }
 
     return usageData;
+}
+
+export const getCachedWeeklyReport = async (userId, deviceId, appliances) => {
+    const weeklyApplianceReport = await getReportCache("appliance", "daily", userId, deviceId);
+
+    if (weeklyApplianceReport) {
+
+        return weeklyApplianceReport;
+    }
+    const fresh = await fetchWeeklyReport(userId, deviceId, appliances)
+
+    const updatedData = await Promise.all(
+        fresh.map(async (item) => {
+            const predictions = await predictionServices.predidct_daily(
+                userId,
+                deviceId,
+                item.applianceName
+            );
+
+            if (!predictions) {
+                return item
+            }
+
+            const barData2 = Object.entries(predictions).map(([date, obj]) => ({
+                label: date.slice(5),
+                value: Number(obj.predicted_kWh.toFixed(2)),
+                dataPointText: Number(obj.predicted_kWh.toFixed(2)),
+
+            }))
+            return {
+                ...item,
+                barData2
+            }
+        })
+    )
+    await saveReportCache("appliance", "daily", userId, deviceId, updatedData);
+    return updatedData
 }
 
 export const getCacheWeeklyReport = async (userId, deviceId, appliances) => {

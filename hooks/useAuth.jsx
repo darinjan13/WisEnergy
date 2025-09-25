@@ -7,6 +7,7 @@ import Toast from "react-native-toast-message";
 import { get, ref, set } from "firebase/database";
 import { clearStates, useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clearReportCache } from "@/utils/asyncStorageUtils";
 
 const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
     const userRef = ref(db, "users/" + user_id);
@@ -117,8 +118,9 @@ export default function useAuth() {
     const logout = useCallback(async (setIsLoading) => {
         try {
             router.replace("/(auth)/login");
+            await clearReportCache(auth?.currentUser.uid);
             await signOut(auth);
-            await AsyncStorage.clear();
+            // await AsyncStorage.clear();
             clearStates();
             unsubscribeFromMonthlyTotalConsumption();
             unsubscribeToBudget();

@@ -12,6 +12,8 @@ const api = axios.create({
 export const predidct_daily = async (userId, deviceId, appliance_name) => {
     try {
         const response = await api.get(`/predict/${userId}/${deviceId}/${appliance_name}`)
+        console.log(response.data);
+        
         return response.data.predictions;
     } catch (error) {
         return null
