@@ -6,6 +6,8 @@ import { getMonthName } from '../../utils/dateHelper';
 
 export default function ApplianceUsage({ category, data }) {
     const monthValue = data.barData[0]?.month || "";
+    console.log(data.barData2);
+    
 
     // const isExpanded = expandedIndex === index;
     return (
@@ -25,7 +27,7 @@ export default function ApplianceUsage({ category, data }) {
                 data2={data.barData2}   // predicted data
                 width={250}             // Adjust width as needed
                 height={250}            // Adjust height for better visualization
-                maxValue={Math.max(...data.barData.map(b => b.value)) + 2}  // Ensure dynamic max value
+                maxValue={Math.max(...data.barData2.map(b => b.value)) + 2}  // Ensure dynamic max value
                 spacing={50}            // Adjust spacing between points
                 initialSpacing={30}     // Adjust initial spacing for better readability
                 noOfSections={category === "Daily" ? 3 : 5}        // You can adjust this based on your data

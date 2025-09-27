@@ -73,6 +73,11 @@ export default function reports() {
     );
 
     useEffect(() => {
+        console.log("Reportssss:", reports);
+        
+    }, [reports])
+
+    useEffect(() => {
         if (devices.length === 0) setDevices();
         // if (userAppliances.length === 0) fetchUserAppliances();
     }, [devices])
@@ -171,7 +176,7 @@ export default function reports() {
                             <LineChart
                                 data={lineData1}
                                 data2={lineData2}
-                                height={250}
+                                height={200}
                                 showVerticalLines
                                 spacing={44}
                                 initialSpacing={30}
@@ -200,13 +205,35 @@ export default function reports() {
                             ))}
                         </View>
 
-                        <View className="flex-row justify-between mb-2 text-center">
+                        {/* <View className="flex-row justify-between mb-2 text-center">
                             <Text className="text-2xl font-bold text-[#14532d] my-auto">{reportCategory} Energy Consumption</Text>
                             <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption?.toFixed(2)} kWh</Text>
-                        </View>
+                        </View> */}
 
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
                             <View className="flex-row items-center justify-between">
+                                <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
+                                <View className="flex-1 border border-gray-300 rounded-xl overflow-hidden">
+                                    <Picker
+                                        selectedValue={selectedDevice}
+                                        onValueChange={(itemValue) => {
+                                            if (selectedDevice === itemValue) {
+                                                return
+                                            } else {
+                                                setReportLoading(true);
+                                                setSelectedDevice(itemValue);
+                                            }
+                                        }}
+                                    >
+                                        {reportData.map((userDevice) => (
+                                            <Picker.Item
+                                                key={userDevice.device_id}
+                                                label={userDevice.device_nickname || "Unnamed Device"}
+                                                value={userDevice.device_id}
+                                            />
+                                        ))}
+                                    </Picker>
+                                </View>
                                 <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
                                 <View className="flex-1 border border-gray-300 rounded-xl overflow-hidden">
                                     <Picker
