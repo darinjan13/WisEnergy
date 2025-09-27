@@ -7,7 +7,7 @@ import {
     ActivityIndicator,
     Image
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Fontisto, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import AuthHeader from "../../components/ui/AuthHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -86,8 +86,8 @@ export default function LoginForm() {
 
                 {/* Email Input */}
                 <View className="mb-4">
-                    <View className="flex-row items-center border border-gray-300 rounded-md p-3">
-                        <Feather name="user" size={18} color="gray" />
+                    <View className={`flex-row items-center border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3 bg-gray-100`}>
+                        <MaterialIcons name='email' size={18} color="gray" />
                         <TextInput
                             className="ml-2 flex-1"
                             placeholder="Enter Email Address"
@@ -105,8 +105,8 @@ export default function LoginForm() {
 
                 {/* Password Input */}
                 <View className="mb-4">
-                    <View className="flex-row items-center border border-gray-300 rounded-md p-3">
-                        <Feather name="lock" size={18} color="gray" />
+                    <View className={`flex-row items-center border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md p-3 bg-gray-100`}>
+                        <Fontisto name='locked' size={18} color="gray" />
                         <TextInput
                             className="ml-2 flex-1"
                             placeholder="Enter Password"

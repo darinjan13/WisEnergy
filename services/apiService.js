@@ -1,13 +1,22 @@
 import axios from "axios"
 
 const api = axios.create({
-    baseURL: 'https://wisenergy-backend.onrender.com',
-    // baseURL: 'http://192.168.1.5:10000',
-    timeout: 5000,
+    // baseURL: 'https://wisenergy-backend.onrender.com',
+    baseURL: 'http://192.168.1.7:10000',
+    timeout: 20000,
     headers: {
         'Content-Type': 'application/json'
     }
 })
+
+export const daily_ai_insights = async (userId, date) => {
+    try {
+        const response = await api.get(`/generate-recommendations/${userId}/${date}`)
+        return response.data
+    } catch (error) {
+        return null
+    }
+}
 
 export const predidct_daily = async (userId, deviceId, appliance_name) => {
     try {
@@ -18,10 +27,10 @@ export const predidct_daily = async (userId, deviceId, appliance_name) => {
     }
 }
 
-export const generate_otp = async (email) => {
+export const generate_otp = async (email, userVerification) => {
     try {
         const response = await api.post(`/generate-otp`, {
-            email
+            email, userVerification
         })
         return { success: true, message: response.data.message };
     } catch (error) {

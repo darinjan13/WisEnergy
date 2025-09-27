@@ -19,6 +19,7 @@ import { Picker } from "@react-native-picker/picker";
 import { BlurView } from "expo-blur";
 import TermsOfService from "../../components/ui/Terms";
 import Privacy from "../../components/ui/Privacy";
+import { Feather, Fontisto, Ionicons, MaterialIcons } from "@expo/vector-icons";
 
 export default function RegisterForm() {
     const router = useRouter();
@@ -81,31 +82,39 @@ export default function RegisterForm() {
     return (
         <SafeAreaView>
             <AuthHeader />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="h-full bg-white rounded-t-[40px] p-6">
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="h-full bg-white rounded-t-[40px] px-6 py-10">
                 <ScrollView>
                     <Text className="text-2xl font-bold text-center text-gray-800 mb-10">
                         Create A New Account
                     </Text>
                     <View className="flex-row justify-between mb-4 gap-2">
-                        <View className="flex-1">
-                            <TextInput
-                                placeholder="First Name"
-                                value={form.firstName}
-                                onChangeText={(text) => handleChange("firstName", text)}
-                                className={`border px-3 py-4 rounded-md bg-white ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
-                            />
+                        <View className="flex-1 mr-1">
+                            <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
+                                <Feather name='user' size={18} color="gray" />
+                                <TextInput
+                                    placeholder="First Name"
+                                    value={form.firstName}
+                                    onChangeText={(text) => handleChange("firstName", text)}
+                                    className={`ml-2  ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
+                                />
+
+                            </View>
                             {errors.firstName && (
                                 <Text className="text-red-500 text-xs mt-1">{errors.firstName}</Text>
                             )}
                         </View>
 
                         <View className="flex-1 mr-1">
-                            <TextInput
-                                placeholder="Last Name"
-                                value={form.lastName}
-                                onChangeText={(text) => handleChange("lastName", text)}
-                                className={`border px-3 py-4 rounded-md bg-white ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
-                            />
+                            <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
+                                <Feather name='user' size={18} color="gray" />
+                                <TextInput
+                                    placeholder="Last Name"
+                                    value={form.lastName}
+                                    onChangeText={(text) => handleChange("lastName", text)}
+                                    className={`ml-2  ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
+                                />
+
+                            </View>
                             {errors.lastName && (
                                 <Text className="text-red-500 text-xs mt-1">{errors.lastName}</Text>
                             )}
@@ -113,29 +122,39 @@ export default function RegisterForm() {
                     </View>
 
                     <View className="mb-4 mr-1">
-                        <TextInput
-                            placeholder="Email"
-                            value={form.email}
-                            onChangeText={(text) => handleChange("email", text)}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            className={`border px-3 py-4 rounded-md bg-white ${errors.email ? "border-red-500" : "border-gray-300"}`}
-                        />
+                        <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
+                            <MaterialIcons name='email' size={18} color="gray" />
+                            <TextInput
+                                placeholder="Email"
+                                value={form.email}
+                                onChangeText={(text) => handleChange("email", text)}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                className={`ml-2 flex-1 ${errors.email ? "border-red-500" : "border-gray-300"}`}
+                            />
+
+                        </View>
                         {errors.email && (
                             <Text className="text-red-500 text-xs mt-1">{errors.email}</Text>
                         )}
                     </View>
-
-                    <View className={`${!errors.location ? "mb-4" : "mb-9"} mr-1 max-h-14`}>
+                    <View className="mb-4 mr-1">
                         <View
-                            className="rounded-xl overflow-hidden"
-                            style={errors.location ? { borderColor: "#eF4444", borderWidth: 1 } : { borderColor: "#d1d5db", borderWidth: 1 }}
+                            className={`flex-row items-center rounded-lg bg-gray-100 border ${errors.location ? "border-red-500" : "border-gray-300"
+                                }`}
                         >
+                            <Ionicons
+                                name="location-outline"
+                                size={18}
+                                color="gray"
+                                style={{ marginLeft: 8 }}
+                            />
                             <Picker
                                 selectedValue={form.location}
                                 onValueChange={(value) => handleChange("location", value)}
+                                style={{ flex: 1, color: form.location ? "black" : "#6b7280", padding: 3 }}
                             >
-                                <Picker.Item label="Select Location" value={""} color="#6b7280" />
+                                <Picker.Item label="Select Location" value="" color="#6b7280" />
                                 {items.map((item, index) => (
                                     <Picker.Item
                                         key={index}
@@ -145,32 +164,41 @@ export default function RegisterForm() {
                                 ))}
                             </Picker>
                         </View>
+
                         {errors.location && (
                             <Text className="text-red-500 text-xs mt-1">{errors.location}</Text>
                         )}
                     </View>
 
                     <View className="mb-4 mr-1">
-                        <TextInput
-                            placeholder="Password"
-                            value={form.password}
-                            onChangeText={(text) => handleChange("password", text)}
-                            secureTextEntry={!showPassword}
-                            className={`border px-3 py-4 rounded-md bg-white ${errors.password ? "border-red-500" : "border-gray-300"}`}
-                        />
+                        <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
+                            <Fontisto name='locked' size={20} color="gray" />
+                            <TextInput
+                                placeholder="Password"
+                                value={form.password}
+                                onChangeText={(text) => handleChange("password", text)}
+                                secureTextEntry={!showPassword}
+                                className={`ml-2 flex-1 ${errors.password ? "border-red-500" : "border-gray-300"}`}
+                            />
+
+                        </View>
                         {errors.password && (
                             <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>
                         )}
                     </View>
 
                     <View className="mb-4 mr-1">
-                        <TextInput
-                            placeholder="Confirm Password"
-                            value={form.confirmPassword}
-                            onChangeText={(text) => handleChange("confirmPassword", text)}
-                            secureTextEntry
-                            className={`border px-3 py-4 rounded-md bg-white ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
-                        />
+                        <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
+                            <Fontisto name='locked' size={20} color="gray" />
+                            <TextInput
+                                placeholder="Confirm Password"
+                                value={form.confirmPassword}
+                                onChangeText={(text) => handleChange("confirmPassword", text)}
+                                secureTextEntry
+                                className={`ml-2 flex-1 ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
+                            />
+
+                        </View>
                         {errors.confirmPassword && (
                             <Text className="text-red-500 text-xs mt-1">{errors.confirmPassword}</Text>
                         )}

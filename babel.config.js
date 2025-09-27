@@ -14,7 +14,8 @@ module.exports = function (api) {
                         "@components": "./components",
                         "@hooks": "./hooks",
                     }
-                }
+                },
+                "react-native-worklets/plugin"
             ],
             'react-native-reanimated/plugin'],
     };

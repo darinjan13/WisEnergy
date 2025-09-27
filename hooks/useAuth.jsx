@@ -7,6 +7,8 @@ import Toast from "react-native-toast-message";
 import { get, ref, set } from "firebase/database";
 import { clearStates, useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { generate_otp } from "@/services/apiService";
+import { clearCache } from "@/utils/asyncStorageUtils";
 
 const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
     const userRef = ref(db, "users/" + user_id);
@@ -24,6 +26,7 @@ const saveUserDetails = async (user_id, location, email, first_name, last_name, 
         notify_smart_recommendation: false,
         notify_high_usage_alerts: false,
         notify_system_updates: false,
+        verified: false,
     });
 }
 
@@ -76,6 +79,7 @@ export default function useAuth() {
         setIsLoading(true);
         try {
             await signInWithEmailAndPassword(auth, email, password);
+            const uid = auth.currentUser.uid
             const userRef = ref(db, 'users/' + auth.currentUser.uid);
 
             const snapshot = await get(userRef);
@@ -83,8 +87,15 @@ export default function useAuth() {
                 throw new Error("User data not found.");
             }
             const userData = snapshot.val();
-            if (userData.role === 'admin') {
-                router.replace("/(admin)/dashboard");
+
+            if (userData.verified === false || userData.verified === undefined) {
+
+                const result = await generate_otp(email, true)
+                if (result.success)
+                    router.navigate({
+                        pathname: '/forgotPassword/verification',
+                        params: { email, from: "login", uid },
+                    });
             } else {
                 Toast.show({
                     type: "success",
@@ -117,9 +128,9 @@ export default function useAuth() {
     const logout = useCallback(async (setIsLoading) => {
         try {
             router.replace("/(auth)/login");
-            await signOut(auth);
-            await AsyncStorage.clear();
             clearStates();
+            clearCache();
+            await signOut(auth);
             unsubscribeFromMonthlyTotalConsumption();
             unsubscribeToBudget();
             unsubscribeFromUserAppliances()

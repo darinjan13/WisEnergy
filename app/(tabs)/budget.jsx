@@ -9,11 +9,13 @@ import { db, auth } from "../../firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
 import { BlurView } from "expo-blur";
-import { useBudgetStore, useUsageStore } from "../../store/firebaseStore";
+import { useAiGeneratedStore, useBudgetStore, useUsageStore } from "../../store/firebaseStore";
 import BudgetModal from "../../components/budget/SetBudget";
+import AIInsightsCarousel from "../../components/ai/Messages";
 
 export default function Budget() {
   const insets = useSafeAreaInsets();
+  const { recommendations } = useAiGeneratedStore();
   const { locationRate, fetchLocationRate, monthlyBudget, percentUsed } = useBudgetStore();
   const { monthlyTotalConsumption } = useUsageStore();
 
@@ -147,13 +149,15 @@ export default function Budget() {
               </View>
             </View>
 
-            <View className="bg-white px-4 py-3 rounded-xl flex-row items-start space-x-3" style={styles.cardShadow}>
-              <MaterialCommunityIcons name="lightbulb-on-outline" size={24} color="#16a34a" />
-              <View className="flex-1">
-                <Text className="text-sm text-gray-800 font-semibold mb-1">Smart Tip</Text>
-                <Text className="text-sm text-gray-600">
-                  Reduce air conditioner usage from 2PM-6PM to stay under budget.
-                </Text>
+            <View className="bg-white p-4 rounded-xl flex-row" style={styles.cardShadow}>
+              <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color="#16a34a" />
+              <View className="flex">
+                <Text className="text-2xl font-extrabold mb-4">Smart Recommendations</Text>
+                {recommendations && recommendations.length > 0 ? (
+                  <AIInsightsCarousel insights={recommendations} />
+                ) : (
+                  <Text className="text-gray-400">No insights available</Text>
+                )}
               </View>
             </View>
           </View>

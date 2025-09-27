@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import * as firebaseDevicesServices from '../services/firebaseDevicesService'
 import * as firebaseUsageServices from '../services/firebaseUsageService'
 import * as firebaseBudgetServices from '../services/firebaseBudgetService'
+import { daily_ai_insights } from '@/services/apiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const useDeviceStore = create((set, get) => ({
     devices: [],
@@ -97,6 +99,59 @@ export const useDeviceStore = create((set, get) => ({
         }),
 }));
 
+export const useAiGeneratedStore = create((set) => ({
+    insights: [],
+    recommendations: [],
+
+    fetchDailyAiGeneratedContent: async (userId, date) => {
+        const key = `@ai_insights:${userId}:${date}`;
+
+        try {
+            // 1. Check cache
+            const cachedStr = await AsyncStorage.getItem(key);
+            if (cachedStr) {
+                const cached = JSON.parse(cachedStr);
+
+                if (cached.timestamp === date) {
+                    set({
+                        insights: cached.data.insights || [],
+                        recommendations: cached.data.recommendations || [],
+                    });
+                    return cached.data;
+                }
+            }
+
+            // 2. Fetch fresh
+            const result = await daily_ai_insights(userId, date);
+            if (result) {
+                const { insights = [], recommendations = [] } = result;
+
+                // update store
+                set({ insights, recommendations });
+
+                // 3. Save cache
+                await AsyncStorage.setItem(
+                    key,
+                    JSON.stringify({
+                        timestamp: date,
+                        data: { insights, recommendations },
+                    })
+                );
+
+                return { insights, recommendations };
+            }
+        } catch (err) {
+            console.error("AI fetch error:", err);
+        }
+    },
+    reset: () =>
+        set({
+            insights: [],
+            recommendations: [],
+        }),
+}));
+
+
 export const useUsageStore = create((set, get) => ({
     monthlyTotalConsumption: 0,
     allMonthlyTotalConsumption: [],
@@ -115,6 +170,18 @@ export const useUsageStore = create((set, get) => ({
         monthly: null
     },
     todayTrend: null,
+    topAppliances: [],
+    fetchTopAppliances: async (userId) => {
+        try {
+            const top = await firebaseUsageServices.fetchTopAppliances(userId);
+            set({ topAppliances: top });
+            return top;
+        } catch (err) {
+            console.error("Error in store.fetchTopAppliances:", err);
+            set({ topAppliances: [] });
+            return [];
+        }
+    },
     subscribeToMonthlyTotalConsumption: (userId) => {
         if (get()._unsubMonthly) return;
 
@@ -205,7 +272,8 @@ export const useUsageStore = create((set, get) => ({
             summaryPerDevice: {},
             totalConsumptionByDate: {},
             lastFetched: { daily: null, weekly: null, monthly: null },
-            todayTrend: null
+            todayTrend: null,
+            topAppliances: []
         });
     },
 }));
@@ -274,4 +342,5 @@ export const clearStates = () => {
     useDeviceStore.getState().reset();
     useUsageStore.getState().reset();
     useBudgetStore.getState().reset();
+    useAiGeneratedStore.getState().reset();
 };

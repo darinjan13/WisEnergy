@@ -40,7 +40,8 @@ export default function ApplianceUsage({ category, data }) {
                 xAxisColor="#d1d5db"    // Light gray for the X axis
                 yAxisColor="#d1d5db"    // Light gray for the Y axis
                 textColor="#111827"     // Dark color for text
-                textShiftX={10}         // Adjust text shift for better alignment
+                textShiftX={5}         // Adjust text shift for better alignment
+                textShiftY={-10}
                 xAxisIndicesColor="#e5e7eb"
                 yAxisIndicesColor="#e5e7eb"
             />

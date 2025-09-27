@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Header from '../../components/ui/Header';
 import { auth } from '../../firebase/firebaseConfig';
-import { useBudgetStore, useDeviceStore, useUsageStore } from '../../store/firebaseStore';
+import { useAiGeneratedStore, useBudgetStore, useDeviceStore, useUsageStore } from '../../store/firebaseStore';
 import BudgetModal from '../../components/budget/SetBudget';
-import { ProgressBar } from 'react-native-paper';
 import CustomProgressBar from '../../components/reports/CustomProgressBar';
+import { format } from 'date-fns-tz';
+import AIInsightsCarousel from '../../components/ai/Messages';
 
 export default function Dashboard() {
     const insets = useSafeAreaInsets();
     const [modalVisible, setModalVisible] = useState(false);
     const { devices, setDevices, listenToUserAppliances } = useDeviceStore();
-    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend } = useUsageStore();
+    const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
+    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances } = useUsageStore();
     const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget, } = useBudgetStore();
     const [efficiency, setEfficiency] = useState(0);
     const [daysRemaining, setDaysRemaining] = useState(0);
@@ -25,9 +27,10 @@ export default function Dashboard() {
 
     useFocusEffect(
         useCallback(() => {
+
             if (devices.length === 0) setDevices();
-            fetchTodayTrend(auth.currentUser?.uid)
             listenToUserAppliances(auth?.currentUser?.uid);
+            fetchTodayTrend(auth.currentUser?.uid)
             if (locationRate == 0 || monthlyBudget === null) {
                 fetchLocationRate(auth.currentUser?.uid);
                 subscribeToBudget(auth.currentUser?.uid);
@@ -37,6 +40,26 @@ export default function Dashboard() {
             }
         }, [devices.length, locationRate, monthlyTotalConsumption, monthlyBudget])
     )
+
+    const fetchDailyInsights = async () => {
+        console.log("Fetching Ai Insights");
+
+        const now = Date.now()
+        const todayStr = format(now, "yyyy-MM-dd", { timeZone: "Asia/Manila" })
+        await fetchDailyAiGeneratedContent(auth?.currentUser.uid, todayStr)
+    }
+    useEffect(() => {
+        console.log(insights.length);
+
+        if (auth?.currentUser?.uid && insights.length <= 0) {
+            fetchDailyInsights();
+        }
+        if (auth?.currentUser?.uid && topAppliances.length <= 0) {
+            console.log("Fetching top Appliances");
+
+            fetchTopAppliances(auth?.currentUser?.uid)
+        }
+    }, [auth?.currentUser?.uid]);
 
     useEffect(() => {
         if (monthlyBudget?.budget_php === 0) {
@@ -58,7 +81,7 @@ export default function Dashboard() {
     useEffect(() => {
         const user = auth?.currentUser;
         if (user) {
-            setUserName(user.displayName || "User");
+            setUserName("User");
         }
     }, []);
 
@@ -100,7 +123,7 @@ export default function Dashboard() {
                         {/* Welcome Back + Stats */}
                         <View className="flex-row justify-between items-center mb-6">
                             {/* Left Welcome Card */}
-                            <View className="bg-white rounded-2xl p-4 shadow w-[55%] h-full">
+                            <View className="bg-white rounded-2xl p-4 w-[55%] h-full" style={styles.cardShadow}>
                                 <Text className="text-2xl font-extrabold mb-6">
                                     Welcome Back, {userName}!
                                 </Text>
@@ -112,7 +135,7 @@ export default function Dashboard() {
                             {/* Right Side Cards */}
                             <View className="w-[43%] flex-col h-full">
                                 {/* Devices */}
-                                <View className="bg-white rounded-xl shadow p-4 mb-3">
+                                <View className="bg-white rounded-xl p-4 mb-3" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="power-plug-outline" size={30} color="gray" />
                                         <Text className="font-bold text-green-600 text-2xl">
@@ -123,7 +146,7 @@ export default function Dashboard() {
                                 </View>
 
                                 {/* Energy */}
-                                <View className="bg-white rounded-xl shadow p-4">
+                                <View className="bg-white rounded-xl p-4" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="lightning-bolt-outline" size={30} color="gray" />
                                         <Text className="font-extrabold text-green-600 text-2xl">{monthlyTotalConsumption}</Text>
@@ -138,7 +161,7 @@ export default function Dashboard() {
 
 
                         {/* Today's Energy Trend */}
-                        <View className="bg-white rounded-2xl p-4 mb-6 shadow">
+                        <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
                             <Text className="text-2xl font-extrabold mb-2">Today's Energy Trend</Text>
                             <Text className="text-gray-500 text-sm mb-4">
                                 Tap a bar to see exact time range & kWh
@@ -154,7 +177,7 @@ export default function Dashboard() {
                         </View>
 
                         {/* Monthly Goals */}
-                        <View className="bg-white rounded-2xl p-4 mb-6 shadow">
+                        <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
                             <Text className="text-2xl font-extrabold mb-2">Monthly Goals</Text>
                             <View className="flex-row justify-between">
                                 <Text className="text-gray-500 mb-2">Current: ₱{(monthlyTotalConsumption * locationRate).toFixed(2)}</Text>
@@ -170,27 +193,31 @@ export default function Dashboard() {
                         </View>
 
                         {/* Top Appliances */}
-                        <View className="bg-white rounded-2xl p-4 mb-6 shadow">
+                        <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
                             <Text className="text-2xl font-extrabold mb-4">Top Appliances</Text>
-                            {[
-                                { name: "Air Conditioner", kwh: "100kWh" },
-                                { name: "Electric Fan", kwh: "90kWh" },
-                                { name: "Humidifier", kwh: "60kWh" },
-                            ].map((appliance, i) => (
-                                <View key={i} className="flex-row justify-between mb-2">
-                                    <Text className="text-gray-700">{appliance.name}</Text>
-                                    <Text className="font-semibold">{appliance.kwh}</Text>
-                                </View>
-                            ))}
+
+                            {topAppliances.length > 0 ? (
+                                topAppliances.map((appliance, i) => (
+                                    <View key={i} className="flex-row justify-between mb-2">
+                                        <Text className="text-gray-700">{appliance.name}</Text>
+                                        <Text className="font-semibold">{appliance.kwh} kWh</Text>
+                                    </View>
+                                ))
+                            ) : (
+                                <Text className="text-gray-400">No usage data available</Text>
+                            )}
                         </View>
 
                         {/* AI Insights */}
-                        <View className="bg-white rounded-2xl p-4 shadow">
-                            <Text className="text-2xl font-extrabold mb-2">AI Insights</Text>
-                            <Text className="text-gray-600 text-sm">
-                                Turning off your humidifier helps reduce unnecessary standby power when humidity levels are already optimal.
-                            </Text>
-                        </View></>
+                        <View className="bg-white rounded-2xl p-4" style={styles.cardShadow}>
+                            <Text className="text-2xl font-extrabold mb-4">AI Insights</Text>
+                            {insights && insights.length > 0 ? (
+                                <AIInsightsCarousel insights={insights} />
+                            ) : (
+                                <Text className="text-gray-400">No insights available</Text>
+                            )}
+                        </View>
+                    </>
                 )}
             </ScrollView>
             <BudgetModal

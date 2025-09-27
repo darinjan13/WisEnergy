@@ -4,7 +4,7 @@ import { getLastNDays, getLastNWeeks, getLastNMonths } from '../utils/dateHelper
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as predictionServices from './apiService'
 import { format } from "date-fns-tz";
-import { getDailyReportCache, saveDailyReportCache } from '../utils/asyncStorageUtils';
+import { getDailyReportCache, getWeeklyReportCache, saveDailyReportCache, saveWeeklyReportCache } from '../utils/asyncStorageUtils';
 
 export const listenToLatestPower = (userId, deviceId, applianceName, date, callback, latestKwh) => {
     const powerRef = ref(db, `usage/${userId}/${deviceId}/${applianceName}/${date}`);
@@ -75,6 +75,56 @@ export const fetchTodayTrend = async (userId) => {
     }
 };
 
+export const fetchTopAppliances = async (userId, limit = 5) => {
+    const key = `@overall_top_appliances:${userId}`;
+
+    try {
+        // 1. Check cache
+        const cachedStr = await AsyncStorage.getItem(key);
+        if (cachedStr) {
+            const cached = JSON.parse(cachedStr);
+            return cached.data;
+        }
+
+        // 2. Fetch all daily_summary for this user
+        const summaryRef = ref(db, `daily_summary/${userId}`);
+        const snapshot = await get(summaryRef);
+
+        if (!snapshot.exists()) {
+            console.log("⚠️ No daily summary found for top appliances.");
+            return [];
+        }
+
+        const totals = {}; // { applianceName: total_kWh }
+
+        snapshot.forEach((deviceSnap) => {
+            deviceSnap.forEach((applianceSnap) => {
+                applianceSnap.forEach((dateSnap) => {
+                    const total = dateSnap.child("total_kWh").val() || 0;
+                    const name = applianceSnap.key;
+                    if (!totals[name]) totals[name] = 0;
+                    totals[name] += total;
+                });
+            });
+        });
+
+        // 3. Convert + sort
+        const appliances = Object.entries(totals).map(([name, kwh]) => ({
+            name,
+            kwh: Number(kwh.toFixed(2)),
+        }));
+
+        const top = appliances.sort((a, b) => b.kwh - a.kwh).slice(0, limit);
+
+        // 4. Cache result (no expiry unless you clear it)
+        await AsyncStorage.setItem(key, JSON.stringify({ data: top }));
+
+        return top;
+    } catch (err) {
+        console.error("Error fetching overall top appliances:", err);
+        return [];
+    }
+};
 
 export const fetchLatestKwhOnce = async (userId, deviceId, applianceName) => {
     const kwhRef = ref(db, `appliances/${userId}/${deviceId}/${applianceName}/latest_kwh`)
@@ -166,28 +216,18 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
 }
 
 export const getCacheWeeklyReport = async (userId, deviceId, appliances) => {
-    const key = `@weekly_report:${userId}:${deviceId}`;
-    const cacheStr = await AsyncStorage.getItem(key)
+    const isCached = await getWeeklyReportCache(userId, deviceId);
 
-    const now = Date.now()
-    const todayStr = format(now, "yyyy-MM-dd", { timeZone: "Asia/Manila" })
-
-    if (cacheStr) {
-        const cached = JSON.parse(cacheStr)
-        if (cached.timestamp === todayStr) {
-            return cached.data
-        }
+    if (isCached) {
+        return isCached;
     }
 
     const fresh = await fetchWeeklyReport(userId, deviceId, appliances);
 
-    await AsyncStorage.setItem(key, JSON.stringify({
-        timestamp: todayStr,
-        data: fresh
-    }))
+    await saveWeeklyReportCache(userId, deviceId, fresh);
 
     return fresh;
-}
+};
 
 export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
     const date = new Date();
