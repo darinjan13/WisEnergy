@@ -107,7 +107,7 @@ export default function useAuth() {
                 else
                     await AsyncStorage.removeItem('rememberedUser')
                 setIsLoading(false);
-                router.replace("/(tabs)");
+                router.replace("/(tabs)/dashboard");
             }
         } catch (e) {
             let message = "An error occurred. Please try again.";

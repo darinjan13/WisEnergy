@@ -46,7 +46,6 @@ export default function Budget() {
       setBudget(monthlyBudget?.budget_php || 0);
       setLoading(false);
     } else {
-      console.log(monthlyBudget?.budget_php);
       setModalVisible(true)
     }
   }, [monthlyBudget]);

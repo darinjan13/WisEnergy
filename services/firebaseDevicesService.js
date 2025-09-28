@@ -50,6 +50,7 @@ export const listenToUserAppliances = (userId, callback) => {
 
                 appliances.push({
                     name: applianceSnap.key,
+                    nickname: data.appliance_nickname || null,
                     added_at: data.added_at,
                 });
             });

@@ -1,20 +1,22 @@
 import { Stack } from 'expo-router'
 import '../../global.css';
-import { StatusBar } from 'react-native';
-import { DefaultTheme, PaperProvider, ThemeProvider } from 'react-native-paper';
+import { StatusBar, useColorScheme } from 'react-native';
+import { PaperProvider } from 'react-native-paper';
 export default function AuthLayout() {
+    const colorScheme = useColorScheme();
     return (
         <PaperProvider>
-            <ThemeProvider theme={DefaultTheme}>
-                <StatusBar barStyle='dark-content' backgroundColor='white' />
-                <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name='login' />
-                    <Stack.Screen name='register' />
-                    <Stack.Screen name="forgotPassword/index" />
-                    <Stack.Screen name="forgotPassword/verification" />
-                    <Stack.Screen name="forgotPassword/resetpassword" />
-                </Stack>
-            </ThemeProvider>
+            <StatusBar
+                barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+                backgroundColor={colorScheme === "dark" ? "#000000" : "#ffffff"}
+            />
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name='login' />
+                <Stack.Screen name='register' />
+                <Stack.Screen name="forgotPassword/index" />
+                <Stack.Screen name="forgotPassword/verification" />
+                <Stack.Screen name="forgotPassword/resetpassword" />
+            </Stack>
         </PaperProvider>
     )
 }

@@ -2,19 +2,19 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import { Text, View, BackHandler, Alert, ScrollView, Modal, TextInput, TouchableOpacity } from "react-native";
 
-import { auth, db } from "../../../firebase/firebaseConfig";
-import ApplianceCard from "../../../components/appliances/ApplianceCard";
+import { auth, db } from "@/firebase/firebaseConfig"
+import ApplianceCard from "@/components/appliances/ApplianceCard";
 import { ActivityIndicator, RadioButton } from "react-native-paper";
-import { useDeviceStore, useUsageStore } from "../../../store/firebaseStore";
-import Header from "../../../components/ui/Header";
-import useApplianceStreams from "../../../hooks/useApplianceStreams";
-import ConfirmModal from "../../../components/ui/ConfirmModal";
+import { useDeviceStore, useUsageStore } from "@/store/firebaseStore";
+import Header from "@/components/ui/Header";
+import useApplianceStreams from "@/hooks/useApplianceStreams";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { BlurView } from "expo-blur";
 import { get, ref, remove, set, update } from "firebase/database";
 import Toast from "react-native-toast-message";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AddApplianceModal from "../../../components/appliances/AddApplianceModal";
+import AddApplianceModal from "@/components/appliances/AddApplianceModal";
 import { format } from "date-fns-tz";
 
 export default function DeviceDetails() {
@@ -28,7 +28,7 @@ export default function DeviceDetails() {
     const [isLoading, setIsLoading] = useState(false);
     const [action, setAction] = useState(null);
     const [applianceId, setApplianceId] = useState(null);
-    const [applianceName, setApplianceName] = useState("");
+    const [applianceNickname, setApplianceNickname] = useState("");
     const [device, setDevice] = useState(null);
 
     const [applianceKWh, setApplianceKWh] = useState(0);
@@ -82,10 +82,7 @@ export default function DeviceDetails() {
     }, [device?.appliance_name]);
 
     const onBackPress = () => {
-        Alert.alert("Hold on!", "Are you sure you want to go back?", [
-            { text: "Cancel", style: "cancel" },
-            { text: "Yes", onPress: () => router.back() },
-        ]);
+        router.back()
         return true;
     };
 
@@ -105,7 +102,8 @@ export default function DeviceDetails() {
 
     const showEditModal = (appliance) => {
         setAction("edit");
-        setApplianceName(appliance.name);
+        setApplianceId(appliance.name);
+        setApplianceNickname(appliance.nickname);
         setModalVisible(true);
     };
 
@@ -145,42 +143,37 @@ export default function DeviceDetails() {
 
 
     const handleEditConfirmed = async () => {
-        if (!deviceId || !applianceName) return;
+        console.log(applianceId);
 
         try {
             setIsLoading(true);
-            setModalVisible(false);
 
             const userId = auth.currentUser?.uid;
-            const oldName = selectedAppliance || applianceId;
-            const newName = applianceName.trim();
+            const newName = applianceNickname.trim();
 
-            if (userId && oldName && newName && oldName !== newName) {
-                const oldRef = ref(db, `appliances/${userId}/${deviceId}/${oldName}`);
-                const newRef = ref(db, `appliances/${userId}/${deviceId}/${newName}`);
+            if (userId && applianceId && newName) {
+                const appliancesRef = ref(db, `appliances/${userId}/${deviceId}/${applianceId}`);
 
-                const snapshot = await get(oldRef);
-                if (snapshot.exists()) {
-                    await set(newRef, snapshot.val());
-                    await remove(oldRef);
+                await update(appliancesRef, { appliance_nickname: newName });
 
-                    Toast.show({
-                        type: "success",
-                        text1: "Success",
-                        text2: `Renamed "${oldName}" → "${newName}".`,
-                    });
-                }
+                Toast.show({
+                    type: "success",
+                    text1: "Success",
+                    text2: `Appliance nickname updated to "${newName}".`,
+                });
             }
 
-            setApplianceName("");
+            setApplianceId("");
             setAction(null);
         } catch (error) {
             console.error("Rename failed", error);
             Alert.alert("Error", "Failed to update appliance name.");
         } finally {
             setIsLoading(false);
+            setModalVisible(false);
         }
     };
+
 
     if (!device) {
         return (
@@ -253,15 +246,15 @@ export default function DeviceDetails() {
                         <TextInput
                             editable={!isLoading}
                             placeholder="Enter Appliance name"
-                            value={applianceName}
-                            onChangeText={setApplianceName}
+                            value={applianceNickname}
+                            onChangeText={setApplianceNickname}
                             className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50"
                         />
 
                         <View className="flex-row justify-end">
                             <TouchableOpacity
                                 className="px-4 py-2 bg-gray-300 rounded-lg mr-4"
-                                onPress={() => { setModalVisible(false); setAction(null); setApplianceName(""); }}
+                                onPress={() => { setModalVisible(false); setAction(null); setApplianceId(""); setApplianceNickname("") }}
                             >
                                 <Text className="text-gray-700 font-semibold">Cancel</Text>
                             </TouchableOpacity>

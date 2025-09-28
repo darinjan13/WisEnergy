@@ -18,16 +18,48 @@ export const daily_ai_insights = async (userId, date) => {
     }
 }
 
-export const predidct_daily = async (userId, deviceId, appliance_name) => {
+export const predict_usage = async (userId, deviceId, applianceName) => {
     try {
-        const response = await api.get(`/predict/${userId}/${deviceId}/${appliance_name}`)
-        console.log(response.data);
-        
-        return response.data.predictions;
+        const response = await api.get(`/predict/${userId}/${deviceId}/${applianceName}`);
+        const { daily, weekly } = response.data || {};
+
+        // Transform daily (object -> array with label/value)
+        const dailyPredictions = daily
+            ? Object.entries(daily).map(([date, obj]) => ({
+                date,                          // full date
+                label: date.slice(5),          // e.g. "08-26"
+                value: Number(obj.predicted_kWh.toFixed(2)),
+                horizon: obj.horizon,
+                model: obj.model,
+                timestamp: obj.timestamp,
+            }))
+            : [];
+
+        // Transform weekly (array -> array with label/value)
+        const weeklyPredictions = weekly
+            ? weekly.map((w) => {
+                const { year, month, week, data } = w;
+                return {
+                    weekKey: `W${week} (${month}/${year})`, // readable key
+                    label: `W${week}`,                      // shorter chart label
+                    value: Number(data.predicted_kWh.toFixed(2)),
+                    horizon: data.horizon,
+                    model: data.model,
+                    timestamp: data.timestamp,
+                };
+            })
+            : [];
+
+        return {
+            daily: dailyPredictions,
+            weekly: weeklyPredictions,
+        };
     } catch (error) {
-        return null
+        console.error("Prediction fetch error:", error);
+        return { daily: [], weekly: [] };
     }
-}
+};
+
 
 export const generate_otp = async (email, userVerification) => {
     try {

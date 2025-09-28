@@ -4,7 +4,6 @@ import Carousel from "react-native-reanimated-carousel";
 
 const AIInsightsCarousel = ({ insights }) => {
     const windowWidth = Dimensions.get("window").width;
-    console.log(insights);
 
     return (
 

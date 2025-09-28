@@ -17,7 +17,7 @@ const TabBar = ({ state, descriptors, navigation }) => {
             );
         }
         switch (routeName) {
-            case 'index':
+            case 'dashboard':
                 iconName = isFocused ? 'home' : 'home-outline';
                 break;
             case 'reports':
@@ -43,7 +43,11 @@ const TabBar = ({ state, descriptors, navigation }) => {
     return (
         <View style={styles.container}>
             {state.routes.map((route, index) => {
+
                 const { options } = descriptors[route.key];
+                if (options.title === "Appliance") {
+                    return null;
+                }
                 const label =
                     options.tabBarLabel !== undefined
                         ? options.tabBarLabel

@@ -147,39 +147,35 @@ export const fetchMonthlyTotalConsumption = (userId, callback) => {
 }
 
 export const getCachedDailyReport = async (userId, deviceId, appliances) => {
-    const isCached = await getDailyReportCache(userId, deviceId)
+    const isCached = await getDailyReportCache(userId, deviceId);
+    if (isCached) return isCached;
 
-    if (isCached) {
-        return isCached;
-    }
-    const fresh = await fetchDailyReport(userId, deviceId, appliances)
+    const fresh = await fetchDailyReport(userId, deviceId, appliances);
 
     const updatedData = await Promise.all(
         fresh.map(async (item) => {
-            const predictions = await predictionServices.predidct_daily(
+            const predictions = await predictionServices.predict_usage(
                 userId,
                 deviceId,
                 item.applianceName
             );
 
-            if (!predictions) {
-                return item
+            if (!predictions?.daily?.length) {
+                return item;
             }
 
-            const barData2 = Object.entries(predictions).map(([date, obj]) => ({
-                label: date.slice(5),
-                value: Number(obj.predicted_kWh.toFixed(2)),
-                dataPointText: Number(obj.predicted_kWh.toFixed(2)),
+            const barData2 = predictions.daily.map((p) => ({
+                label: p.label, // "08-26"
+                value: p.value, // numeric kWh
+                dataPointText: p.value,
+            }));
 
-            }))
-            return {
-                ...item,
-                barData2
-            }
+            return { ...item, barData2 };
         })
-    )
-    await saveDailyReportCache(userId, deviceId, updatedData)
-    return updatedData
+    );
+
+    await saveDailyReportCache(userId, deviceId, updatedData);
+    return updatedData;
 }
 
 export const fetchDailyReport = async (userId, deviceId, appliances) => {
@@ -211,22 +207,41 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
             barData: history
         })
     }
+    console.log("Daily: ", usageData);
 
     return usageData;
 }
 
-export const getCacheWeeklyReport = async (userId, deviceId, appliances) => {
+export const getCachedWeeklyReport = async (userId, deviceId, appliances) => {
     const isCached = await getWeeklyReportCache(userId, deviceId);
-
-    if (isCached) {
-        return isCached;
-    }
+    if (isCached) return isCached;
 
     const fresh = await fetchWeeklyReport(userId, deviceId, appliances);
 
-    await saveWeeklyReportCache(userId, deviceId, fresh);
+    const updatedData = await Promise.all(
+        fresh.map(async (item) => {
+            const predictions = await predictionServices.predict_usage(
+                userId,
+                deviceId,
+                item.applianceName
+            );
 
-    return fresh;
+            if (!predictions?.weekly?.length) {
+                return item;
+            }
+
+            const barData2 = predictions.weekly.map((p) => ({
+                label: p.label, // "W04"
+                value: p.value,
+                dataPointText: p.value,
+            }));
+
+            return { ...item, barData2 };
+        })
+    );
+
+    await saveWeeklyReportCache(userId, deviceId, updatedData);
+    return updatedData;
 };
 
 export const fetchWeeklyReport = async (userId, deviceId, appliances) => {

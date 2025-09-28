@@ -49,7 +49,6 @@ export default function Dashboard() {
         await fetchDailyAiGeneratedContent(auth?.currentUser.uid, todayStr)
     }
     useEffect(() => {
-        console.log(insights.length);
 
         if (auth?.currentUser?.uid && insights.length <= 0) {
             fetchDailyInsights();
@@ -169,7 +168,8 @@ export default function Dashboard() {
                             <View className="flex-row justify-between items-end h-32">
                                 {Object.entries(todayTrend || {}).map(([label, value], i) => (
                                     <TouchableOpacity key={i} className="items-center">
-                                        <View className="w-6 bg-green-600 rounded-md" style={{ height: value * 100000 }} />
+                                        <View className="w-6 bg-green-600 rounded-md" style={{ height: value * 100 }} />
+                                        <Text className="text-xs mt-1 text-gray-500">{value.toFixed(2)}</Text>
                                         <Text className="text-xs mt-1 text-gray-500">{label}</Text>
                                     </TouchableOpacity>
                                 ))}

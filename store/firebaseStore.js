@@ -216,6 +216,8 @@ export const useUsageStore = create((set, get) => ({
     },
 
     fetchDailyReport: async (userId, deviceId, appliances) => {
+        console.log("ASDASD");
+
         const data = await firebaseUsageServices.getCachedDailyReport(userId, deviceId, appliances);
         set(state => ({
             reportHistory: {

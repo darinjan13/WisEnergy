@@ -73,11 +73,6 @@ export default function reports() {
     );
 
     useEffect(() => {
-        console.log("Reportssss:", reports);
-        
-    }, [reports])
-
-    useEffect(() => {
         if (devices.length === 0) setDevices();
         // if (userAppliances.length === 0) fetchUserAppliances();
     }, [devices])
@@ -212,28 +207,6 @@ export default function reports() {
 
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
                             <View className="flex-row items-center justify-between">
-                                <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
-                                <View className="flex-1 border border-gray-300 rounded-xl overflow-hidden">
-                                    <Picker
-                                        selectedValue={selectedDevice}
-                                        onValueChange={(itemValue) => {
-                                            if (selectedDevice === itemValue) {
-                                                return
-                                            } else {
-                                                setReportLoading(true);
-                                                setSelectedDevice(itemValue);
-                                            }
-                                        }}
-                                    >
-                                        {reportData.map((userDevice) => (
-                                            <Picker.Item
-                                                key={userDevice.device_id}
-                                                label={userDevice.device_nickname || "Unnamed Device"}
-                                                value={userDevice.device_id}
-                                            />
-                                        ))}
-                                    </Picker>
-                                </View>
                                 <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
                                 <View className="flex-1 border border-gray-300 rounded-xl overflow-hidden">
                                     <Picker

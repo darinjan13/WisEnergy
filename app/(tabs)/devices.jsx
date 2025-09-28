@@ -146,7 +146,7 @@ export default function devices() {
 
     const handleDecivcePressed = (userDevice) => {
         setDisableDevice(true);
-        router.push(`/appliances/${userDevice.id}`)
+        router.replace(`/appliances/${userDevice.id}`)
     }
 
     return (

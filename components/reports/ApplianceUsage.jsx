@@ -5,9 +5,14 @@ import { useState } from 'react';
 import { getMonthName } from '../../utils/dateHelper';
 
 export default function ApplianceUsage({ category, data }) {
-    const monthValue = data.barData[0]?.month || "";
-    console.log(data.barData2);
-    
+    const monthValue = data?.barData[0]?.month || "";
+    // console.log(data);
+    const values = [
+        ...(data?.barData?.map(b => b.value) || []),
+        ...(data?.barData2?.map(b => b.value) || []),
+    ];
+
+    const maxValue = values.length > 0 ? Math.max(...values) + 2 : 10; // fallback 10
 
     // const isExpanded = expandedIndex === index;
     return (
@@ -23,11 +28,11 @@ export default function ApplianceUsage({ category, data }) {
 
             {/* Line Chart for Displaying Data */}
             <LineChart
-                data={data.barData}     // historical data
-                data2={data.barData2}   // predicted data
+                data={data?.barData}     // historical data
+                data2={data?.barData2 ?? undefined}   // predicted data
                 width={250}             // Adjust width as needed
                 height={250}            // Adjust height for better visualization
-                maxValue={Math.max(...data.barData2.map(b => b.value)) + 2}  // Ensure dynamic max value
+                maxValue={maxValue}  // Ensure dynamic max value
                 spacing={50}            // Adjust spacing between points
                 initialSpacing={30}     // Adjust initial spacing for better readability
                 noOfSections={category === "Daily" ? 3 : 5}        // You can adjust this based on your data
@@ -173,78 +178,6 @@ export default function ApplianceUsage({ category, data }) {
         //                             }
         //                         ) : null}
         //                     /> */}
-
-        //                     <LineChart
-        //                         data={appliance.barData}     // historical
-        //                         data2={appliance.barData2}   // predicted
-
-        //                         width={250}
-        //                         maxValue={Math.max(...appliance.barData.map(b => b.value)) + 2}
-        //                         spacing={55}
-        //                         initialSpacing={30}
-        //                         noOfSections={Math.max(...appliance.barData.map(b => b.value)) + 2}
-
-        //                         curved
-        //                         thickness={3}
-        //                         color1="#095333"
-        //                         color2="#40cc65"
-
-        //                         // focusEnabled
-        //                         // showDataPointOnFocus
-        //                         // showStripOnFocus
-        //                         // showTextOnFocus
-
-        //                         showVerticalLines
-        //                         showXAxisIndices
-        //                         xAxisColor="#d1d5db"
-        //                         yAxisColor="#d1d5db"
-        //                         textColor="#111827"
-        //                         textShiftX={10}
-        //                         xAxisIndicesColor="#e5e7eb"
-        //                         yAxisIndicesColor="#e5e7eb"
-        //                     />
-
-        //                     {/* <LineChart
-        //                         data={appliance.barData}
-        //                         data2={appliance.barData2}
-        //                         endSpacing={30}
-        //                         curved
-        //                         height={260}
-        //                         width={250}
-        //                         spacing={50}
-        //                         thickness={3}
-        //                         color1="#064e3b"
-        //                         color2="#10b981"
-        //                         dataPointsHeight={10}
-        //                         dataPointsWidth={10}
-        //                         textColor1="#064e3b"
-        //                         textColor2="#10b981"
-        //                         dataPointsRadius={6}
-        //                         dataPointsStrokeWidth={2}
-        //                         dataPointsStrokeColor="white"
-        //                         focusEnabled
-        //                         showDataPointOnFocus
-        //                         showStripOnFocus
-        //                         showLegends
-        //                         legend1="Historical"
-        //                         legend2="Predicted"
-        //                         legendTextColor="#111827"
-        //                     /> */}
-        //                     <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center', justifyContent: 'center' }}>
-        //                         <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
-        //                             <View style={{ width: 14, height: 14, backgroundColor: '#095333', borderRadius: 2, marginRight: 6 }} />
-        //                             <Text style={{ fontSize: 12, color: '#374151' }}>Historical</Text>
-        //                         </View>
-        //                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        //                             <View style={{ width: 14, height: 14, backgroundColor: '#40cc65', borderRadius: 2, marginRight: 6 }} />
-        //                             <Text style={{ fontSize: 12, color: '#374151' }}>Predicted</Text>
-        //                         </View>
-        //                     </View>
-        //                 </View>
-        //             </List.Accordion>
-        //         );
-        //     })}
-        // </View>
     );
 }
 
