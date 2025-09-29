@@ -61,38 +61,9 @@ export default function Budget() {
       setRate(locationRate)
     }
   }, [locationRate])
-
-  const [budgetInput, setBudgetInput] = useState(0);
-
-  const handleSetMonthlyBudget = async () => {
-    setLoading(true);
-    try {
-      const budget_php = Number(budgetInput);
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const budget_kwh = Number((budget_php / rate).toFixed(2));
-
-      const budgetRef = ref(db, `user_monthly_budget/${auth.currentUser.uid}/${year}/${month}`);
-      await set(budgetRef, {
-        budget_php,
-        budget_kwh,
-        rate,
-        set_at: serverTimestamp(),
-      });
-
-      await update(ref(db), {
-        [`users/${auth.currentUser.uid}/budget_kwh`]: budget_kwh,
-      });
-      setModalVisible(false)
-    } catch (error) {
-      console.error("Error setting budget:", error);
-    }
-    setLoading(false);
-  };
   return (
     <View className="bg-gray-100">
-      <ScrollView className="p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
+      <ScrollView className="p-4" scrollEnabled={loading ? false : true} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
         <Header />
         {loading ? (
           <View className="h-screen -mt-36 items-center justify-center">
@@ -182,7 +153,9 @@ export default function Budget() {
               <View className="flex">
                 <Text className="text-2xl font-extrabold mb-4">Smart Recommendations</Text>
                 {recommendations && recommendations.length > 0 ? (
-                  <AIInsightsCarousel insights={recommendations} />
+                  <View style={{ maxHeight: 200 }}>
+                    <AIInsightsCarousel insights={recommendations} />
+                  </View>
                 ) : (
                   <Text className="text-gray-400">No insights available</Text>
                 )}
@@ -191,41 +164,11 @@ export default function Budget() {
           </View>
         )}
       </ScrollView >
-      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
-          <View className="w-full h-full bg-white rounded-xl p-6 w-11/12">
-            <Text className="text-lg font-semibold mb-2">Set Monthly Budget</Text>
-            <TextInput
-              className="border border-gray-300 rounded-md p-2 mb-4"
-              placeholder="Enter budget amount"
-              keyboardType="numeric"
-              value={budgetInput}
-              onChangeText={setBudgetInput}
-              editable={!loading}
-            />
-            <View className="flex-row justify-center">
-              <TouchableOpacity
-                onPress={handleSetMonthlyBudget}
-                className="bg-green-700 p-5 rounded-md mr-4"
-                disabled={loading}
-              >
-                <Text className="text-white font-semibold text-center">
-                  {loading ? "Setting..." : "Set Budget"}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                className="bg-green-700 p-5 rounded-md"
-                disabled={loading}
-              >
-                <Text className="text-white font-semibold text-center">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </BlurView>
-      </Modal>
+      <BudgetModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        rate={locationRate}
+      />
     </View>
   );
 }

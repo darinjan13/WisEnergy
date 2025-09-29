@@ -1,17 +1,17 @@
-import React from "react";
-import { View, Text, Dimensions, ActivityIndicator, useWindowDimensions } from "react-native";
+import React, { useState } from "react";
+import { View, Text, useWindowDimensions } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 
 const AIInsightsCarousel = ({ insights }) => {
-    const { width, height } = useWindowDimensions();
+    const { width } = useWindowDimensions();
+    const [heights, setHeights] = useState({});
 
     return (
-
         <Carousel
             loop
-            width={width - 80} // card width
-            height={100} // adjust height as needed
-            autoPlay={false} // set true if you want auto sliding
+            width={width - 80}
+            height={Math.max(...Object.values(heights), 80)} // use tallest card, min 120
+            autoPlay={false}
             data={insights}
             scrollAnimationDuration={400}
             modeConfig={{
@@ -24,7 +24,12 @@ const AIInsightsCarousel = ({ insights }) => {
                     style={{
                         backgroundColor: "white",
                         borderRadius: 20,
+                        padding: 16,
                         justifyContent: "center",
+                    }}
+                    onLayout={(e) => {
+                        const { height } = e.nativeEvent.layout;
+                        setHeights((prev) => ({ ...prev, [index]: height }));
                     }}
                 >
                     <Text className="text-gray-600 text-sm">{item}</Text>
