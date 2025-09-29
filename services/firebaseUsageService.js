@@ -1,6 +1,6 @@
 import { get, limitToLast, off, onValue, orderByKey, query, ref } from 'firebase/database';
 import { db } from '../firebase/firebaseConfig';
-import { getLastNDays, getLastNWeeks, getLastNMonths } from '../utils/dateHelper'
+import { getLastNDays, getLastNWeeks, getLastNMonths, getMonthName } from '../utils/dateHelper'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as predictionServices from './apiService'
 import { format } from "date-fns-tz";
@@ -186,13 +186,13 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
 
         for (const date of dates) {
             const dailySummaryRef = ref(db, `daily_summary/${userId}/${deviceId}/${appliance.name}/${date}`)
+
             const snapshot = await get(dailySummaryRef)
 
             let data;
 
             if (snapshot.exists()) {
                 data = snapshot.val();
-
             }
 
             history.push({
@@ -207,7 +207,6 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
             barData: history
         })
     }
-    console.log("Daily: ", usageData);
 
     return usageData;
 }
@@ -336,7 +335,7 @@ export const fetchAllMonthlyTotalConsumption = async (userId) => {
     for (const year in monthlyTotalConsumption) {
         for (const month in monthlyTotalConsumption[year]) {
             monthlyTotals.push({
-                month,
+                label: getMonthName(month, 'short'),
                 value: monthlyTotalConsumption[year][month].total_energy_consumption || 0,
                 dataPointText: monthlyTotalConsumption[year][month].total_energy_consumption || 0
             });

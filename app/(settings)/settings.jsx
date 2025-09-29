@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Switch, ScrollView, ActivityIndicator, BackHandler } from "react-native";
+import { View, Text, TouchableOpacity, Switch, ScrollView, ActivityIndicator, BackHandler, useWindowDimensions } from "react-native";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { auth, db } from "../../firebase/firebaseConfig";
 import { onValue, ref, update } from "firebase/database";
 
 export default function settings() {
+    const { width } = useWindowDimensions();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { logout } = useAuth();
@@ -76,7 +77,7 @@ export default function settings() {
                         if (router.canGoBack()) {
                             router.back();
                         } else {
-                            router.replace('/(tabs)'); // fallback to home/tabs if no history
+                            router.replace('/(tabs)/dashboard'); // fallback to home/tabs if no history
                         }
                     }}
                 >
@@ -117,7 +118,7 @@ export default function settings() {
                 ].map(({ label, route }) => (
                     <Link asChild key={route} href={route} className="ml-12">
                         <TouchableOpacity className="flex-row justify-between items-center py-3">
-                            <Text className="text-gray-800">{label}</Text>
+                            <Text className={width < 720 ? "text-sm text-gray-800" : "text-gray-800"}>{label}</Text>
                             <Feather name="chevron-right" size={20} color="#6B7280" />
                         </TouchableOpacity>
                     </Link>
@@ -148,7 +149,7 @@ export default function settings() {
                     },
                 ].map(({ label, value, toggle }) => (
                     <View key={label} className="flex-row justify-between items-center">
-                        <Text className="text-gray-800 ml-14">{label}</Text>
+                        <Text className={width < 720 ? "text-sm text-gray-800 ml-12" : "text-gray-800 ml-12"}>{label}</Text>
                         <Switch
                             value={value}
                             onValueChange={toggle}
@@ -168,13 +169,13 @@ export default function settings() {
 
                 {[
                     { label: "WisEnergy", route: "/(settings)/about" },
-                    { label: "Contact Support", route: "/(settings)/contactSupport" },
+                    { label: "Help and Feedback", route: "/(settings)/contactSupport" },
                     { label: "Terms of Service", route: "/(settings)/terms" },
                     { label: "Privacy Policy", route: "/(settings)/privacy" },
                 ].map((item) => (
                     <Link asChild key={item.route} href={item.route} className="ml-12">
                         <TouchableOpacity className="flex-row justify-between items-center py-3">
-                            <Text className="text-gray-800">{item.label}</Text>
+                            <Text className={width < 720 ? "text-sm text-gray-800" : "text-gray-800"}>{item.label}</Text>
                             <Feather name="chevron-right" size={20} color="#6B7280" />
                         </TouchableOpacity>
                     </Link>

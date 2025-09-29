@@ -16,7 +16,7 @@ import AIInsightsCarousel from '../../components/ai/Messages';
 export default function Dashboard() {
     const insets = useSafeAreaInsets();
     const [modalVisible, setModalVisible] = useState(false);
-    const { devices, setDevices, listenToUserAppliances } = useDeviceStore();
+    const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
     const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances } = useUsageStore();
     const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget, } = useBudgetStore();
@@ -138,7 +138,7 @@ export default function Dashboard() {
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="power-plug-outline" size={30} color="gray" />
                                         <Text className="font-bold text-green-600 text-2xl">
-                                            {devices?.length}
+                                            {userDevices?.length}
                                         </Text>
                                     </View>
                                     <Text className="text-gray-500 text-sm">Devices</Text>

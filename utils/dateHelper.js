@@ -1,10 +1,14 @@
 import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 const timeZone = "Asia/Manila"
-export const getMonthName = (monthNumber) => {
-    const date = new Date()
+export const getMonthName = (monthNumber, format = 'long') => {
+    const date = new Date();
     date.setMonth(monthNumber - 1);
-    return date.toLocaleString('en-US', { month: 'long' })
-}
+    return date.toLocaleString('en-US', { month: format });
+};
+
+// Usage:
+getMonthName(1, 'long');  // "January"
+getMonthName(1, 'short'); // "Jan"   
 
 export const getLastNDays = (n) => {
     const dates = [];

@@ -2,7 +2,7 @@ import axios from "axios"
 
 const api = axios.create({
     baseURL: 'https://wisenergy-backend.onrender.com',
-    // baseURL: 'http://192.168.1.7:10000',
+    // baseURL: 'http://192.168.1.2:10000',
     timeout: 20000,
     headers: {
         'Content-Type': 'application/json'
@@ -50,13 +50,14 @@ export const predict_usage = async (userId, deviceId, applianceName) => {
             })
             : [];
 
+        console.log(dailyPredictions);
+
         return {
             daily: dailyPredictions,
             weekly: weeklyPredictions,
         };
     } catch (error) {
-        console.error("Prediction fetch error:", error);
-        return { daily: [], weekly: [] };
+        return null
     }
 };
 

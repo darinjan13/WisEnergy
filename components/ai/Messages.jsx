@@ -1,16 +1,16 @@
 import React from "react";
-import { View, Text, Dimensions, ActivityIndicator } from "react-native";
+import { View, Text, Dimensions, ActivityIndicator, useWindowDimensions } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 
 const AIInsightsCarousel = ({ insights }) => {
-    const windowWidth = Dimensions.get("window").width;
+    const { width, height } = useWindowDimensions();
 
     return (
 
         <Carousel
             loop
-            width={windowWidth - 80} // card width
-            height={60} // adjust height as needed
+            width={width - 80} // card width
+            height={100} // adjust height as needed
             autoPlay={false} // set true if you want auto sliding
             data={insights}
             scrollAnimationDuration={400}

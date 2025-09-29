@@ -91,6 +91,7 @@ export default function reports() {
 
             if (reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] == undefined) {
                 reportData.find((device) => {
+
                     if (device.device_id == selectedDevice) {
                         fetchDailyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
                         fetchWeeklyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
@@ -129,6 +130,8 @@ export default function reports() {
     useEffect(() => {
         setLineData1(allMonthlyTotalConsumption)
         setLineData2(allBudget)
+        console.log(allBudget);
+
     }, [allMonthlyTotalConsumption, allBudget])
 
     useEffect(() => {
@@ -172,6 +175,8 @@ export default function reports() {
                                 data={lineData1}
                                 data2={lineData2}
                                 height={200}
+                                maxValue={monthlyBudget?.budget_kwh + 10}
+                                stepValue={50}
                                 showVerticalLines
                                 spacing={44}
                                 initialSpacing={30}

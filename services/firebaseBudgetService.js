@@ -50,15 +50,13 @@ export const fetchAllBudget = async (userId) => {
         for (const year in budgetData) {
             for (const month in budgetData[year]) {
                 const budgetKwh = Number(budgetData[year][month].budget_kwh);
-                const rate = Number(budgetData[year][month].rate);
 
                 // Check if budget_kwh and rate are valid numbers
-                if (!isNaN(budgetKwh) && !isNaN(rate) && rate !== 0) {
-                    const calculatedValue = (budgetKwh / rate).toFixed(2); // Calculate the budget value
+                if (!isNaN(budgetKwh)) {
                     monthlyBudgets.push({
-                        month,
-                        value: Number(calculatedValue),
-                        dataPointText: Number(calculatedValue),
+                        label: month,
+                        value: Number(budgetKwh),
+                        dataPointText: Number(budgetKwh),
                     });
                 }
             }

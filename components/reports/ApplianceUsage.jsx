@@ -33,6 +33,7 @@ export default function ApplianceUsage({ category, data }) {
                 width={250}             // Adjust width as needed
                 height={250}            // Adjust height for better visualization
                 maxValue={maxValue}  // Ensure dynamic max value
+                mostNegativeValue={-0.1}
                 spacing={50}            // Adjust spacing between points
                 initialSpacing={30}     // Adjust initial spacing for better readability
                 noOfSections={category === "Daily" ? 3 : 5}        // You can adjust this based on your data
