@@ -175,8 +175,8 @@ export default function reports() {
                                 data={lineData1}
                                 data2={lineData2}
                                 height={200}
-                                maxValue={monthlyBudget?.budget_kwh + 10}
-                                stepValue={50}
+                                maxValue={monthlyBudget?.budget_kwh + 20}
+                                // stepValue={50}
                                 showVerticalLines
                                 spacing={44}
                                 initialSpacing={30}

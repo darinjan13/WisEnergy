@@ -45,12 +45,12 @@ export const fetchAllBudget = async (userId) => {
     const budgetSnapshot = await get(budgetRef);
 
     const monthlyBudgets = [];
+
     if (budgetSnapshot.exists()) {
         const budgetData = budgetSnapshot.val();
         for (const year in budgetData) {
             for (const month in budgetData[year]) {
                 const budgetKwh = Number(budgetData[year][month].budget_kwh);
-
                 // Check if budget_kwh and rate are valid numbers
                 if (!isNaN(budgetKwh)) {
                     monthlyBudgets.push({
@@ -62,6 +62,6 @@ export const fetchAllBudget = async (userId) => {
             }
         }
     }
-
+    monthlyBudgets.sort((a, b) => parseInt(a.label) - parseInt(b.label));
     return monthlyBudgets;
 };

@@ -331,6 +331,7 @@ export const fetchAllMonthlyTotalConsumption = async (userId) => {
     const monthlyTotalConsumption = monthlyTotalConsumptionSnapshot.val() || {};
 
     const monthlyTotals = [];
+    const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     for (const year in monthlyTotalConsumption) {
         for (const month in monthlyTotalConsumption[year]) {
@@ -341,6 +342,6 @@ export const fetchAllMonthlyTotalConsumption = async (userId) => {
             });
         }
     }
-
+    monthlyTotals.sort((a, b) => monthOrder.indexOf(a.label) - monthOrder.indexOf(b.label));
     return monthlyTotals;
 }
