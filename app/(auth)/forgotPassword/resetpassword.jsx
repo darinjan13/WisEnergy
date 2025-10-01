@@ -48,7 +48,7 @@ export default function ResetPasswordScreen() {
             <View className="h-full p-6 bg-white">
                 <TouchableOpacity
                     onPress={() => router.back()}
-                    className="w-10 -ml-1 mb-10"
+                    className="w-10 -ml-1 my-10"
                 >
                     <Feather name='arrow-left' size={30} color="#095333" />
                 </TouchableOpacity>

@@ -12,6 +12,7 @@ import BudgetModal from '../../components/budget/SetBudget';
 import CustomProgressBar from '../../components/reports/CustomProgressBar';
 import { format } from 'date-fns-tz';
 import AIInsightsCarousel from '../../components/ai/Messages';
+import { RFValueWidth } from '../../utils/responsive';
 
 export default function Dashboard() {
     const insets = useSafeAreaInsets();
@@ -93,7 +94,7 @@ export default function Dashboard() {
 
     return (
         <View>
-            <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
+            <ScrollView className="p-4 bg-white" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
                 <Header />
                 {locationRate > 0 && (
                     <>
@@ -110,7 +111,7 @@ export default function Dashboard() {
                                 centerLabelComponent={() => {
                                     return (
                                         <View className="items-center">
-                                            <Text style={{ fontSize: 30 }}>{efficiency.toFixed(1)}%</Text>
+                                            <Text style={{ fontSize: RFValueWidth(30) }}>{efficiency.toFixed(1)}%</Text>
                                             <Text className="text-center">Energy Efficiency Index</Text>
                                         </View>
                                     );
@@ -137,7 +138,7 @@ export default function Dashboard() {
                                 <View className="bg-white rounded-xl p-4 mb-3" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="power-plug-outline" size={30} color="gray" />
-                                        <Text className="font-bold text-green-600 text-2xl">
+                                        <Text style={{ fontSize: RFValueWidth(20) }} className="font-bold text-green-600">
                                             {userDevices?.length}
                                         </Text>
                                     </View>
@@ -148,7 +149,7 @@ export default function Dashboard() {
                                 <View className="bg-white rounded-xl p-4" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="lightning-bolt-outline" size={30} color="gray" />
-                                        <Text className="font-extrabold text-green-600 text-2xl">{monthlyTotalConsumption}</Text>
+                                        <Text style={{ fontSize: RFValueWidth(20) }} className="font-extrabold text-green-600">{monthlyTotalConsumption}</Text>
                                         <Text className="text-sm">kWh</Text>
                                     </View>
                                     <Text className="text-gray-500 text-xs italic">
@@ -169,8 +170,8 @@ export default function Dashboard() {
                                 {Object.entries(todayTrend || {}).map(([label, value], i) => (
                                     <TouchableOpacity key={i} className="items-center">
                                         <View className="w-6 bg-green-600 rounded-md" style={{ height: value * 100 }} />
-                                        <Text className="text-xs mt-1 text-gray-500">{value.toFixed(2)}</Text>
-                                        <Text className="text-xs mt-1 text-gray-500">{label}</Text>
+                                        <Text style={{ fontSize: RFValueWidth(10) }} className="mt-1 text-gray-500">{value.toFixed(2)}</Text>
+                                        <Text style={{ fontSize: RFValueWidth(10) }} className="mt-1 text-gray-500">{label}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>

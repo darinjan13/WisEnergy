@@ -143,8 +143,6 @@ export default function DeviceDetails() {
 
 
     const handleEditConfirmed = async () => {
-        console.log(applianceId);
-
         try {
             setIsLoading(true);
 
@@ -185,8 +183,9 @@ export default function DeviceDetails() {
     }
 
     return (
-        <View className="p-4">
+        <View className="px-4" style={{ paddingTop: insets.top }}>
             <Header />
+
             <Text className="text-xl font-bold text-[#2E4F4F]">Device: {deviceId}</Text>
             <Text className="text-gray-700 mt-2">Status: {device.status}</Text>
             <Text className="text-gray-700">Paired at: {device.paired_at}</Text>

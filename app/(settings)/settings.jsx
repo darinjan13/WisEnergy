@@ -36,7 +36,7 @@ export default function settings() {
         }, [])
     )
 
-    const onBackPress = () => { router.replace('/(tabs)'); return true; };
+    const onBackPress = () => { router.replace('/(tabs)/dashboard'); return true; };
 
     const toggleSwitch = (key, setter) => () => {
         setter((prev) => {
@@ -69,7 +69,7 @@ export default function settings() {
     }
 
     return (
-        <ScrollView className="flex-1 bg-gray-100 p-10" contentContainerStyle={{ paddingBottom: insets.bottom + 60, }}>
+        <ScrollView className="flex-1 bg-gray-100 p-10" contentContainerStyle={{ paddingBottom: insets.bottom + 60, paddingTop: insets.top - 10}}>
             <View className="mb-6 flex-row items-center">
                 <TouchableOpacity
                     className="w-10 -ml-4"
@@ -148,8 +148,8 @@ export default function settings() {
                         toggle: toggleSwitch("notify_system_updates", setSystemUpdates)
                     },
                 ].map(({ label, value, toggle }) => (
-                    <View key={label} className="flex-row justify-between items-center">
-                        <Text className={width < 720 ? "text-sm text-gray-800 ml-12" : "text-gray-800 ml-12"}>{label}</Text>
+                    <View key={label} className="flex-row justify-between items-center py-3 ml-12">
+                        <Text className={width < 720 ? "text-sm text-gray-800" : "text-gray-800"}>{label}</Text>
                         <Switch
                             value={value}
                             onValueChange={toggle}

@@ -3,33 +3,33 @@ import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAuth from "@/hooks/useAuth";
 import * as SplashScreen from "expo-splash-screen";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function Index() {
-    const { user, checkingAuth } = useAuth();
-    const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-    const [seen, setSeen] = useState(null);
+  const { user, checkingAuth } = useAuth();
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [seen, setSeen] = useState(null);
 
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const val = await AsyncStorage.getItem("onboardingSeen");
-                setSeen(val);
-            } finally {
-                setCheckingOnboarding(false);
-                // ✅ Hide splash once checks are done
-                SplashScreen.hideAsync();
-            }
-        };
-        load();
-    }, []);
+  // 👇 run notifications setup once
+  const expoPushToken = useNotifications();
 
-    // Keep splash visible until checks are finished
-    if (checkingAuth || checkingOnboarding) {
-        return null; // don’t render spinner — keep splash
-    }
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const val = await AsyncStorage.getItem("onboardingSeen");
+        setSeen(val);
+      } finally {
+        setCheckingOnboarding(false);
+        SplashScreen.hideAsync();
+      }
+    };
+    load();
+  }, []);
 
-    if (!seen) return <Redirect href="/onboarding" />;
-    if (!user) return <Redirect href="/(auth)/login" />;
+  if (checkingAuth || checkingOnboarding) return null;
 
-    return <Redirect href="/(tabs)/dashboard" />;
+  if (!seen) return <Redirect href="/onboarding" />;
+  if (!user) return <Redirect href="/(auth)/login" />;
+
+  return <Redirect href="/(tabs)/dashboard" />;
 }

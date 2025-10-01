@@ -130,7 +130,6 @@ export default function reports() {
     useEffect(() => {
         setLineData1(allMonthlyTotalConsumption)
         setLineData2(allBudget)
-        console.log(allBudget);
 
     }, [allMonthlyTotalConsumption, allBudget])
 
@@ -147,7 +146,7 @@ export default function reports() {
 
     if (isLoading) {
         return (
-            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
+            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingTop: insets.top }}>
                 <Header />
                 <View className="h-screen -mt-36 items-center justify-center">
                     <ActivityIndicator size="large" color="#166534" />
@@ -157,9 +156,10 @@ export default function reports() {
         )
     }
 
+
     return (
         <View className="flex-1 bg-gray-100">
-            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
+            <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
                 <Header />
                 {reportData.length === 0 ? (
                     <View className="h-screen -mt-36 items-center justify-center">
@@ -204,12 +204,6 @@ export default function reports() {
                                 </TouchableOpacity>
                             ))}
                         </View>
-
-                        {/* <View className="flex-row justify-between mb-2 text-center">
-                            <Text className="text-2xl font-bold text-[#14532d] my-auto">{reportCategory} Energy Consumption</Text>
-                            <Text className="text-2xl font-bold text-white my-auto bg-green-600 rounded-xl py-1 px-2">{totalEnergyConsumption?.toFixed(2)} kWh</Text>
-                        </View> */}
-
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
                             <View className="flex-row items-center justify-between">
                                 <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
@@ -258,10 +252,10 @@ export default function reports() {
                                         >
                                             <View className="w-full flex-row items-center">
                                                 {/* Appliance name */}
-                                                <Text className="w-20">{item.applianceName}</Text>
+                                                <Text className="w-24">{item.applianceName}</Text>
 
                                                 {/* Progress bar takes remaining space */}
-                                                <View className="flex-1 ml-2">
+                                                <View className="flex-1 ">
                                                     <CustomProgressBar
                                                         progress={powerUsed}
                                                         maxProgress={maxProgress}

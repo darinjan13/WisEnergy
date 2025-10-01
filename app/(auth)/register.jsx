@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AuthHeader from "../../components/ui/AuthHeader";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import useAuth from "../../hooks/useAuth";
 import { Checkbox } from "react-native-paper";
 import { Picker } from "@react-native-picker/picker";
@@ -23,6 +23,8 @@ import { Feather, Fontisto, Ionicons, MaterialIcons } from "@expo/vector-icons";
 
 export default function RegisterForm() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+
 
     const { register } = useAuth();
 
@@ -80,10 +82,10 @@ export default function RegisterForm() {
     };
 
     return (
-        <SafeAreaView>
+        <View>
             <AuthHeader />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="h-full bg-white rounded-t-[40px] px-6 py-10">
-                <ScrollView>
+            <KeyboardAvoidingView behavior={Platform.OS === "android" ? "padding" : "padding"} className="h-full bg-white rounded-t-[40px] px-6 py-10">
+                <ScrollView showsVerticalScrollIndicator={false}>
                     <Text className="text-2xl font-bold text-center text-gray-800 mb-10">
                         Create A New Account
                     </Text>
@@ -92,10 +94,11 @@ export default function RegisterForm() {
                             <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
                                 <Feather name='user' size={18} color="gray" />
                                 <TextInput
+                                    placeholderTextColor="#9CA3AF"
                                     placeholder="First Name"
                                     value={form.firstName}
                                     onChangeText={(text) => handleChange("firstName", text)}
-                                    className={`ml-2  ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
+                                    className={`ml-2 p-3 ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
                                 />
 
                             </View>
@@ -108,10 +111,11 @@ export default function RegisterForm() {
                             <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
                                 <Feather name='user' size={18} color="gray" />
                                 <TextInput
+                                    placeholderTextColor="#9CA3AF"
                                     placeholder="Last Name"
                                     value={form.lastName}
                                     onChangeText={(text) => handleChange("lastName", text)}
-                                    className={`ml-2  ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
+                                    className={`ml-2 p-3 ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
                                 />
 
                             </View>
@@ -125,12 +129,13 @@ export default function RegisterForm() {
                         <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
                             <MaterialIcons name='email' size={18} color="gray" />
                             <TextInput
-                                placeholder="Email"
+                                className="ml-2 flex-1 p-3"
+                                placeholder="Enter Email Address"
+                                placeholderTextColor="#9CA3AF"
+                                autoCapitalize="none"
+                                keyboardType="email-address"
                                 value={form.email}
                                 onChangeText={(text) => handleChange("email", text)}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                className={`ml-2 flex-1 ${errors.email ? "border-red-500" : "border-gray-300"}`}
                             />
 
                         </View>
@@ -230,7 +235,7 @@ export default function RegisterForm() {
 
                     <TouchableOpacity
                         onPress={handleSubmit}
-                        className="bg-green-700 py-4 rounded-md mb-4"
+                        className="bg-green-700 py-5 rounded-lg mb-4 justify-center h-16"
                         disabled={isLoading}
                     >
                         <View className="h-5 items-center justify-center">
@@ -274,6 +279,6 @@ export default function RegisterForm() {
                     </View>
                 </BlurView>
             </Modal>
-        </SafeAreaView >
+        </View >
     );
 }

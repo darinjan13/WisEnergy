@@ -1,12 +1,14 @@
 import { View, Text, ScrollView, Image, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function AboutWisEnergy() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     return (
-        <View className="flex-1 bg-white p-10">
+        <View className="flex-1 bg-white p-10" style={{ paddingTop: insets.top + 10 }}>
             {/* Header */}
             <TouchableOpacity
                 onPress={() => router.back()}

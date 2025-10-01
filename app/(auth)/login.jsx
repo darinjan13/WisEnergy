@@ -5,7 +5,9 @@ import {
     TextInput,
     TouchableOpacity,
     ActivityIndicator,
-    Image
+    Image,
+    KeyboardAvoidingView,
+    Platform
 } from "react-native";
 import { Feather, Fontisto, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -74,9 +76,9 @@ export default function LoginForm() {
     };
 
     return (
-        <SafeAreaView>
+        <View>
             <AuthHeader />
-            <View className="h-full bg-white rounded-t-[40px] p-6">
+            <KeyboardAvoidingView behavior={Platform.OS === "android" ? "padding" : "padding"} className="h-full bg-white rounded-t-[40px] p-6">
                 <Text className="text-2xl font-bold text-center text-gray-800 mb-2">
                     Login
                 </Text>
@@ -89,7 +91,7 @@ export default function LoginForm() {
                     <View className={`flex-row items-center border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3 bg-gray-100`}>
                         <MaterialIcons name='email' size={18} color="gray" />
                         <TextInput
-                            className="ml-2 flex-1"
+                            className="ml-2 flex-1 p-3"
                             placeholder="Enter Email Address"
                             placeholderTextColor="#9CA3AF"
                             autoCapitalize="none"
@@ -108,7 +110,7 @@ export default function LoginForm() {
                     <View className={`flex-row items-center border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md p-3 bg-gray-100`}>
                         <Fontisto name='locked' size={18} color="gray" />
                         <TextInput
-                            className="ml-2 flex-1"
+                            className="ml-2 flex-1 p-3"
                             placeholder="Enter Password"
                             placeholderTextColor="#9CA3AF"
                             secureTextEntry={!showPassword}
@@ -143,13 +145,13 @@ export default function LoginForm() {
                 {/* Login Button */}
                 <TouchableOpacity
                     onPress={handleSubmit}
-                    className="bg-green-700 py-5 rounded-lg mb-4"
+                    className="bg-green-700 py-5 rounded-lg mb-4 justify-center h-16"
                     disabled={isLoading}
                 >
                     {!isLoading ? (
                         <Text className="text-white text-center font-semibold">Sign In</Text>
                     ) : (
-                        <ActivityIndicator size="small" color="white" />
+                        <ActivityIndicator color="white" />
                     )}
                 </TouchableOpacity>
 
@@ -168,7 +170,7 @@ export default function LoginForm() {
                     </TouchableOpacity>
                 </View>
 
-            </View>
-        </SafeAreaView>
+            </KeyboardAvoidingView>
+        </View>
     );
 }

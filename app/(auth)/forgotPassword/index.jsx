@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-
-import AuthHeader from "../../../components/ui/AuthHeader";
 import { generate_otp } from "../../../services/apiService";
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Feather, Fontisto, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ForgotPasswordScreen() {
+  const insets = useSafeAreaInsets();
+
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen() {
       <View className="h-full p-6 bg-white">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="w-10 -ml-1 mb-10"
+          className="w-10 -ml-1 my-10"
         >
           <Feather name='arrow-left' size={30} color="#095333" />
         </TouchableOpacity>

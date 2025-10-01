@@ -1,8 +1,21 @@
-import { ScrollView, Text, TouchableOpacity } from 'react-native'
+import { Feather } from '@expo/vector-icons'
+import { router } from 'expo-router';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Privacy({ source, close }) {
+    const insets = useSafeAreaInsets();
+
     return (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: insets.top }}>
+            <View className="flex-row items-center mb-6">
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Feather name="arrow-left" size={24} color="#23403A" />
+                </TouchableOpacity>
+                <Text className="ml-3 text-2xl font-bold text-[#23403A]">
+                    Privacy Policy
+                </Text>
+            </View>
             {/* Effective Date + Version */}
             <Text className="text-gray-600 mb-1">Effective Date: April 26, 2025</Text>
             <Text className="text-gray-600 mb-4">Version: 1.0</Text>

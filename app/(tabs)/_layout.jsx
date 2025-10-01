@@ -1,7 +1,8 @@
 import { Tabs, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { View, ActivityIndicator, StatusBar, useColorScheme } from "react-native";
+import { View, ActivityIndicator, useColorScheme } from "react-native";
 import useAuth from "@/hooks/useAuth";
+import { StatusBar } from 'expo-status-bar';
 import { auth, db } from "@/firebase/firebaseConfig";
 import { get, ref } from "firebase/database";
 import { generate_otp } from "@/services/apiService";
@@ -60,10 +61,7 @@ export default function TabLayout() {
 
   return (
     <>
-      <StatusBar
-        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={colorScheme === "dark" ? "#000000" : "#ffffff"}
-      />
+      <StatusBar style="dark" />
       <Tabs tabBar={(props) => <TabBar {...props} />}>
         <Tabs.Screen name="dashboard" options={{ title: "Home", headerShown: false }} />
         <Tabs.Screen name="devices" options={{ title: "Devices", headerShown: false }} />

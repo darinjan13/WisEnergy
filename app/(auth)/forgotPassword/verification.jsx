@@ -90,7 +90,7 @@ export default function CodeVerificationScreen() {
             <View className="h-full px-6 pt-8 bg-white">
                 <TouchableOpacity
                     onPress={handleOnBackPress}
-                    className="w-10 -ml-1 mb-10"
+                    className="w-10 -ml-1 my-10"
                 >
                     <Feather name='arrow-left' size={30} color="#095333" />
                 </TouchableOpacity>

@@ -1,0 +1,95 @@
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { useEffect, useState } from "react";
+import { Platform } from "react-native";
+import { db } from "@/firebase/firebaseConfig";
+import { ref, set, get } from "firebase/database";
+import useAuth from "@/hooks/useAuth";
+import { router } from "expo-router";
+
+export function useNotifications() {
+  const [expoPushToken, setExpoPushToken] = useState(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    // Register for push
+    registerForPushNotificationsAsync().then(async (token) => {
+      if (token) {
+        setExpoPushToken(token);
+        console.log("Expo Push Token:", token);
+
+        if (user?.uid) {
+          try {
+            const tokensRef = ref(db, `tokens/${user.uid}`);
+            const snap = await get(tokensRef);
+            let tokens = snap.exists() ? snap.val() : [];
+
+            if (!Array.isArray(tokens)) tokens = [];
+
+            if (!tokens.includes(token)) {
+              tokens.push(token);
+              await set(tokensRef, tokens);
+              console.log("✅ Token saved in Firebase:", token);
+            } else {
+              console.log("ℹ️ Token already exists in Firebase");
+            }
+          } catch (err) {
+            console.error("❌ Failed to save token:", err.message);
+          }
+        }
+      }
+    });
+
+    // Foreground listener
+    const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
+      console.log("📩 Foreground notification:", notification);
+    });
+
+    // Tap listener (background/open)
+    const tapSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      console.log("👉 User tapped notification:", response.notification.request.content.data);
+      const screen = response.notification.request.content.data?.screen;
+      if (screen) {
+        router.push(`/(tabs)/${screen}`);
+      }
+    });
+
+    return () => {
+      foregroundSub.remove();
+      tapSub.remove();
+    };
+  }, [user]);
+
+  return expoPushToken;
+}
+
+async function registerForPushNotificationsAsync() {
+  let token;
+  if (Device.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      alert("Permission not granted for push notifications!");
+      return null;
+    }
+
+    token = (await Notifications.getExpoPushTokenAsync()).data;
+  } else {
+    alert("Must use physical device for push notifications");
+  }
+
+  if (Platform.OS === "android") {
+    Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+    });
+  }
+
+  return token;
+}
