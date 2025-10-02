@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { FontAwesome, FontAwesome6, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,10 +19,11 @@ export default function Dashboard() {
     const [modalVisible, setModalVisible] = useState(false);
     const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
-    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances } = useUsageStore();
+    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption } = useUsageStore();
     const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget, } = useBudgetStore();
     const [efficiency, setEfficiency] = useState(0);
     const [daysRemaining, setDaysRemaining] = useState(0);
+    const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
 
     const [userName, setUserName] = useState("");
 
@@ -32,6 +33,7 @@ export default function Dashboard() {
             if (devices.length === 0) setDevices();
             listenToUserAppliances(auth?.currentUser?.uid);
             fetchTodayTrend(auth.currentUser?.uid)
+            fetchAllMonthlyTotalConsumption(auth.currentUser?.uid)
             if (locationRate == 0 || monthlyBudget === null) {
                 fetchLocationRate(auth.currentUser?.uid);
                 subscribeToBudget(auth.currentUser?.uid);
@@ -41,6 +43,17 @@ export default function Dashboard() {
             }
         }, [devices.length, locationRate, monthlyTotalConsumption, monthlyBudget])
     )
+
+    useEffect(() => {
+        if (totalEnergyConsumption <= 0) {
+            const total = allMonthlyTotalConsumption.reduce(
+                (sum, item) => sum + (item.value || 0),
+                0
+            );
+            console.log("Total Consumption:", total);
+            setTotalEnergyConsumption(total)
+        }
+    }, [allMonthlyTotalConsumption]);
 
     const fetchDailyInsights = async () => {
         console.log("Fetching Ai Insights");
@@ -81,14 +94,14 @@ export default function Dashboard() {
     useEffect(() => {
         const user = auth?.currentUser;
         if (user) {
-            setUserName("User");
+            setUserName(user.displayName);
         }
     }, []);
 
     useEffect(() => {
         if (locationRate > 0 && monthlyTotalConsumption > 0 && monthlyBudget?.budget_php > 0) {
             fetchPercentUsed(monthlyTotalConsumption);
-            setEfficiency(Math.max(0, 100 - ((monthlyTotalConsumption / (monthlyBudget?.budget_php / locationRate)) * 100)))
+            setEfficiency(Math.max(0, 100 - (((monthlyBudget?.budget_php / locationRate) / monthlyTotalConsumption) * 100)))
         }
     }, [locationRate, monthlyTotalConsumption, monthlyBudget])
 
@@ -135,7 +148,7 @@ export default function Dashboard() {
                             {/* Right Side Cards */}
                             <View className="w-[43%] flex-col h-full">
                                 {/* Devices */}
-                                <View className="bg-white rounded-xl p-4 mb-3" style={styles.cardShadow}>
+                                <View className="bg-white rounded-xl p-4 mb-3 items-center" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="power-plug-outline" size={30} color="gray" />
                                         <Text style={{ fontSize: RFValueWidth(20) }} className="font-bold text-green-600">
@@ -146,14 +159,13 @@ export default function Dashboard() {
                                 </View>
 
                                 {/* Energy */}
-                                <View className="bg-white rounded-xl p-4" style={styles.cardShadow}>
+                                <View className="bg-white rounded-xl p-4 items-center" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="lightning-bolt-outline" size={30} color="gray" />
-                                        <Text style={{ fontSize: RFValueWidth(20) }} className="font-extrabold text-green-600">{monthlyTotalConsumption}</Text>
-                                        <Text className="text-sm">kWh</Text>
+                                        <Text style={{ fontSize: RFValueWidth(20) }} className="font-extrabold text-green-600">{totalEnergyConsumption}</Text>
                                     </View>
                                     <Text className="text-gray-500 text-xs italic">
-                                        Total Energy Consumption
+                                        Total Energy Consumption(kWh)
                                     </Text>
                                 </View>
                             </View>
@@ -180,6 +192,7 @@ export default function Dashboard() {
                         {/* Monthly Goals */}
                         <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
                             <Text className="text-2xl font-extrabold mb-2">Monthly Goals</Text>
+                            <Text className="text-sm text-black mb-4">Monitor your estimated monthly energy bills against your set target.</Text>
                             <View className="flex-row justify-between">
                                 <Text className="text-gray-500 mb-2">Current: ₱{(monthlyTotalConsumption * locationRate).toFixed(2)}</Text>
                                 <Text>Goal: ₱{monthlyBudget?.budget_php}</Text>
@@ -196,11 +209,15 @@ export default function Dashboard() {
                         {/* Top Appliances */}
                         <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
                             <Text className="text-2xl font-extrabold mb-4">Top Appliances</Text>
-
+                            <Text className="text-sm text-black mb-4">See which appliances are consuming the most energy</Text>
                             {topAppliances.length > 0 ? (
                                 topAppliances.map((appliance, i) => (
-                                    <View key={i} className="flex-row justify-between mb-2">
-                                        <Text className="text-gray-700">{appliance.name}</Text>
+                                    <View key={i} className="flex-row justify-center gap-x-10 mb-2 items-center">
+                                        <View className="flex-row items-center">
+                                            <MaterialCommunityIcons name={`numeric-${i + 1}-circle`} size={20} color="green" />
+                                            <Text className="text-gray-700 ml-2">{appliance.name}</Text>
+                                        </View>
+                                        <FontAwesome6 name="arrow-right-long" size={15} color="gray" />
                                         <Text className="font-semibold">{appliance.kwh} kWh</Text>
                                     </View>
                                 ))

@@ -58,7 +58,12 @@ export default function useAuth() {
                 text1: "Registration Successful",
                 text2: "You can now log in.",
             });
-            router.replace("/(auth)/login");
+            const result = await generate_otp(email, true)
+            if (result.success)
+                router.navigate({
+                    pathname: '/forgotPassword/verification',
+                    params: { email, from: "login", uid },
+                });
         } catch (e) {
             let message = "An error occurred. Please try again.";
             if (e.code === "auth/email-already-in-use") {

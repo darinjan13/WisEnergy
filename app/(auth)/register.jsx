@@ -77,7 +77,6 @@ export default function RegisterForm() {
     const handleSubmit = () => {
         setIsLoading(true);
         if (!validateForm()) return;
-        // Alert.alert(form.firstName, form.lastName);
         register(setIsLoading, form.location, form.firstName, form.lastName, form.email, form.password);
     };
 
@@ -98,7 +97,7 @@ export default function RegisterForm() {
                                     placeholder="First Name"
                                     value={form.firstName}
                                     onChangeText={(text) => handleChange("firstName", text)}
-                                    className={`ml-2 p-3 ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
+                                    className="ml-2 flex-1 p-3 text-black"
                                 />
 
                             </View>
@@ -115,7 +114,7 @@ export default function RegisterForm() {
                                     placeholder="Last Name"
                                     value={form.lastName}
                                     onChangeText={(text) => handleChange("lastName", text)}
-                                    className={`ml-2 p-3 ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
+                                    className="ml-2 flex-1 p-3 text-black"
                                 />
 
                             </View>
@@ -177,13 +176,14 @@ export default function RegisterForm() {
 
                     <View className="mb-4 mr-1">
                         <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
-                            <Fontisto name='locked' size={20} color="gray" />
+                            <Fontisto name='locked' size={18} color="gray" />
                             <TextInput
                                 placeholder="Password"
+                                placeholderTextColor="#9CA3AF"
                                 value={form.password}
                                 onChangeText={(text) => handleChange("password", text)}
                                 secureTextEntry={!showPassword}
-                                className={`ml-2 flex-1 ${errors.password ? "border-red-500" : "border-gray-300"}`}
+                                className="ml-2 flex-1 p-3 text-black"
                             />
 
                         </View>
@@ -194,13 +194,14 @@ export default function RegisterForm() {
 
                     <View className="mb-4 mr-1">
                         <View className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3`}>
-                            <Fontisto name='locked' size={20} color="gray" />
+                            <Fontisto name='locked' size={18} color="gray" />
                             <TextInput
                                 placeholder="Confirm Password"
+                                placeholderTextColor="#9CA3AF"
                                 value={form.confirmPassword}
                                 onChangeText={(text) => handleChange("confirmPassword", text)}
                                 secureTextEntry
-                                className={`ml-2 flex-1 ${errors.confirmPassword ? "border-red-500" : "border-gray-300"}`}
+                                className="ml-2 flex-1 p-3 text-black"
                             />
 
                         </View>

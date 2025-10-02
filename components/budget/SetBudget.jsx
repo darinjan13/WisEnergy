@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Modal } from "react-native";
 import { BlurView } from "expo-blur";
-import { ref, serverTimestamp, set, update } from "firebase/database";
+import { get, ref, serverTimestamp, set, update } from "firebase/database";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -23,22 +23,37 @@ export default function BudgetModal({
             const budget_kwh = Number((budget_php / rate).toFixed(2));
 
             const budgetRef = ref(db, `user_monthly_budget/${auth.currentUser.uid}/${year}/${month}`);
-            await set(budgetRef, {
-                budget_php,
-                budget_kwh,
-                rate,
-                set_at: serverTimestamp(),
-            });
+            const snapshot = await get(budgetRef);
 
-            await update(ref(db), {
-                [`users/${auth.currentUser.uid}/budget_kwh`]: budget_kwh,
-            });
-            onClose();
+            let set_attempted = 0;
+            if (snapshot.exists()) {
+                set_attempted = snapshot.val().set_attempted || 0;
+            }
+
+            if (set_attempted < 3) {
+                await set(budgetRef, {
+                    budget_php,
+                    budget_kwh,
+                    rate,
+                    set_at: serverTimestamp(),
+                    set_attempted: set_attempted + 1,
+                });
+
+                // also update the current user’s budget_kwh in /users
+                await update(ref(db), {
+                    [`users/${auth.currentUser.uid}/budget_kwh`]: budget_kwh,
+                });
+
+                onClose();
+            } else {
+                alert("You have already set your budget 3 times this month.");
+            }
         } catch (error) {
             console.error("Error setting budget:", error);
         }
         setLoading(false);
     };
+
     return (
         <GestureHandlerRootView>
             <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>

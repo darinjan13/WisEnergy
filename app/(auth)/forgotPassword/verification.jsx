@@ -98,7 +98,7 @@ export default function CodeVerificationScreen() {
                     Code Verification
                 </Text>
                 <View className="mb-40">
-                    {from === 'login' ? (
+                    {from !== "login" ? (
                         <Text className="text-gray-500">
                             Please enter the 6-digit verification code sent to
                             your email address. If you don't see it, please check

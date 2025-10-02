@@ -91,7 +91,7 @@ export default function LoginForm() {
                     <View className={`flex-row items-center border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md p-3 bg-gray-100`}>
                         <MaterialIcons name='email' size={18} color="gray" />
                         <TextInput
-                            className="ml-2 flex-1 p-3"
+                            className="ml-2 flex-1 p-3 text-black"
                             placeholder="Enter Email Address"
                             placeholderTextColor="#9CA3AF"
                             autoCapitalize="none"
@@ -110,7 +110,7 @@ export default function LoginForm() {
                     <View className={`flex-row items-center border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md p-3 bg-gray-100`}>
                         <Fontisto name='locked' size={18} color="gray" />
                         <TextInput
-                            className="ml-2 flex-1 p-3"
+                            className="ml-2 flex-1 p-3 text-black"
                             placeholder="Enter Password"
                             placeholderTextColor="#9CA3AF"
                             secureTextEntry={!showPassword}
