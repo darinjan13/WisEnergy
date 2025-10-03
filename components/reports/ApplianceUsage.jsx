@@ -32,7 +32,7 @@ export default function ApplianceUsage({ category, data }) {
                 data2={data?.barData2 ?? undefined}   // predicted data
                 width={250}             // Adjust width as needed
                 height={250}            // Adjust height for better visualization
-                maxValue={maxValue}  // Ensure dynamic max value
+                maxValue={maxValue + 10}  // Ensure dynamic max value
                 mostNegativeValue={-0.1}
                 spacing={50}            // Adjust spacing between points
                 initialSpacing={30}     // Adjust initial spacing for better readability
@@ -105,14 +105,14 @@ export default function ApplianceUsage({ category, data }) {
                 textColor2="#10b981"
                 showDataPointOnFocus
             /> */}
-            <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center', justifyContent: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
-                    <View style={{ width: 14, height: 14, backgroundColor: '#095333', borderRadius: 2, marginRight: 6 }} />
-                    <Text style={{ fontSize: 12, color: '#374151' }}>Historical</Text>
+            <View className="flex-row mt-12 items-center justify-center">
+                <View className="flex-row items-center mr-4">
+                    <View className="w-3.5 h-3.5 bg-[#095333] rounded-sm mr-1.5" />
+                    <Text className="text-xs text-gray-600">Historical</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ width: 14, height: 14, backgroundColor: '#40cc65', borderRadius: 2, marginRight: 6 }} />
-                    <Text style={{ fontSize: 12, color: '#374151' }}>Predicted</Text>
+                <View className="flex-row items-center">
+                    <View className="w-3.5 h-3.5 bg-[#40cc65] rounded-sm mr-1.5" />
+                    <Text className="text-xs text-gray-600">Predicted</Text>
                 </View>
             </View>
         </View>

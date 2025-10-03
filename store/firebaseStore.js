@@ -201,12 +201,11 @@ export const useUsageStore = create((set, get) => ({
 
     },
 
-    fetchLatestKwhOnce: async (userId, deviceId, applianceName) => {
-        const latestKwhObj = await firebaseUsageServices.fetchLatestKwhOnce(userId, deviceId, applianceName);
-        const value = latestKwhObj[applianceName];
-        set(state => ({
-            latestKwh: { ...state.latestKwh, [applianceName]: value }
-        }));
+    fetchAllLatestKwh: async (userId, deviceId) => {
+        const latestKwh = await firebaseUsageServices.fetchAllLatestKwh(userId, deviceId);
+        set({
+            latestKwh
+        });
     },
 
     updateLatestKwh: async () => {
@@ -216,7 +215,6 @@ export const useUsageStore = create((set, get) => ({
     },
 
     fetchDailyReport: async (userId, deviceId, appliances) => {
-        console.log("ASDASD");
 
         const data = await firebaseUsageServices.getCachedDailyReport(userId, deviceId, appliances);
         set(state => ({
@@ -237,6 +235,20 @@ export const useUsageStore = create((set, get) => ({
                 ...state.reportHistory,
                 weekly: {
                     ...state.reportHistory.weekly,
+                    [deviceId]: data
+                }
+            }
+        }))
+    },
+
+    fetchMonthlyReport: async (userId, deviceId, appliances) => {
+        const data = await firebaseUsageServices.getCachedMonthlyReport(userId, deviceId, appliances);
+
+        set(state => ({
+            reportHistory: {
+                ...state.reportHistory,
+                monthly: {
+                    ...state.reportHistory.monthly,
                     [deviceId]: data
                 }
             }

@@ -1,24 +1,27 @@
-import React from 'react';
-import { View } from 'react-native';
+import React from "react";
+import { View } from "react-native";
 
-const CustomProgressBar = ({ progress, maxProgress, color = "green", backgroundColor }) => {
-    const progressPercentage = (progress / maxProgress) * 100;
+export default function CustomProgressBar({ progress = 0, color = "#4CAF50", height = 20 }) {
+    // Clamp value between 0–100
+    const safeProgress = Math.min(100, Math.max(0, progress));
 
     return (
-        <View className=" w-[100%]">
-            {/* Background bar */}
+        <View
+            style={{
+                height,
+                width: "100%",
+                backgroundColor: "#E5E7EB", // light gray bg
+                borderRadius: height / 2,
+                overflow: "hidden",
+            }}
+        >
             <View
-                className="h-6 w-full rounded-2xl overflow-hidden"
-                style={{ backgroundColor }}
-            >
-                {/* Foreground bar (progress) */}
-                <View
-                    className="h-full rounded-2xl"
-                    style={{ width: `${progressPercentage}%`, backgroundColor: color }}
-                />
-            </View>
+                style={{
+                    height: "100%",
+                    width: `${safeProgress}%`, // percent width
+                    backgroundColor: color,
+                }}
+            />
         </View>
     );
-};
-
-export default CustomProgressBar;
+}

@@ -4,7 +4,7 @@ import { getLastNDays, getLastNWeeks, getLastNMonths, getMonthName } from '../ut
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as predictionServices from './apiService'
 import { format } from "date-fns-tz";
-import { getDailyReportCache, getWeeklyReportCache, saveDailyReportCache, saveWeeklyReportCache } from '../utils/asyncStorageUtils';
+import { getDailyReportCache, getMonthlyReportCache, getWeeklyReportCache, saveDailyReportCache, saveMonthlyReportCache, saveWeeklyReportCache } from '../utils/asyncStorageUtils';
 
 export const listenToLatestPower = (userId, deviceId, applianceName, date, callback, latestKwh) => {
     const powerRef = ref(db, `usage/${userId}/${deviceId}/${applianceName}/${date}`);
@@ -19,13 +19,16 @@ export const listenToLatestPower = (userId, deviceId, applianceName, date, callb
     return () => off(powerRef, 'value', unsubscribe);
 };
 
-export const listenToLatestKwh = (userId, deviceId, applianceName, callback) => {
-    const kwhRef = ref(db, `appliances/${userId}/${deviceId}/${applianceName}/latest_kwh`);
-    const unsubscribe = onValue(kwhRef, (snapshot) => {
-        callback(snapshot.val());
-    });
-    return () => off(kwhRef, 'value', unsubscribe);
-};
+// export const listenToLatestKwh = (userId, deviceId, applianceName, callback) => {
+//     const kwhRef = ref(db, `appliances/${userId}/${deviceId}/${applianceName}/latest_kwh`);
+
+//     const unsubscribe = onValue(kwhRef, (snapshot) => {
+//         console.log(snapshot.val());
+
+//         callback(snapshot.val());
+//     });
+//     return () => off(kwhRef, 'value', unsubscribe);
+// };
 
 export const fetchTodayTrend = async (userId) => {
     try {
@@ -126,11 +129,23 @@ export const fetchTopAppliances = async (userId, limit = 5) => {
     }
 };
 
-export const fetchLatestKwhOnce = async (userId, deviceId, applianceName) => {
-    const kwhRef = ref(db, `appliances/${userId}/${deviceId}/${applianceName}/latest_kwh`)
-    const kwhSnapshot = await get(kwhRef);
+export const fetchAllLatestKwh = async (userId, deviceId) => {
+    const deviceRef = ref(db, `appliances/${userId}/${deviceId}`);
+    const snapshot = await get(deviceRef);
 
-    return { [applianceName]: kwhSnapshot.val() };
+    if (!snapshot.exists()) {
+        return {};
+    }
+
+    const data = snapshot.val();
+    const results = {};
+
+    // Flatten only latest_kwh for each appliance
+    Object.entries(data).forEach(([applianceName, applianceData]) => {
+        results[applianceName] = applianceData?.latest_kwh ?? 0;
+    });
+
+    return results;
 };
 
 export const fetchMonthlyTotalConsumption = (userId, callback) => {
@@ -173,43 +188,49 @@ export const getCachedDailyReport = async (userId, deviceId, appliances) => {
             return { ...item, barData2 };
         })
     );
-
     await saveDailyReportCache(userId, deviceId, updatedData);
     return updatedData;
 }
 
 export const fetchDailyReport = async (userId, deviceId, appliances) => {
-    const dates = getLastNDays(5)
-    const usageData = []
+    const dates = getLastNDays(5);
+    const today = dates[dates.length - 1]; // last entry from getLastNDays = today
+    const usageData = [];
+
     for (const appliance of appliances) {
-        const history = []
+        const history = [];
 
         for (const date of dates) {
-            const dailySummaryRef = ref(db, `daily_summary/${userId}/${deviceId}/${appliance.name}/${date}`)
+            const dailySummaryRef = ref(
+                db,
+                `daily_summary/${userId}/${deviceId}/${appliance.name}/${date}`
+            );
 
-            const snapshot = await get(dailySummaryRef)
+            const snapshot = await get(dailySummaryRef);
 
             let data;
-
             if (snapshot.exists()) {
                 data = snapshot.val();
             }
 
+            const value = Number(data?.total_kWh?.toFixed(2) ?? 0);
+
             history.push({
-                label: date.slice(5),
-                value: Number(data?.total_kWh.toFixed(2) ?? 0),
-                dataPointText: Number(data?.total_kWh.toFixed(2) ?? 0),
-            })
+                label: date.slice(5), // MM-DD
+                value,
+                dataPointText: value,
+            });
         }
 
         usageData.push({
             applianceName: appliance.name,
-            barData: history
-        })
+            latestKwh: history.length > 0 ? history[history.length - 1].value : 0,
+            barData: history,
+        });
     }
 
     return usageData;
-}
+};
 
 export const getCachedWeeklyReport = async (userId, deviceId, appliances) => {
     const isCached = await getWeeklyReportCache(userId, deviceId);
@@ -293,25 +314,93 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
         usageData.push({
             applianceName: appliance.name,
             barData: history,
+            latestKwh: history.length > 0 ? history[history.length - 1].value : 0
         });
     }
 
     return usageData;
 };
 
-export const fetchMonthlyRerport = async (userId, deviceId, appliances) => {
-    const dates = getLastNMonths(5);
+export const getCachedMonthlyReport = async (userId, deviceId, appliances) => {
+    const isCached = await getMonthlyReportCache(userId, deviceId);
+    if (isCached) return isCached;
+
+    const fresh = await fetchMonthlyReport(userId, deviceId, appliances);
+
+    const updatedData = await Promise.all(
+        fresh.map(async (item) => {
+            const predictions = await predictionServices.predict_usage(
+                userId,
+                deviceId,
+                item.applianceName
+            );
+
+            if (!predictions?.monthly?.length) { // <-- you can later add .monthly if backend supports it
+                return item;
+            }
+
+            const barData2 = predictions.weekly.map((p) => ({
+                label: p.label,
+                value: p.value,
+                dataPointText: p.value,
+            }));
+
+            return { ...item, barData2 };
+        })
+    );
+
+    await saveMonthlyReportCache(userId, deviceId, updatedData);
+    return updatedData;
+};
+
+
+
+export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
+    const date = new Date();
+    const year = date.getFullYear().toString();
     const usageData = [];
 
     for (const appliance of appliances) {
-        const history = []
+        let data = {};
+        let months = [];
 
-        for (const date of dates) {
-            const dailySummaryRef = ref(db, `monthly_summary/${userId}/${deviceId}/${appliance.name}/${date}`)
+        // Look up this year
+        const ref1 = ref(db, `monthly_summary/${userId}/${deviceId}/${appliance.name}/${year}`);
+        const snapshot1 = await get(ref1);
 
+        if (snapshot1.exists()) {
+            data = snapshot1.val();          // object keyed by month ("08", "09", "10", …)
+            months = Object.keys(data).sort();
         }
+
+        let history = [];
+
+        history = months.map((month) => {
+            const d = data[month] || {};
+
+            const start = (d.start_date || "").replace(`${year}-`, "");
+            const end = (d.end_date || "").replace(`${year}-`, "");
+            const total = Number((d.total_kWh ?? 0).toFixed(2));
+            console.log(total);
+
+            return {
+                label: month, // "08", "09", etc.
+                value: total,
+                dataPointText: total,
+                date: `${start} - ${end}`,
+            };
+        });
+
+        usageData.push({
+            applianceName: appliance.name,
+            barData: history,
+            latestKwh: history.length > 0 ? history[history.length - 1].value : 0
+        });
     }
-}
+
+    return usageData;
+};
+
 
 export const fetchDailyKwh = async (userId) => {
     const todayStr = format(new Date(), "yyyy-MM-dd", { timeZone: "Asia/Manila" });

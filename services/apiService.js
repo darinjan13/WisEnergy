@@ -2,7 +2,7 @@ import axios from "axios"
 
 const api = axios.create({
     baseURL: 'https://wisenergy-backend.onrender.com',
-    // baseURL: 'http://192.168.1.6:10000',
+    // baseURL: 'http://192.168.1.8:10000',
     // baseURL: 'http://192.168.0.113:10000',
     timeout: 20000,
     headers: {
@@ -81,6 +81,21 @@ export const generate_otp = async (email, userVerification) => {
         return { success: false, message: error.response.data.detail };
     }
 }
+
+export const verify_otp = async (email, code) => {
+    try {
+        const response = await api.post(`/verify-otp`, {
+            email,
+            code
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return {
+            success: false,
+            message: error.response?.data?.detail || "OTP verification failed"
+        };
+    }
+};
 
 export const reset_password = async (email, password) => {
     try {

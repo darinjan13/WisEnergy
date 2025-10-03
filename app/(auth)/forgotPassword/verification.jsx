@@ -1,17 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
-import { db, fs } from '../../../firebase/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { db } from '@/firebase/firebaseConfig';
 import { router, useLocalSearchParams } from 'expo-router';
-import { generate_otp } from '../../../services/apiService';
+import { generate_otp, verify_otp } from '@/services/apiService';
 import { Feather } from '@expo/vector-icons';
 import OTPTextInput from "react-native-otp-textinput";
-import useAuth from '../../../hooks/useAuth';
-import { get, ref, update } from 'firebase/database';
-import SuccessModal from '../../../components/Modals/SuccessModal';
+import useAuth from '@/hooks/useAuth';
+import { ref } from 'firebase/database';
+import SuccessModal from '@/components/Modals/SuccessModal';
 
 export default function CodeVerificationScreen() {
-    const { email, from, uid } = useLocalSearchParams();
+
+    const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
+        const userRef = ref(db, "users/" + user_id);
+        const now = new Date();
+        const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        set(userRef, {
+            email: email,
+            first_name: first_name,
+            last_name: last_name,
+            location: location,
+            role: role,
+            created_at: offsetDate.toISOString(),
+            notify_smart_recommendation: false,
+            notify_high_usage_alerts: false,
+            notify_system_updates: false,
+        });
+    }
+
+    const { email, from } = useLocalSearchParams();
     const { logout } = useAuth();
 
     const [isLoading, setIsLoading] = useState(false)
@@ -31,33 +48,48 @@ export default function CodeVerificationScreen() {
     };
 
     const verifyCode = async () => {
-        setIsLoading(true)
-        const verificationRef = doc(fs, "otp-verification", email.replace(".", "_"));
+        setIsLoading(true);
+        try {
+            // 🔐 Call backend verify endpoint
+            const result = await verify_otp(email, otp);
 
-        const verificationSnap = await getDoc(verificationRef);
-        const data = verificationSnap.data();
+            if (!result.success) {
+                Alert.alert("Error", result.message || "OTP is incorrect.");
+                setIsLoading(false);
+                return;
+            }
 
-        if (otp === data.otp) {
-            if (from === "login" && uid) {
-                const userRef = ref(db, 'users/' + uid);
-                const userVerificationSnap = await get(userRef);
-
-                if (!userVerificationSnap.exists()) {
-                    throw new Error("User data not found.");
-                }
-                await update(userRef, { verified: true });
-                setShowSuccess(true);
-            } else {
+            // ✅ OTP verified — now handle flows
+            if (from === "forgotPassword") {
                 router.navigate({
                     pathname: "/forgotPassword/resetpassword",
-                    params: { email }
-                })
+                    params: { email },
+                });
+            } else if (from === "register") {
+                const { firstName, lastName, password, location } = useLocalSearchParams();
+
+                // Create Firebase Auth account
+                const res = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(res.user, { displayName: firstName + " " + lastName });
+
+                // Save user details to Realtime Database
+                await saveUserDetails(res.user.uid, location, email, firstName, lastName, "user");
+
+                Toast.show({
+                    type: "success",
+                    text1: "Registration Successful",
+                    text2: "You can now log in.",
+                });
+
+                router.replace("/(auth)/login");
             }
-        } else {
-            Alert.alert("Error", "OTP is incorrect.")
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Error", "Something went wrong.");
         }
-        setIsLoading(false)
-    }
+        setIsLoading(false);
+    };
+
 
     function obfuscateEmail(email) {
         if (!email || !email.includes('@')) return email;
@@ -73,15 +105,6 @@ export default function CodeVerificationScreen() {
         return `${local.slice(0, 3)}***@${domain}`;
     }
 
-    const handleOnBackPress = () => {
-        if (from === "login" || from === "index") {
-            router.replace("/(auth)/login")
-            logout();
-        } else {
-            router.back()
-        }
-    }
-
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -89,7 +112,7 @@ export default function CodeVerificationScreen() {
         >
             <View className="h-full px-6 pt-8 bg-white">
                 <TouchableOpacity
-                    onPress={handleOnBackPress}
+                    onPress={() => router.back()}
                     className="w-10 -ml-1 my-10"
                 >
                     <Feather name='arrow-left' size={30} color="#095333" />
@@ -98,7 +121,7 @@ export default function CodeVerificationScreen() {
                     Code Verification
                 </Text>
                 <View className="mb-40">
-                    {from !== "login" ? (
+                    {from === "register" ? (
                         <Text className="text-gray-500">
                             Please enter the 6-digit verification code sent to
                             your email address. If you don't see it, please check

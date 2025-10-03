@@ -20,7 +20,7 @@ export default function Dashboard() {
     const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
     const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption } = useUsageStore();
-    const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget, } = useBudgetStore();
+    const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget } = useBudgetStore();
     const [efficiency, setEfficiency] = useState(0);
     const [daysRemaining, setDaysRemaining] = useState(0);
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
@@ -50,7 +50,6 @@ export default function Dashboard() {
                 (sum, item) => sum + (item.value || 0),
                 0
             );
-            console.log("Total Consumption:", total);
             setTotalEnergyConsumption(total)
         }
     }, [allMonthlyTotalConsumption]);
@@ -101,15 +100,16 @@ export default function Dashboard() {
     useEffect(() => {
         if (locationRate > 0 && monthlyTotalConsumption > 0 && monthlyBudget?.budget_php > 0) {
             fetchPercentUsed(monthlyTotalConsumption);
-            setEfficiency(Math.max(0, 100 - (((monthlyBudget?.budget_php / locationRate) / monthlyTotalConsumption) * 100)))
+            setEfficiency(Math.max(0, 100 - ((monthlyTotalConsumption / (monthlyBudget?.budget_php / locationRate)) * 100)))
+
         }
     }, [locationRate, monthlyTotalConsumption, monthlyBudget])
 
     return (
         <View>
-            <ScrollView className="p-4 bg-white" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
+            <ScrollView className="p-5 bg-white" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
                 <Header />
-                {locationRate > 0 && (
+                {locationRate > 0 ? (
                     <>
                         <View className="p-6 mb-6 items-center">
                             <PieChart
@@ -124,7 +124,7 @@ export default function Dashboard() {
                                 centerLabelComponent={() => {
                                     return (
                                         <View className="items-center">
-                                            <Text style={{ fontSize: RFValueWidth(30) }}>{efficiency.toFixed(1)}%</Text>
+                                            <Text style={{ fontSize: RFValueWidth(30) }}>{efficiency.toFixed(0)}%</Text>
                                             <Text className="text-center">Energy Efficiency Index</Text>
                                         </View>
                                     );
@@ -162,7 +162,7 @@ export default function Dashboard() {
                                 <View className="bg-white rounded-xl p-4 items-center" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="lightning-bolt-outline" size={30} color="gray" />
-                                        <Text style={{ fontSize: RFValueWidth(20) }} className="font-extrabold text-green-600">{totalEnergyConsumption}</Text>
+                                        <Text style={{ fontSize: RFValueWidth(20) }} className="font-extrabold text-green-600">{totalEnergyConsumption.toFixed(2)}</Text>
                                     </View>
                                     <Text className="text-gray-500 text-xs italic">
                                         Total Energy Consumption(kWh)
@@ -236,6 +236,13 @@ export default function Dashboard() {
                             )}
                         </View>
                     </>
+                ) : (
+                    <View className="h-screen -mt-36 items-center justify-center">
+                        <ActivityIndicator size="large" color="#166534" />
+                        <Text className="text-gray-500 mt-4 text-lg font-semibold">
+                            Loading dashboard...
+                        </Text>
+                    </View>
                 )}
             </ScrollView>
             <BudgetModal

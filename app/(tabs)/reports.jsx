@@ -17,7 +17,7 @@ import { set } from "date-fns";
 export default function reports() {
     const insets = useSafeAreaInsets();
     const { devices, setDevices, fetchUserAppliances, userAppliances, userDevices } = useDeviceStore();
-    const { reportHistory, fetchDailyReport, fetchWeeklyReport, monthlyTotalConsumption, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption } = useUsageStore();
+    const { reportHistory, fetchDailyReport, fetchWeeklyReport, fetchMonthlyReport, monthlyTotalConsumption, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, latestKwh, fetchAllLatestKwh } = useUsageStore();
     const { monthlyBudget, allBudget, fetchAllBudget } = useBudgetStore();
 
     const [reportCategory, setReportCategory] = useState("Daily");
@@ -77,6 +77,7 @@ export default function reports() {
         // if (userAppliances.length === 0) fetchUserAppliances();
     }, [devices])
 
+
     const fetchDailyReport1 = async (user_id, selectedDevice, appliances) => {
         setReportLoading(true);
         await fetchDailyReport(user_id, selectedDevice, appliances);
@@ -84,6 +85,10 @@ export default function reports() {
     const fetchWeeklyReport1 = async (user_id, selectedDevice, appliances) => {
         setReportLoading(true);
         await fetchWeeklyReport(user_id, selectedDevice, appliances);
+    }
+    const fetchMonthlyReport1 = async (user_id, selectedDevice, appliances) => {
+        setReportLoading(true);
+        await fetchMonthlyReport(user_id, selectedDevice, appliances);
     }
 
     useEffect(() => {
@@ -93,8 +98,26 @@ export default function reports() {
                 reportData.find((device) => {
 
                     if (device.device_id == selectedDevice) {
-                        fetchDailyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
-                        fetchWeeklyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                        switch (reportCategory) {
+                            case "Weekly":
+                                console.log("Weekly", selectedDevice);
+                                setMaxProgress(50);
+                                fetchWeeklyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                                break;
+                            case "Daily":
+                                console.log("Daily", selectedDevice);
+
+                                setMaxProgress(10);
+                                fetchDailyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                                break;
+                            case "Monthly":
+                                setMaxProgress(10);
+                                fetchMonthlyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                                break;
+                            default:
+                                break;
+                        }
+                        fetchAllLatestKwh(auth.currentUser?.uid, selectedDevice)
                     }
                 })
             } else {
@@ -104,20 +127,20 @@ export default function reports() {
         }
     }, [selectedDevice, reportCategory])
 
-    useEffect(() => {
-        setReportLoading(true);
-        switch (reportCategory) {
-            case "Weekly":
-                setMaxProgress(50);
-                break;
-            case "Daily":
-                setMaxProgress(10);
-                break;
-            default:
-                break;
-        }
+    // useEffect(() => {
+    //     setReportLoading(true);
+    //     switch (reportCategory) {
+    //         case "Weekly":
+    //             setMaxProgress(50);
+    //             break;
+    //         case "Daily":
+    //             setMaxProgress(10);
+    //             break;
+    //         default:
+    //             break;
+    //     }
 
-    }, [reportCategory])
+    // }, [reportCategory])
 
     useEffect(() => {
         if (reports.length > 0) {
@@ -156,10 +179,15 @@ export default function reports() {
         )
     }
 
+    const maxValueData1 = lineData1.length ? Math.max(...lineData1.map(d => d.value)) : 0;
+    const maxValueData2 = lineData2.length ? Math.max(...lineData2.map(d => d.value)) : 0;
+
+    // Take the larger of the two
+    const chartMax = Math.max(maxValueData1, maxValueData2);
 
     return (
         <View className="flex-1 bg-gray-100">
-            <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
+            <ScrollView className="p-5" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
                 <Header />
                 {reportData.length === 0 ? (
                     <View className="h-screen -mt-36 items-center justify-center">
@@ -174,9 +202,9 @@ export default function reports() {
                             <LineChart
                                 data={lineData1}
                                 data2={lineData2}
-                                height={200}
-                                maxValue={monthlyBudget?.budget_kwh + 20}
-                                // stepValue={50}
+                                height={150}
+                                maxValue={chartMax + 10}
+                                stepValue={chartMax / 2}
                                 showVerticalLines
                                 spacing={44}
                                 initialSpacing={30}
@@ -192,7 +220,18 @@ export default function reports() {
                                 textShiftX={-5}
                                 textFontSize={13}
                             />
+                            <View className="flex-row mt-5 items-center justify-center">
+                                <View className="flex-row items-center mr-4">
+                                    <View className="w-3.5 h-3.5 bg-orange-500 rounded-sm mr-1.5" />
+                                    <Text className="text-xs text-gray-600">Budget</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <View className="w-3.5 h-3.5 bg-sky-500 rounded-sm mr-1.5" />
+                                    <Text className="text-xs text-gray-600">Consumption</Text>
+                                </View>
+                            </View>
                         </View>
+                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Consumption</Text>
                         <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl shadow-sm justify-between items-center">
                             {category?.map((label, index) => (
                                 <TouchableOpacity
@@ -209,6 +248,7 @@ export default function reports() {
                                 <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
                                 <View className="flex-1 border border-gray-300 rounded-xl overflow-hidden">
                                     <Picker
+                                        style={{ backgroundColor: "white" }}
                                         selectedValue={selectedDevice}
                                         onValueChange={(itemValue) => {
                                             if (selectedDevice === itemValue) {
@@ -221,6 +261,7 @@ export default function reports() {
                                     >
                                         {reportData.map((userDevice) => (
                                             <Picker.Item
+                                                style={{ color: "black", backgroundColor: "white" }}
                                                 key={userDevice.device_id}
                                                 label={userDevice.device_nickname || "Unnamed Device"}
                                                 value={userDevice.device_id}
@@ -235,11 +276,16 @@ export default function reports() {
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
                             {!reportLoading ? (
                                 reports.map((item, index) => {
-                                    let powerUsed = item?.barData?.reduce((total, current) => total + current.value, 0) || 0;
+                                    // Always use latestKwh (already computed depending on category)
+                                    const powerUsed = item.latestKwh ?? 0;
 
-                                    if (powerUsed > maxProgress) {
-                                        powerUsed = maxProgress;
-                                    }
+                                    // Total usage across all appliances (still based on latestKwh)
+                                    const totalUsage = reports.reduce((sum, r) => {
+                                        return sum + (r.latestKwh ?? 0);
+                                    }, 0);
+
+                                    // Percentage contribution
+                                    const percent = totalUsage > 0 ? (powerUsed / totalUsage) * 100 : 0;
 
                                     return (
                                         <TouchableOpacity
@@ -254,14 +300,19 @@ export default function reports() {
                                                 {/* Appliance name */}
                                                 <Text className="w-24">{item.applianceName}</Text>
 
-                                                {/* Progress bar takes remaining space */}
-                                                <View className="flex-1 ">
+                                                {/* Progress bar */}
+                                                <View className="flex-1">
                                                     <CustomProgressBar
-                                                        progress={powerUsed}
-                                                        maxProgress={maxProgress}
+                                                        progress={percent}
+                                                        maxProgress={100}
                                                         color="#4CAF50"
                                                     />
                                                 </View>
+
+                                                {/* Show actual kWh */}
+                                                <Text className="ml-2 text-gray-600 text-sm">
+                                                    {powerUsed.toFixed(2)} kWh
+                                                </Text>
                                             </View>
                                         </TouchableOpacity>
                                     );
@@ -269,54 +320,12 @@ export default function reports() {
                             ) : (
                                 <View className="h-full p-4 flex-1 items-center justify-center">
                                     <ActivityIndicator size="large" color="#166534" />
-                                    <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                                    <Text className="text-gray-500 mt-4 text-lg font-semibold">
+                                        Loading your reports data....
+                                    </Text>
                                 </View>
                             )}
                         </View>
-                        {/* {Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0 ? (
-                            <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
-                                {reportLoading ? (
-                                    reports?.map((item, index) => {
-                                        let powerUsed = item?.barData?.reduce((total, current) => total + current.value, 0) || 0;
-
-                                        let maxProgress = 10;
-
-                                        if (powerUsed > maxProgress) {
-                                            powerUsed = maxProgress;
-                                        }
-
-                                        return (
-                                            <TouchableOpacity
-                                                key={item.applianceName + index}
-                                                onPress={() => {
-                                                    setModalVisible(true);
-                                                    setSelectedAppliance(item);
-                                                }}
-                                                className="mb-4"
-                                            >
-                                                <View className="w-full flex flex-row flex-wrap items-center mb-5">
-                                                    <Text className="mr-5 w-24">{item.applianceName}</Text>
-                                                    <CustomProgressBar
-                                                        progress={powerUsed}
-                                                        maxProgress={maxProgress}
-                                                        color="#4CAF50"
-                                                    />
-                                                </View>
-                                            </TouchableOpacity>
-                                        );
-                                    })
-                                ) : (
-                                    <View className="h-full flex-1 items-center justify-center">
-                                        <ActivityIndicator size="large" color="#166534" />
-                                        <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
-                                    </View>
-                                )}
-                            </View>
-                        ) : (
-                            <View className="h-full flex-1 items-center justify-center">
-                                <Text className="text-gray-500 mt-4 text-lg font-semibold">No reports data...</Text>
-                            </View>
-                        )} */}
                     </View>
                 )}
             </ScrollView>

@@ -1,25 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, TouchableWithoutFeedback } from 'react-native';
-import { Portal } from 'react-native-paper';
+import { router } from 'expo-router';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { auth } from '../../firebase/firebaseConfig';
 
 const Header = () => {
-    const [notificationDropdownVisible, setNotificationDropdownVisible] = useState(false);
-    const [hasUnread, setHasUnread] = useState(true);
 
-    useFocusEffect(
-        useCallback(() => {
-            return () => {
-                setNotificationDropdownVisible(false);
-            };
-        }, [])
-    );
-
-    const handleCloseDropdown = () => {
-        setNotificationDropdownVisible(false);
-    }
 
     return (
         <View className="flex-row justify-between items-center h-16 mb-4">
@@ -33,12 +18,7 @@ const Header = () => {
 
             <View className="flex-row items-center">
                 {/* Notification Bell */}
-                <TouchableOpacity
-                    onPress={() => {
-                        setNotificationDropdownVisible(!notificationDropdownVisible);
-                        setHasUnread(false);
-                    }}
-                >
+                <TouchableOpacity onPress={() => router.replace('/notifications')}>
                     <View
                         className="w-12 h-12 rounded-2xl bg-white items-center justify-center"
                         style={{
@@ -67,19 +47,6 @@ const Header = () => {
                     </View>
                 </TouchableOpacity>
 
-                {/* Notification Dropdown */}
-                <Portal>
-                    {notificationDropdownVisible && (
-                        <TouchableWithoutFeedback onPress={handleCloseDropdown}>
-                            <View className="absolute inset-0 z-40">
-                                <View className="absolute top-[60px] right-4 bg-white border border-gray-300 rounded-xl shadow-md w-64 p-3 z-50">
-                                    <Text className="text-sm text-gray-800">🔌 New usage report is ready!</Text>
-                                    <Text className="text-sm text-gray-800 mt-2">⚡ You saved 12% this week!</Text>
-                                </View>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    )}
-                </Portal>
             </View>
         </View>
     );

@@ -31,7 +31,7 @@ export default function ForgotPasswordScreen() {
         setIsLoading(false)
         router.navigate({
           pathname: '/forgotPassword/verification',
-          params: { email, from: "reset", userRef: null },
+          params: { email, from: "forgotPassword" },
         });
       }
       else {

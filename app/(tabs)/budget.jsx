@@ -63,7 +63,7 @@ export default function Budget() {
   }, [locationRate])
   return (
     <View className="bg-gray-100">
-      <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
+      <ScrollView className="p-5" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
         <Header />
         {loading ? (
           <View className="h-screen -mt-36 items-center justify-center">

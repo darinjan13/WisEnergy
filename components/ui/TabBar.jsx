@@ -41,48 +41,57 @@ const TabBar = ({ state, descriptors, navigation }) => {
     };
 
     return (
-        <View style={styles.container}>
-            {state.routes.map((route, index) => {
+        <>
+            {!(state.routes[state.index]?.name === "notifications") && (
+                <View style={styles.container}>
+                    {state.routes.map((route, index) => {
+                        const { options } = descriptors[route.key];
+                        if (options.title === "Appliance" || options.title === "Notifications") {
+                            return null;
+                        }
+                        const label =
+                            options.tabBarLabel !== undefined
+                                ? options.tabBarLabel
+                                : options.title !== undefined
+                                    ? options.title
+                                    : route.name;
 
-                const { options } = descriptors[route.key];
-                if (options.title === "Appliance") {
-                    return null;
-                }
-                const label =
-                    options.tabBarLabel !== undefined
-                        ? options.tabBarLabel
-                        : options.title !== undefined
-                            ? options.title
-                            : route.name;
+                        const isFocused = state.index === index;
 
-                const isFocused = state.index === index;
+                        const onPress = () => {
+                            const event = navigation.emit({
+                                type: "tabPress",
+                                target: route.key,
+                                canPreventDefault: true,
+                            });
 
-                const onPress = () => {
-                    const event = navigation.emit({
-                        type: 'tabPress',
-                        target: route.key,
-                        canPreventDefault: true,
-                    });
+                            if (!isFocused && !event.defaultPrevented) {
+                                navigation.navigate(route.name, route.params);
+                            }
+                        };
 
-                    if (!isFocused && !event.defaultPrevented) {
-                        navigation.navigate(route.name, route.params);
-                    }
-                };
-
-                return (
-                    <TouchableOpacity
-                        key={route.key}
-                        onPress={onPress}
-                        style={styles.tabItem}
-                    >
-                        {getTabIcon(route.name, isFocused)}
-                        <Text style={[styles.tabItemText, { fontWeight: isFocused ? 'bold' : 'normal' }, { color: isFocused ? "#039400" : "black" }]}>
-                            {label}
-                        </Text>
-                    </TouchableOpacity>
-                );
-            })}
-        </View>
+                        return (
+                            <TouchableOpacity
+                                key={route.key}
+                                onPress={onPress}
+                                style={styles.tabItem}
+                            >
+                                {getTabIcon(route.name, isFocused)}
+                                <Text
+                                    style={[
+                                        styles.tabItemText,
+                                        { fontWeight: isFocused ? "bold" : "normal" },
+                                        { color: isFocused ? "#039400" : "black" },
+                                    ]}
+                                >
+                                    {label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            )}
+        </>
     );
 }
 

@@ -10,25 +10,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generate_otp } from "@/services/apiService";
 import { clearCache } from "@/utils/asyncStorageUtils";
 
-const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
-    const userRef = ref(db, "users/" + user_id);
-    const now = new Date();
-    const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    set(userRef, {
-        email: email,
-        first_name: first_name,
-        last_name: last_name,
-        location: location,
-        role: role,
-        budget_kwh: 0,
-        total_energy_consumption: 0,
-        created_at: offsetDate.toISOString(),
-        notify_smart_recommendation: false,
-        notify_high_usage_alerts: false,
-        notify_system_updates: false,
-        verified: false,
-    });
-}
 
 
 export default function useAuth() {
@@ -49,32 +30,33 @@ export default function useAuth() {
 
     const register = useCallback(async (setIsLoading, location, firstName, lastName, email, password) => {
         try {
-            const res = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(res.user, { displayName: firstName + " " + lastName });
+            const result = await generate_otp(email, true);
 
-            await saveUserDetails(res.user.uid, location, email, firstName, lastName, "user");
-            Toast.show({
-                type: "success",
-                text1: "Registration Successful",
-                text2: "You can now log in.",
-            });
-            const result = await generate_otp(email, true)
-            if (result.success)
+            if (result.success) {
                 router.navigate({
                     pathname: '/forgotPassword/verification',
-                    params: { email, from: "login", uid },
+                    params: {
+                        email,
+                        from: "register",
+                        location,
+                        firstName,
+                        lastName,
+                        password
+                    },
                 });
-        } catch (e) {
-            let message = "An error occurred. Please try again.";
-            if (e.code === "auth/email-already-in-use") {
-                message = "This email is already in use.";
-            } else if (e.code === "auth/weak-password") {
-                message = "Password should be at least 6 characters.";
+            } else {
+                Toast.show({
+                    type: "error",
+                    text1: "OTP Failed",
+                    text2: result.message || "Unable to send OTP. Please try again.",
+                });
+                setIsLoading(false);
             }
+        } catch (e) {
             Toast.show({
                 type: "error",
-                text1: "Registration Failed",
-                text2: message,
+                text1: "Error",
+                text2: "Something went wrong. Please try again.",
             });
             setIsLoading(false);
         }
@@ -82,38 +64,20 @@ export default function useAuth() {
 
     const login = useCallback(async (setIsLoading, email, password, rememberMe) => {
         setIsLoading(true);
+
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            const uid = auth.currentUser.uid
-            const userRef = ref(db, 'users/' + auth.currentUser.uid);
-
-            const snapshot = await get(userRef);
-            if (!snapshot.exists()) {
-                throw new Error("User data not found.");
-            }
-            const userData = snapshot.val();
-
-            if (userData.verified === false || userData.verified === undefined) {
-
-                const result = await generate_otp(email, true)
-                if (result.success)
-                    router.navigate({
-                        pathname: '/forgotPassword/verification',
-                        params: { email, from: "login", uid },
-                    });
-            } else {
-                Toast.show({
-                    type: "success",
-                    text1: "Welcome back!",
-                    text2: "You are now logged in.",
-                });
-                if (rememberMe)
-                    await AsyncStorage.setItem('rememberedUser', JSON.stringify({ email, password }))
-                else
-                    await AsyncStorage.removeItem('rememberedUser')
-                setIsLoading(false);
-                router.replace("/(tabs)/dashboard");
-            }
+            Toast.show({
+                type: "success",
+                text1: "Welcome back!",
+                text2: "You are now logged in.",
+            });
+            if (rememberMe)
+                await AsyncStorage.setItem('rememberedUser', JSON.stringify({ email, password }))
+            else
+                await AsyncStorage.removeItem('rememberedUser')
+            setIsLoading(false);
+            router.replace("/(tabs)/dashboard");
         } catch (e) {
             let message = "An error occurred. Please try again.";
             if (e.code === "auth/user-not-found") {

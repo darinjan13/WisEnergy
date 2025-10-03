@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AuthHeader from "../../components/ui/AuthHeader";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useAuth from "../../hooks/useAuth";
 import { Checkbox } from "react-native-paper";
 import { Picker } from "@react-native-picker/picker";
@@ -76,6 +76,8 @@ export default function RegisterForm() {
 
     const handleSubmit = () => {
         setIsLoading(true);
+        console.log(form);
+
         if (!validateForm()) return;
         register(setIsLoading, form.location, form.firstName, form.lastName, form.email, form.password);
     };

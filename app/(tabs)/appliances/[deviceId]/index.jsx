@@ -20,7 +20,6 @@ import { format } from "date-fns-tz";
 export default function DeviceDetails() {
     const insets = useSafeAreaInsets();
     const { devices, userAppliances, setDeviceApplianceName, setApplianceActive, setOnlyOneActive } = useDeviceStore();
-    const { latestKwh, fetchLatestKwhOnce } = useUsageStore();
 
     const userId = auth?.currentUser.uid;
     const { deviceId } = useLocalSearchParams();
@@ -31,7 +30,7 @@ export default function DeviceDetails() {
     const [applianceNickname, setApplianceNickname] = useState("");
     const [device, setDevice] = useState(null);
 
-    const [applianceKWh, setApplianceKWh] = useState(0);
+    const [applianceKWh, setApplianceKWh] = useState([]);
     const [appliancePower, setAppliancePower] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -65,7 +64,6 @@ export default function DeviceDetails() {
         deviceId,
         setAppliancePower,
         setApplianceKWh,
-        latestKwh
     });
 
     const setAppliancesInActive = () => {
@@ -183,13 +181,20 @@ export default function DeviceDetails() {
     }
 
     return (
-        <View className="px-4" style={{ paddingTop: insets.top }}>
+        <View className="p-5" style={{ paddingTop: insets.top }}>
             <Header />
-
-            <Text className="text-xl font-bold text-[#2E4F4F]">Device: {deviceId}</Text>
+            <View className="mb-4 flex-row items-center">
+                <TouchableOpacity
+                    onPress={() => router.replace("/devices")}
+                    className="w-10 -ml-2"
+                >
+                    <Feather name='arrow-left' size={30} color="#095333" />
+                </TouchableOpacity>
+                <Text className="text-2xl font-bold text-[#2E4F4F]">Back to Devices</Text>
+            </View>
+            <Text className="text-2xl font-bold text-[#2E4F4F]">Device: {deviceId}</Text>
             <Text className="text-gray-700 mt-2">Status: {device.status}</Text>
             <Text className="text-gray-700">Paired at: {device.paired_at}</Text>
-            <Text className="text-gray-700">Last updated: asd</Text>
 
             <View className="flex-row items-center justify-between mt-10 mb-5">
                 <Text className="text-2xl font-bold text-[#2E4F4F]">Appliances</Text>
@@ -200,7 +205,7 @@ export default function DeviceDetails() {
 
             <ScrollView showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
                 {deviceAppliances.length > 0 && (
-                    <View className="mb-40">
+                    <View className="mb-40 p-1">
                         <RadioButton.Group
                             onValueChange={handleSelectedAppliance}
                             value={selectedAppliance}
@@ -216,7 +221,7 @@ export default function DeviceDetails() {
                                         key={index}
                                         power={appliancePower[appliance.name] || 0}
                                         appliance={appliance}
-                                        applianceKWH={latestKwh[appliance.name] || 0}
+                                        applianceKWH={applianceKWh[appliance.name] || 0}
                                         onEdit={() => showEditModal(appliance)}
                                         onDelete={() => openConfirmModal(appliance.name, "delete")}
                                         selectedAppliance={selectedAppliance}
@@ -279,7 +284,6 @@ export default function DeviceDetails() {
                 visible={showConfirmModal}
                 onCancel={() => {
                     setShowConfirmModal(false);
-                    setApplianceName(null);
                 }}
                 onConfirm={handleDeleteConfirmed}
                 action={action}
