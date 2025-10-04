@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { FontAwesome, FontAwesome6, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { PieChart } from 'react-native-gifted-charts';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
+import { Feather, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Tooltip } from 'react-native-paper';
 
-import Header from '../../components/ui/Header';
-import { auth } from '../../firebase/firebaseConfig';
-import { useAiGeneratedStore, useBudgetStore, useDeviceStore, useUsageStore } from '../../store/firebaseStore';
-import BudgetModal from '../../components/budget/SetBudget';
-import CustomProgressBar from '../../components/reports/CustomProgressBar';
+import Header from '@/components/ui/Header';
+import { auth } from '@/firebase/firebaseConfig';
+import { useAiGeneratedStore, useBudgetStore, useDeviceStore, useUsageStore } from '@/store/firebaseStore';
+import BudgetModal from '@/components/budget/SetBudget';
+import CustomProgressBar from '@/components/reports/CustomProgressBar';
 import { format } from 'date-fns-tz';
-import AIInsightsCarousel from '../../components/ai/Messages';
-import { RFValueWidth } from '../../utils/responsive';
+import AIInsightsCarousel from '@/components/ai/Messages';
 
 export default function Dashboard() {
     const insets = useSafeAreaInsets();
@@ -24,7 +24,9 @@ export default function Dashboard() {
     const [efficiency, setEfficiency] = useState(0);
     const [daysRemaining, setDaysRemaining] = useState(0);
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
-
+    const [selectedBar, setSelectedBar] = useState(null);
+    const [hourlyData, setHourlyData] = useState([]);
+    const [efficiencyTooltip, setEfficiencyTooltip] = useState(false);
     const [userName, setUserName] = useState("");
 
     useFocusEffect(
@@ -105,13 +107,47 @@ export default function Dashboard() {
         }
     }, [locationRate, monthlyTotalConsumption, monthlyBudget])
 
+    const handleBarPress = (label) => {
+        const ranges = {
+            "12am-4am": [0, 3],
+            "4am-8am": [4, 7],
+            "8am-12pm": [8, 11],
+            "12pm-4pm": [12, 15],
+            "4pm-8pm": [16, 19],
+            "8pm-12am": [20, 23],
+        };
+
+        const [start, end] = ranges[label];
+
+        const filtered = Object.entries(todayTrend?.hourlyData || {})
+            .filter(([hourKey]) => {
+                const h = parseInt(hourKey.split(":")[0]);
+                return h >= start && h <= end;
+            })
+            .map(([hour, val]) => {
+                const h = parseInt(hour.split(":")[0]);
+                const ampm = h >= 12 ? "pm" : "am";
+                const displayHour = h % 12 === 0 ? 12 : h % 12;
+                return {
+                    label: `${displayHour}${ampm}`, // 1am, 2am, 3pm, etc.
+                    value: parseFloat(val) || 0,
+                };
+            });
+
+        setHourlyData(filtered);
+        setSelectedBar({
+            label,
+            value: filtered.reduce((a, b) => a + b.value, 0),
+        });
+    };
+
     return (
         <View>
             <ScrollView className="p-5 bg-white" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
                 <Header />
                 {locationRate > 0 ? (
                     <>
-                        <View className="p-6 mb-6 items-center">
+                        <View className="p-6 mb-6 items-center relative">
                             <PieChart
                                 donut
                                 radius={80}
@@ -124,13 +160,39 @@ export default function Dashboard() {
                                 centerLabelComponent={() => {
                                     return (
                                         <View className="items-center">
-                                            <Text style={{ fontSize: RFValueWidth(30) }}>{efficiency.toFixed(0)}%</Text>
-                                            <Text className="text-center">Energy Efficiency Index</Text>
+                                            <Text className="text-4xl font-bold">{efficiency.toFixed(0)}</Text>
+                                            <Text className="text-md text-center">Energy Efficiency Index</Text>
+                                            <TouchableOpacity
+                                                onPress={() => setEfficiencyTooltip(!efficiencyTooltip)}
+                                                className="p-1"
+                                            >
+                                                <Feather name="info" size={18} color="gray" />
+                                            </TouchableOpacity>
+
                                         </View>
                                     );
                                 }}
                                 textColor="black"
                             />
+                            {efficiencyTooltip && (
+                                <TouchableWithoutFeedback onPress={() => setEfficiencyTooltip(false)}>
+                                    <View className="absolute top-[150px] bg-white border border-gray-300 rounded-xl p-3 w-[90%] z-50 mx-auto"
+                                        style={{
+                                            shadowColor: "#000",
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.15,
+                                            shadowRadius: 4,
+                                            elevation: 3,
+                                        }}
+                                    >
+                                        <Text className="text-gray-600 text-[13px] leading-5 text-center">
+                                            Energy Efficiency Index is calculated from your consumption patterns
+                                            compared to your budget and previous usage. A higher score means
+                                            more efficient energy use.
+                                        </Text>
+                                    </View>
+                                </TouchableWithoutFeedback>
+                            )}
                         </View>
 
                         {/* Welcome Back + Stats */}
@@ -151,7 +213,7 @@ export default function Dashboard() {
                                 <View className="bg-white rounded-xl p-4 mb-3 items-center" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="power-plug-outline" size={30} color="gray" />
-                                        <Text style={{ fontSize: RFValueWidth(20) }} className="font-bold text-green-600">
+                                        <Text className="text-3xl font-bold text-green-600">
                                             {userDevices?.length}
                                         </Text>
                                     </View>
@@ -162,7 +224,7 @@ export default function Dashboard() {
                                 <View className="bg-white rounded-xl p-4 items-center" style={styles.cardShadow}>
                                     <View className="flex-row items-center">
                                         <MaterialCommunityIcons name="lightning-bolt-outline" size={30} color="gray" />
-                                        <Text style={{ fontSize: RFValueWidth(20) }} className="font-extrabold text-green-600">{totalEnergyConsumption.toFixed(2)}</Text>
+                                        <Text className="text-3xl font-bold text-green-600">{totalEnergyConsumption.toFixed(2)}</Text>
                                     </View>
                                     <Text className="text-gray-500 text-xs italic">
                                         Total Energy Consumption(kWh)
@@ -179,11 +241,11 @@ export default function Dashboard() {
                                 Tap a bar to see exact time range & kWh
                             </Text>
                             <View className="flex-row justify-between items-end h-32">
-                                {Object.entries(todayTrend || {}).map(([label, value], i) => (
-                                    <TouchableOpacity key={i} className="items-center">
+                                {Object.entries(todayTrend?.buckets || {}).map(([label, value], i) => (
+                                    <TouchableOpacity key={i} className="items-center" onPress={() => handleBarPress(label)}>
                                         <View className="w-6 bg-green-600 rounded-md" style={{ height: value * 100 }} />
-                                        <Text style={{ fontSize: RFValueWidth(10) }} className="mt-1 text-gray-500">{value.toFixed(2)}</Text>
-                                        <Text style={{ fontSize: RFValueWidth(10) }} className="mt-1 text-gray-500">{label}</Text>
+                                        <Text className="text-md mt-1 text-gray-500">{value.toFixed(2)}</Text>
+                                        <Text className="text-sm mt-1 text-gray-500">{label}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
@@ -245,6 +307,62 @@ export default function Dashboard() {
                     </View>
                 )}
             </ScrollView>
+            <Modal
+                visible={!!selectedBar}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setSelectedBar(null)}
+            >
+                <View className="flex-1 justify-center items-center bg-black/40 px-4">
+                    <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+                        <Text className="text-lg font-bold text-center mb-2">
+                            {selectedBar?.label}
+                        </Text>
+
+                        <Text className="text-center text-gray-700 mb-4 text-base">
+                            Total Consumption:{" "}
+                            <Text className="font-semibold text-green-700">
+                                {selectedBar?.value?.toFixed(3)} kWh
+                            </Text>
+                        </Text>
+
+                        {hourlyData.length > 0 ? (
+                            <View style={{ width: "100%", alignItems: "center" }}>
+                                <BarChart
+                                    data={hourlyData}
+                                    barWidth={36}
+                                    spacing={40}
+                                    disableScroll
+                                    frontColor="#16a34a"
+                                    yAxisTextStyle={{ color: "#6B7280", fontSize: 11 }}
+                                    xAxisLabelTextStyle={{ color: "#6B7280", fontSize: 11 }}
+                                    noOfSections={4}
+                                    animationDuration={800}
+                                    yAxisThickness={0}
+                                    xAxisThickness={0}
+                                    width={320} // full width in modal
+                                    maxValue={Math.max(...hourlyData.map((d) => d.value)) * 1.2 || 1}
+                                    initialSpacing={20}
+                                    barBorderRadius={6}
+                                    xAxisLabelsVerticalShift={8}
+                                    yAxisLabelWidth={32}
+                                />
+                            </View>
+                        ) : (
+                            <Text className="text-center text-gray-400">No hourly data</Text>
+                        )}
+
+                        <TouchableOpacity
+                            onPress={() => setSelectedBar(null)}
+                            className="mt-6 py-3 bg-emerald-600 rounded-lg"
+                        >
+                            <Text className="text-white text-center font-semibold text-base">
+                                Close
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
             <BudgetModal
                 visible={modalVisible}
                 onClose={() => setModalVisible(false)}

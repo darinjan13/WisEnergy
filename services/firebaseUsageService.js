@@ -33,7 +33,6 @@ export const listenToLatestPower = (userId, deviceId, applianceName, date, callb
 export const fetchTodayTrend = async (userId) => {
     try {
         const today = format(new Date(), "yyyy-MM-dd", { timeZone: "Asia/Manila" });
-
         const summaryRef = ref(db, `daily_summary/${userId}`);
         const snapshot = await get(summaryRef);
 
@@ -42,7 +41,7 @@ export const fetchTodayTrend = async (userId) => {
             return null;
         }
 
-        // prepare 6 groups of 4 hours
+        // 6 groups of 4 hours
         const buckets = {
             "12am-4am": 0,
             "4am-8am": 0,
@@ -52,6 +51,16 @@ export const fetchTodayTrend = async (userId) => {
             "8pm-12am": 0,
         };
 
+        // detailed hourly map for drilldown
+        const hourlyData = {
+            "00:00": 0, "01:00": 0, "02:00": 0, "03:00": 0,
+            "04:00": 0, "05:00": 0, "06:00": 0, "07:00": 0,
+            "08:00": 0, "09:00": 0, "10:00": 0, "11:00": 0,
+            "12:00": 0, "13:00": 0, "14:00": 0, "15:00": 0,
+            "16:00": 0, "17:00": 0, "18:00": 0, "19:00": 0,
+            "20:00": 0, "21:00": 0, "22:00": 0, "23:00": 0,
+        };
+
         snapshot.forEach((deviceSnap) => {
             deviceSnap.forEach((applianceSnap) => {
                 const todayData = applianceSnap.child(today);
@@ -59,9 +68,16 @@ export const fetchTodayTrend = async (userId) => {
 
                 const hourly = todayData.child("hourly");
                 hourly.forEach((hourSnap) => {
-                    const hour = parseInt(hourSnap.key.split(":")[0]); // "18:00" -> 18
+                    const hourKey = hourSnap.key; // e.g. "18:00"
+                    const hour = parseInt(hourKey.split(":")[0]);
                     const value = parseFloat(hourSnap.val()) || 0;
 
+                    // store to hourly map
+                    if (hourlyData[hourKey] !== undefined) {
+                        hourlyData[hourKey] += value;
+                    }
+
+                    // accumulate per bucket
                     if (hour >= 0 && hour < 4) buckets["12am-4am"] += value;
                     else if (hour >= 4 && hour < 8) buckets["4am-8am"] += value;
                     else if (hour >= 8 && hour < 12) buckets["8am-12pm"] += value;
@@ -72,8 +88,9 @@ export const fetchTodayTrend = async (userId) => {
             });
         });
 
-        return buckets;
+        return { buckets, hourlyData };
     } catch (error) {
+        console.error("❌ Error fetching today trend:", error);
         return null;
     }
 };

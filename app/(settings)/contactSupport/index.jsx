@@ -53,7 +53,7 @@ export default function FeedbackScreen() {
                     onPress={() => router.replace('/(settings)/contactSupport/suggestImprovement')}
                 >
                     <View className="flex-row items-center">
-                        <AntDesign name="like2" size={24} color="white" className="mr-4" />
+                        <AntDesign name="like" size={24} color="white" className="mr-4" />
                         <Text className="text-white text-lg">Suggest an improvement</Text>
                     </View>
                     <Entypo name="chevron-thin-right" size={30} color="white" className="" />
