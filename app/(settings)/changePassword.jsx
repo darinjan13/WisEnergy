@@ -13,6 +13,10 @@ export default function ChangePassword() {
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+
     const handleUpdatePassword = async () => {
         if (!currentPassword || !newPassword || !confirmPassword) {
             Toast.show({ type: "error", text1: "Please fill all fields" });
@@ -31,16 +35,12 @@ export default function ChangePassword() {
                 throw new Error("No authenticated user found");
             }
 
-            // Step 1: Re-authenticate with current password
             const credential = EmailAuthProvider.credential(user.email, currentPassword);
             await reauthenticateWithCredential(user, credential);
-
-            // Step 2: Update to new password
             await updatePassword(user, newPassword);
 
             Toast.show({ type: "success", text1: "Password updated successfully" });
 
-            // Clear fields
             setCurrentPassword("");
             setNewPassword("");
             setConfirmPassword("");
@@ -62,33 +62,69 @@ export default function ChangePassword() {
             </TouchableOpacity>
             <Text className="text-3xl font-extrabold text-gray-800 mb-10">Change your Password</Text>
 
+            {/* Current Password */}
             <Text className="mb-2 text-gray-700 font-bold">Current Password</Text>
-            <TextInput
-                placeholder="Enter Current Password"
-                secureTextEntry
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
-            />
+            <View className="relative mb-4">
+                <TextInput
+                    placeholder="Enter Current Password"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={!showCurrent}
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    className="border border-gray-300 rounded-md p-6 pr-12 text-black bg-[#F9F9F9]"
+                />
+                <TouchableOpacity
+                    className="absolute right-5 top-6"
+                    onPress={() => setShowCurrent(!showCurrent)}
+                >
+                    <Feather name={showCurrent ? "eye" : "eye-off"} size={22} color="#6B7280" />
+                </TouchableOpacity>
+            </View>
+
+            {/* New Password */}
             <Text className="mb-2 text-gray-700 font-bold">New Password</Text>
-            <TextInput
-                placeholder="Enter New Password"
-                secureTextEntry
-                value={newPassword}
-                onChangeText={setNewPassword}
-                className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
-            />
+            <View className="relative mb-4">
+                <TextInput
+                    placeholder="Enter New Password"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={!showNew}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    className="border border-gray-300 rounded-md p-6 pr-12 text-black bg-[#F9F9F9]"
+                />
+                <TouchableOpacity
+                    className="absolute right-5 top-6"
+                    onPress={() => setShowNew(!showNew)}
+                >
+                    <Feather name={showNew ? "eye" : "eye-off"} size={22} color="#6B7280" />
+                </TouchableOpacity>
+            </View>
+
+            {/* Confirm Password */}
             <Text className="mb-2 text-gray-700 font-bold">Confirm Password</Text>
-            <TextInput
-                placeholder="Confirm Password"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
-            />
+            <View className="relative mb-4">
+                <TextInput
+                    placeholder="Confirm Password"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={!showConfirm}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    className="border border-gray-300 rounded-md p-6 pr-12 text-black bg-[#F9F9F9]"
+                />
+                <TouchableOpacity
+                    className="absolute right-5 top-6"
+                    onPress={() => setShowConfirm(!showConfirm)}
+                >
+                    <Feather name={showConfirm ? "eye" : "eye-off"} size={22} color="#6B7280" />
+                </TouchableOpacity>
+            </View>
 
             <View className="flex-1 justify-end mb-8">
-                <TouchableOpacity disabled={isLoading} onPress={handleUpdatePassword} className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}>
+                <TouchableOpacity
+                    disabled={isLoading}
+                    onPress={handleUpdatePassword}
+                    className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}
+                >
                     {!isLoading ? (
                         <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
                     ) : (

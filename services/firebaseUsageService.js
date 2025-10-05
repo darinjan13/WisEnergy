@@ -4,7 +4,7 @@ import { getLastNDays, getLastNWeeks, getLastNMonths, getMonthName } from '../ut
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as predictionServices from './apiService'
 import { format } from "date-fns-tz";
-import { getDailyReportCache, getMonthlyReportCache, getWeeklyReportCache, saveDailyReportCache, saveMonthlyReportCache, saveWeeklyReportCache } from '../utils/asyncStorageUtils';
+import { getDailyReportCache, getDailyTotalsCache, getMonthlyReportCache, getMonthlyTotalsCache, getWeeklyReportCache, getWeeklyTotalsCache, saveDailyReportCache, saveDailyTotalsCache, saveMonthlyReportCache, saveMonthlyTotalsCache, saveWeeklyReportCache, saveWeeklyTotalsCache } from '../utils/asyncStorageUtils';
 
 export const listenToLatestPower = (userId, deviceId, applianceName, date, callback, latestKwh) => {
     const powerRef = ref(db, `usage/${userId}/${deviceId}/${applianceName}/${date}`);
@@ -165,7 +165,7 @@ export const fetchAllLatestKwh = async (userId, deviceId) => {
     return results;
 };
 
-export const fetchMonthlyTotalConsumption = (userId, callback) => {
+export const fetchMonthlyTotalConsumptionRealtime = (userId, callback) => {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -398,7 +398,6 @@ export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
             const start = (d.start_date || "").replace(`${year}-`, "");
             const end = (d.end_date || "").replace(`${year}-`, "");
             const total = Number((d.total_kWh ?? 0).toFixed(2));
-            console.log(total);
 
             return {
                 label: month, // "08", "09", etc.
@@ -416,6 +415,223 @@ export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
     }
 
     return usageData;
+};
+
+export const getCachedDailyTotalConsumption = async (userId) => {
+    const isCached = await getDailyTotalsCache(userId);
+    if (isCached) return isCached;
+
+    const fresh = await fetchDailyTotalConsumption(userId);
+
+    const updatedData = await Promise.all(
+        fresh.map(async (item) => {
+            const predictions = await predictionServices.predict_usage(userId, "daily");
+            if (!predictions?.daily?.length) return item;
+
+            const barData2 = predictions.daily.map((p) => ({
+                label: p.label,
+                value: p.value,
+                dataPointText: p.value,
+            }));
+
+            return { ...item, barData2 };
+        })
+    );
+
+    await saveDailyTotalsCache(userId, updatedData);
+    return updatedData;
+};
+
+export const fetchDailyTotalConsumption = async (userId) => {
+    try {
+        const dates = getLastNDays(5); // same utility as your daily report
+        const usageData = [];
+
+        const history = [];
+
+        for (const date of dates) {
+            const dailyRef = ref(db, `daily_total_consumption/${userId}/${date}`);
+            const snapshot = await get(dailyRef);
+
+            let total = 0;
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                total = Number((data?.total_energy_consumption ?? 0).toFixed(2));
+            }
+
+            history.push({
+                label: date.slice(5), // "MM-DD"
+                value: total,
+                dataPointText: total,
+                date,
+            });
+        }
+
+        usageData.push({
+            title: "Daily Total Consumption",
+            latestKwh: history.length > 0 ? history[history.length - 1].value : 0,
+            barData: history,
+        });
+
+        return usageData;
+    } catch (error) {
+        console.error("❌ Error in fetchDailyTotalConsumption:", error);
+        return [];
+    }
+};
+
+export const getCachedWeeklyTotalConsumption = async (userId) => {
+    const isCached = await getWeeklyTotalsCache(userId);
+    if (isCached) return isCached;
+
+    const fresh = await fetchWeeklyTotalConsumption(userId);
+
+    const updatedData = await Promise.all(
+        fresh.map(async (item) => {
+            const predictions = await predictionServices.predict_usage(userId, "weekly");
+            if (!predictions?.weekly?.length) return item;
+
+            const barData2 = predictions.weekly.map((p) => ({
+                label: p.label,
+                value: p.value,
+                dataPointText: p.value,
+            }));
+
+            return { ...item, barData2 };
+        })
+    );
+
+    await saveWeeklyTotalsCache(userId, updatedData);
+    return updatedData;
+};
+
+export const fetchWeeklyTotalConsumption = async (userId) => {
+    try {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const prevMonth = String(date.getMonth()).padStart(2, "0");
+        const usageData = [];
+
+
+        let history = [];
+        let data = {};
+        let weeks = [];
+
+        // 🔹 Try current month
+        const ref1 = ref(db, `weekly_total_consumption/${userId}/${year}/${month}`);
+        const snapshot1 = await get(ref1);
+
+        if (snapshot1.exists()) {
+            data = snapshot1.val();
+            weeks = Object.keys(data).sort();
+        }
+
+        // 🔹 Fallback: try previous month if no data yet
+        if (weeks.length === 0 && prevMonth !== "0") {
+            const ref2 = ref(db, `weekly_total_consumption/${userId}/${year}/${prevMonth}`);
+
+            const snapshot2 = await get(ref2);
+
+            if (snapshot2.exists()) {
+                data = snapshot2.val();
+                weeks = Object.keys(data).sort();
+            }
+        }
+
+        // 🔹 Format chart-ready data
+        history = weeks.map((week) => {
+            const d = data[week] || {};
+            const start = (d.start_date || "").replace(`${year}-`, "");
+            const end = (d.end_date || "").replace(`${year}-`, "");
+            const total = Number((d.total_energy_consumption ?? 0).toFixed(2));
+
+            return {
+                label: week.replace(/^0/, "W"), // → W1, W2, W3, …
+                value: total,
+                dataPointText: total,
+                date: `${start} - ${end}`,
+                month: start.split("-")[0] || "",
+            };
+        });
+
+        usageData.push({
+            title: "Weekly Total Consumption",
+            barData: history,
+            latestKwh: history.length > 0 ? history.at(-1).value : 0,
+        });
+
+        return usageData;
+    } catch (error) {
+        console.error("❌ Error in fetchWeeklyTotalConsumption:", error);
+        return [];
+    }
+};
+
+export const getCachedMonthlyTotalConsumption = async (userId) => {
+    const isCached = await getMonthlyTotalsCache(userId);
+    if (isCached) return isCached;
+
+    const fresh = await fetchMonthlyTotalConsumption(userId);
+
+    const updatedData = await Promise.all(
+        fresh.map(async (item) => {
+            const predictions = await predictionServices.predict_usage(userId, "monthly");
+            if (!predictions?.monthly?.length) return item;
+
+            const barData2 = predictions.monthly.map((p) => ({
+                label: p.label,
+                value: p.value,
+                dataPointText: p.value,
+            }));
+
+            return { ...item, barData2 };
+        })
+    );
+
+    await saveMonthlyTotalsCache(userId, updatedData);
+    return updatedData;
+};
+
+export const fetchMonthlyTotalConsumption = async (userId) => {
+    try {
+        const refPath = ref(db, `monthly_total_consumption/${userId}`);
+        const snap = await get(refPath);
+        if (!snap.exists()) return [];
+
+        const years = Object.keys(snap.val());
+        const history = [];
+        const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        for (const year of years) {
+            const yearData = snap.val()[year];
+            const months = Object.keys(yearData).sort();
+            for (const month of months) {
+                const m = yearData[month];
+                const total = Number((m.total_energy_consumption ?? 0).toFixed(2));
+
+                history.push({
+                    label: getMonthName(month, 'short'),
+                    value: total,
+                    dataPointText: total,
+                    date: `${m.start_date ?? ""} - ${m.end_date ?? ""}`,
+                });
+            }
+        }
+
+        // keep only last 5 months
+        const recent = history.slice(-5);
+
+        return [
+            {
+                title: "Monthly Total Consumption",
+                latestKwh: recent.at(-1)?.value || 0,
+                barData: recent,
+            },
+        ];
+    } catch (err) {
+        console.error("❌ Error in fetchMonthlyTotalConsumption:", err);
+        return [];
+    }
 };
 
 

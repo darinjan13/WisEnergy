@@ -5,6 +5,7 @@ import { Divider } from 'react-native-paper';
 import { router } from 'expo-router';
 import { db, auth } from '../../../firebase/firebaseConfig';
 import { ref, push, serverTimestamp, get, set } from 'firebase/database';
+import { format } from 'date-fns-tz';
 
 export default function GiveRatingScreen() {
     const [rating, setRating] = useState(0);
@@ -48,8 +49,7 @@ export default function GiveRatingScreen() {
                 rating,
                 message: review || "No message provided",
                 email,
-                created_at: new Date().toISOString().split("T")[0],
-                timestamp: serverTimestamp(),
+                created_at: format(new Date(), "yyyy-MM-dd HH:mm:ss", { timeZone: "PH_TZ" }),
             });
 
             Alert.alert("Success", "Thank you for your feedback!");
@@ -99,6 +99,7 @@ export default function GiveRatingScreen() {
                 value={review}
                 onChangeText={setReview}
                 className="p-3 rounded-lg h-24 mb-4 bg-[#F9F9F9]"
+                placeholderTextColor="#9CA3AF"
                 placeholder="Tell us more about your experience (optional)"
                 multiline
             />

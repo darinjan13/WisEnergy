@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     View,
     Text,
@@ -78,8 +78,9 @@ export default function Onboarding() {
             <View className="h-full bg-white">
                 {/* Skip button */}
                 <TouchableOpacity
-                    className="absolute top-12 right-6 z-10"
+                    className={`${currentIndex === 4 && "hidden"} absolute top-12 right-6 z-10`}
                     onPress={handleSkip}
+
                 >
                     <Text className="bg-green-700 p-5 rounded-xl text-white font-semibold">Skip</Text>
                 </TouchableOpacity>

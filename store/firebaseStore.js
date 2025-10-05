@@ -171,6 +171,10 @@ export const useUsageStore = create((set, get) => ({
     },
     todayTrend: null,
     topAppliances: [],
+
+    dailyTotals: [],
+    weeklyTotals: [],
+    monthlyTotals: [],
     fetchTopAppliances: async (userId) => {
         try {
             const top = await firebaseUsageServices.fetchTopAppliances(userId);
@@ -185,7 +189,7 @@ export const useUsageStore = create((set, get) => ({
     subscribeToMonthlyTotalConsumption: (userId) => {
         if (get()._unsubMonthly) return;
 
-        const unsubscribe = firebaseUsageServices.fetchMonthlyTotalConsumption(userId, (currentConsumption) => {
+        const unsubscribe = firebaseUsageServices.fetchMonthlyTotalConsumptionRealtime(userId, (currentConsumption) => {
             set({ monthlyTotalConsumption: currentConsumption });
         });
 
@@ -273,6 +277,22 @@ export const useUsageStore = create((set, get) => ({
             todayTrend
         })
     },
+    fetchDailyTotals: async (userId) => {
+        const data = await firebaseUsageServices.getCachedDailyTotalConsumption(userId);
+        set({ dailyTotals: data });
+    },
+
+    fetchWeeklyTotals: async (userId) => {
+        const data =
+            await firebaseUsageServices.getCachedWeeklyTotalConsumption(userId);
+        set({ weeklyTotals: data });
+    },
+
+    fetchMonthlyTotals: async (userId) => {
+        const data =
+            await firebaseUsageServices.getCachedMonthlyTotalConsumption(userId);
+        set({ monthlyTotals: data });
+    },
     reset: () => {
         // cleanup listener if still active
         const unsubMonthly = get()._unsubMonthly;
@@ -287,7 +307,10 @@ export const useUsageStore = create((set, get) => ({
             totalConsumptionByDate: {},
             lastFetched: { daily: null, weekly: null, monthly: null },
             todayTrend: null,
-            topAppliances: []
+            topAppliances: [],
+            dailyTotals: [],
+            weeklyTotals: [],
+            monthlyTotals: [],
         });
     },
 }));

@@ -1,9 +1,10 @@
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { auth, db } from '../../firebase/firebaseConfig';
-import { get, ref, serverTimestamp, set } from 'firebase/database';
+import { get, ref, set } from 'firebase/database';
+import { format } from 'date-fns-tz';
 
 export default function FeedbackForm({ type, title, description, placeholder }) {
     const [email, setEmail] = useState(auth.currentUser?.email || "");
@@ -37,9 +38,8 @@ export default function FeedbackForm({ type, title, description, placeholder }) 
                 type,
                 message,
                 email,
-                date_created: new Date().toISOString().split("T")[0],
+                date_created: format(new Date(), "yyyy-MM-dd HH:mm:ss", { timeZone: "PH_TZ" }),
                 status: "Open",
-                timestamp: serverTimestamp(),
             });
 
             Alert.alert("Success", `Your ${type.toLowerCase()} has been submitted.`);
@@ -80,6 +80,7 @@ export default function FeedbackForm({ type, title, description, placeholder }) 
                 onChangeText={setMessage}
                 className="p-3 rounded-lg h-24 mb-4 bg-[#F9F9F9]"
                 placeholder={placeholder}
+                placeholderTextColor="#9CA3AF"
                 multiline
             />
 

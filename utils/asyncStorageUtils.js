@@ -79,6 +79,80 @@ export const getMonthlyReportCache = async (userId, deviceId) => {
     }
 };
 
+/* 🔹 Daily totals (expire hourly) */
+export const saveDailyTotalsCache = async (userId, data) => {
+    const key = `@daily_totals:${userId}`;
+    const storedAt = Date.now();
+    await AsyncStorage.setItem(key, JSON.stringify({ storedAt, data }));
+};
+
+export const getDailyTotalsCache = async (userId) => {
+    const key = `@daily_totals:${userId}`;
+    try {
+        const cacheStr = await AsyncStorage.getItem(key);
+        if (!cacheStr) return null;
+
+        const cached = JSON.parse(cacheStr);
+        if (cached?.storedAt && Date.now() - cached.storedAt < HOUR_MS && cached.data) {
+            return cached.data;
+        }
+
+        await AsyncStorage.removeItem(key); // expired
+        return null;
+    } catch (error) {
+        console.log('Error reading daily totals cache:', error);
+        return null;
+    }
+};
+
+/* 🔹 Weekly totals (expires next day) */
+export const saveWeeklyTotalsCache = async (userId, data) => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd', { timeZone: PH_TZ });
+    const key = `@weekly_totals:${userId}`;
+    await AsyncStorage.setItem(key, JSON.stringify({ timestamp: todayStr, data }));
+};
+
+export const getWeeklyTotalsCache = async (userId) => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd', { timeZone: PH_TZ });
+    const key = `@weekly_totals:${userId}`;
+    try {
+        const cacheStr = await AsyncStorage.getItem(key);
+        if (cacheStr) {
+            const cached = JSON.parse(cacheStr);
+            if (cached.timestamp === todayStr && cached.data) return cached.data;
+            await AsyncStorage.removeItem(key); // expired
+        }
+        return null;
+    } catch (error) {
+        console.log('Error reading weekly totals cache:', error);
+        return null;
+    }
+};
+
+/* 🔹 Monthly totals (expires next day) */
+export const saveMonthlyTotalsCache = async (userId, data) => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd', { timeZone: PH_TZ });
+    const key = `@monthly_totals:${userId}`;
+    await AsyncStorage.setItem(key, JSON.stringify({ timestamp: todayStr, data }));
+};
+
+export const getMonthlyTotalsCache = async (userId) => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd', { timeZone: PH_TZ });
+    const key = `@monthly_totals:${userId}`;
+    try {
+        const cacheStr = await AsyncStorage.getItem(key);
+        if (cacheStr) {
+            const cached = JSON.parse(cacheStr);
+            if (cached.timestamp === todayStr && cached.data) return cached.data;
+            await AsyncStorage.removeItem(key); // expired
+        }
+        return null;
+    } catch (error) {
+        console.log('Error reading monthly totals cache:', error);
+        return null;
+    }
+};
+
 /* -------------------- CLEAR -------------------- */
 export const clearCache = async () => {
     try {
@@ -88,7 +162,10 @@ export const clearCache = async () => {
             (key) =>
                 key.startsWith('@daily_report:') ||
                 key.startsWith('@weekly_report:') ||
-                key.startsWith('@monthly_report:') ||  // ✅ include monthly
+                key.startsWith('@monthly_report:') ||
+                key.startsWith('@daily_totals:') ||
+                key.startsWith('@weekly_totals:') ||
+                key.startsWith('@monthly_totals:') ||
                 key.startsWith('@top_appliances:') ||
                 key.startsWith('@overall_top_appliances:') ||
                 key.startsWith('@ai_insights:') ||

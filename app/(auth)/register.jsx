@@ -41,6 +41,7 @@ export default function RegisterForm() {
 
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [errors, setErrors] = useState({});
     const [choice, setChoice] = useState("")
@@ -187,7 +188,9 @@ export default function RegisterForm() {
                                 secureTextEntry={!showPassword}
                                 className="ml-2 flex-1 p-3 text-black"
                             />
-
+                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="gray" />
+                            </TouchableOpacity>
                         </View>
                         {errors.password && (
                             <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>
@@ -202,9 +205,12 @@ export default function RegisterForm() {
                                 placeholderTextColor="#9CA3AF"
                                 value={form.confirmPassword}
                                 onChangeText={(text) => handleChange("confirmPassword", text)}
-                                secureTextEntry
+                                secureTextEntry={!showConfirmPassword}
                                 className="ml-2 flex-1 p-3 text-black"
                             />
+                            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                <Feather name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="gray" />
+                            </TouchableOpacity>
 
                         </View>
                         {errors.confirmPassword && (

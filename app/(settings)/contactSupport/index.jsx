@@ -5,10 +5,6 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Divider } from 'react-native-paper';
 
 export default function FeedbackScreen() {
-    const handlePress = (type) => {
-        console.log(`${type} selected`);
-        // Handle navigation or other logic here
-    };
 
     return (
         <View className="flex-1 bg-gray-100 p-10">
