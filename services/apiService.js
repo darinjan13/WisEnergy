@@ -1,8 +1,8 @@
 import axios from "axios"
 
 const api = axios.create({
-    // baseURL: 'https://wisenergy-backend.onrender.com',
-    baseURL: 'http://192.168.1.8:10000',
+    baseURL: 'https://wisenergy-backend.onrender.com',
+    // baseURL: 'http://192.168.1.8:10000',
     // baseURL: 'http://192.168.0.113:10000',
     timeout: 20000,
     headers: {
