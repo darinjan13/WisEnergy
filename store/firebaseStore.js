@@ -44,7 +44,7 @@ export const useDeviceStore = create((set, get) => ({
     unsubscribeFromUserAppliances: () => {
         const unsubUserAppliances = get()._unsubUserAppliances
         if (unsubUserAppliances) {
-            unsubMonthly();
+            unsubUserAppliances();
             set({ _unsubUserAppliances: null })
         }
     },

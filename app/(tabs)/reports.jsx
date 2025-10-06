@@ -16,6 +16,7 @@ import CustomProgressBar from "../../components/reports/CustomProgressBar";
 import { BlurView } from "expo-blur";
 import { set } from "date-fns";
 import { getMonthName } from "../../utils/dateHelper";
+import EnergyPredictionChart from "../../components/reports/EnergyPredictionChart";
 
 export default function reports() {
     const scheme = useColorScheme();
@@ -94,12 +95,6 @@ export default function reports() {
     const fetchMonthlyReport1 = async (user_id, selectedDevice, appliances) => {
         setReportLoading(true);
         await fetchMonthlyReport(user_id, selectedDevice, appliances);
-    }
-
-    const fetchDailyTotals1 = async (user_id) => {
-        setReportLoading(true);
-        await fetchDailyTotals(user_id);
-        setReportLoading(false);
     }
 
     useEffect(() => {
@@ -181,7 +176,7 @@ export default function reports() {
 
     if (isLoading) {
         return (
-            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingTop: insets.top }}>
+            <ScrollView className="h-full p-5" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingTop: insets.top }}>
                 <Header />
                 <View className="h-screen -mt-36 items-center justify-center">
                     <ActivityIndicator size="large" color="#166534" />
@@ -312,8 +307,8 @@ export default function reports() {
                                 >
                                     {!reportLoading ? (
                                         <View className="w-full">
-                                            <BarChart
-                                                data={
+                                            <EnergyPredictionChart
+                                                actualData={
                                                     (reportCategory === "Daily"
                                                         ? dailyTotals
                                                         : reportCategory === "Weekly"
@@ -321,23 +316,15 @@ export default function reports() {
                                                             : monthlyTotals
                                                     )?.[0]?.barData || []
                                                 }
-                                                barWidth={30}
-                                                spacing={28}
-                                                disableScroll
-                                                frontColor="#16a34a"
-                                                yAxisTextStyle={{ color: "#6B7280", fontSize: 11 }}
-                                                xAxisLabelTextStyle={{ color: "#6B7280", fontSize: 11 }}
-                                                noOfSections={4}
-                                                animationDuration={800}
-                                                yAxisThickness={0}
-                                                xAxisThickness={0}
-                                                width={undefined} // full width auto from container
-                                                initialSpacing={20}
-                                                barBorderRadius={6}
-                                                xAxisLabelsVerticalShift={8}
-                                                yAxisLabelWidth={32}
-                                                showValuesAsTopLabel
-                                                topLabelTextStyle={{ fontSize: 10 }}
+                                                predictedData={
+                                                    (reportCategory === "Daily"
+                                                        ? dailyTotals
+                                                        : reportCategory === "Weekly"
+                                                            ? weeklyTotals
+                                                            : monthlyTotals
+                                                    )?.[0]?.barData2 || []
+                                                }
+                                                category={reportCategory}
                                             />
                                             {reportCategory === "Weekly" &&
                                                 weeklyTotals?.[0]?.barData?.length > 0 && (
