@@ -31,19 +31,36 @@ export default function Dashboard() {
 
     useFocusEffect(
         useCallback(() => {
+            const userId = auth?.currentUser?.uid;
+            if (!userId) return;
 
-            if (devices.length === 0) setDevices();
-            listenToUserAppliances(auth?.currentUser?.uid);
-            fetchTodayTrend(auth.currentUser?.uid)
-            fetchAllMonthlyTotalConsumption(auth.currentUser?.uid)
-            if (locationRate == 0 || monthlyBudget === null) {
-                fetchLocationRate(auth.currentUser?.uid);
-                subscribeToBudget(auth.currentUser?.uid);
-                subscribeToMonthlyTotalConsumption(auth.currentUser?.uid);
-            }
+            const setupData = async () => {
+                if (devices.length === 0) {
+                    await setDevices();
+                }
+
+                listenToUserAppliances(userId);
+
+                if (locationRate === 0 || monthlyBudget === null) {
+                    await fetchLocationRate(userId);
+                    subscribeToBudget(userId);
+                    subscribeToMonthlyTotalConsumption(userId);
+                }
+
+                if (!todayTrend) {
+                    await fetchTodayTrend(userId);
+                }
+
+                if (allMonthlyTotalConsumption.length === 0) {
+                    await fetchAllMonthlyTotalConsumption(userId);
+                }
+            };
+
+            setupData();
+
             return () => {
             }
-        }, [devices.length, locationRate, monthlyTotalConsumption, monthlyBudget])
+        }, [])
     )
 
     useEffect(() => {
@@ -56,24 +73,26 @@ export default function Dashboard() {
         }
     }, [allMonthlyTotalConsumption]);
 
-    const fetchDailyInsights = async () => {
-        console.log("Fetching Ai Insights");
-
-        const now = Date.now()
-        const todayStr = format(now, "yyyy-MM-dd", { timeZone: "Asia/Manila" })
-        await fetchDailyAiGeneratedContent(auth?.currentUser.uid, todayStr)
-    }
     useEffect(() => {
+        const userId = auth?.currentUser?.uid;
+        if (!userId) return;
 
-        if (auth?.currentUser?.uid && insights.length <= 0) {
-            fetchDailyInsights();
-        }
-        if (auth?.currentUser?.uid && topAppliances.length <= 0) {
-            console.log("Fetching top Appliances");
+        const fetchInitialData = async () => {
+            if (insights.length === 0) {
+                console.log("Fetching Ai Insights");
+                const now = Date.now();
+                const todayStr = format(now, "yyyy-MM-dd", { timeZone: "Asia/Manila" });
+                await fetchDailyAiGeneratedContent(userId, todayStr);
+            }
 
-            fetchTopAppliances(auth?.currentUser?.uid)
-        }
-    }, [auth?.currentUser?.uid]);
+            if (topAppliances.length === 0) {
+                console.log("Fetching top Appliances");
+                await fetchTopAppliances(userId);
+            }
+        };
+
+        fetchInitialData();
+    }, []);
 
     useEffect(() => {
         if (monthlyBudget?.budget_php === 0) {

@@ -10,20 +10,30 @@ export default function Index() {
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [seen, setSeen] = useState(null);
 
-  // 👇 run notifications setup once
-  const expoPushToken = useNotifications();
+  useNotifications();
 
   useEffect(() => {
+    let isMounted = true;
+
     const load = async () => {
       try {
         const val = await AsyncStorage.getItem("onboardingSeen");
-        setSeen(val);
+        if (isMounted) {
+          setSeen(val);
+        }
       } finally {
-        setCheckingOnboarding(false);
-        SplashScreen.hideAsync();
+        if (isMounted) {
+          setCheckingOnboarding(false);
+          await SplashScreen.hideAsync();
+        }
       }
     };
+
     load();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (checkingAuth || checkingOnboarding) return null;
