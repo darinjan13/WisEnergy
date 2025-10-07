@@ -91,7 +91,6 @@ export const predict_totals = async (userId) => {
                 };
             })
             : [];
-        console.log("Weekly: ", weeklyPredictions);
 
         return {
             daily: dailyPredictions,

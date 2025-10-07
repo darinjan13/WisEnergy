@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
-import { Text, View, BackHandler, Alert, ScrollView, Modal, TextInput, TouchableOpacity } from "react-native";
+import { Text, View, BackHandler, Alert, ScrollView, Modal, TextInput, TouchableOpacity, Pressable } from "react-native";
 
 import { auth, db } from "@/firebase/firebaseConfig"
 import ApplianceCard from "@/components/appliances/ApplianceCard";
@@ -16,6 +16,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddApplianceModal from "@/components/appliances/AddApplianceModal";
 import { format } from "date-fns-tz";
+import Tooltip from "../../../../components/ui/Tooltip";
 
 export default function DeviceDetails() {
     const insets = useSafeAreaInsets();
@@ -24,19 +25,20 @@ export default function DeviceDetails() {
     const userId = auth?.currentUser.uid;
     const { deviceId } = useLocalSearchParams();
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [applianceKWh, setApplianceKWh] = useState([]);
     const [action, setAction] = useState(null);
     const [applianceId, setApplianceId] = useState(null);
-    const [applianceNickname, setApplianceNickname] = useState("");
     const [device, setDevice] = useState(null);
 
-    const [applianceKWh, setApplianceKWh] = useState([]);
-    const [appliancePower, setAppliancePower] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [addModal, setAddModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [toolTip, setToolTip] = useState(false);
 
+    const [appliancePower, setAppliancePower] = useState(0);
     const [selectedAppliance, setSelectedAppliance] = useState("");
+    const [applianceNickname, setApplianceNickname] = useState("");
 
     // derive appliances directly from store
     const deviceAppliances =
@@ -54,6 +56,7 @@ export default function DeviceDetails() {
             return () => {
                 backHandler.remove();
                 setAppliancesInActive();
+                setToolTip(false)
             };
         }, [deviceAppliances])
     );
@@ -181,7 +184,7 @@ export default function DeviceDetails() {
     }
 
     return (
-        <View className="p-5" style={{ paddingTop: insets.top }}>
+        <Pressable className="p-5" style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 150 }} onPress={toolTip ? () => setToolTip(false) : undefined}>
             <Header />
             <View className="mb-4 flex-row items-center">
                 <TouchableOpacity
@@ -196,14 +199,23 @@ export default function DeviceDetails() {
             <Text className="text-gray-700 mt-2">Status: {device.status}</Text>
             <Text className="text-gray-700">Paired at: {device.paired_at}</Text>
 
-            <View className="flex-row items-center justify-between mt-10 mb-5">
-                <Text className="text-2xl font-bold text-[#2E4F4F]">Appliances</Text>
+            <View className="flex-row items-center justify-between my-5">
+                <View className="flex-row items-center gap-x-2">
+                    <Text className="text-2xl font-bold text-[#2E4F4F]">Appliances</Text>
+                    <TouchableOpacity
+                        onPress={() => setToolTip(!toolTip)}
+                        className="p-1"
+                    >
+                        <Feather name="info" size={18} color="gray" />
+                    </TouchableOpacity>
+                </View>
+                <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`Devices track energy for one appliance at a time. If you switch the appliance (e.g., from Refrigerator to Electric Fan), the device will start recording consumption for the new appliance. You can switch back anytime.`} from="Devices" />
                 <TouchableOpacity onPress={showAddModal} className="rounded-3xl bg-white items-center justify-center">
                     <Feather className="p-1" name="plus" size={20} color="#136B1E" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 150 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
                 {deviceAppliances.length > 0 && (
                     <View className="mb-40 p-1">
                         <RadioButton.Group
@@ -288,6 +300,6 @@ export default function DeviceDetails() {
                 onConfirm={handleDeleteConfirmed}
                 action={action}
             />
-        </View>
+        </Pressable>
     );
 }

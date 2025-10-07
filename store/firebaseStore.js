@@ -283,14 +283,12 @@ export const useUsageStore = create((set, get) => ({
     },
 
     fetchWeeklyTotals: async (userId) => {
-        const data =
-            await firebaseUsageServices.getCachedWeeklyTotalConsumption(userId);
+        const data = await firebaseUsageServices.getCachedWeeklyTotalConsumption(userId);
         set({ weeklyTotals: data });
     },
 
     fetchMonthlyTotals: async (userId) => {
-        const data =
-            await firebaseUsageServices.getCachedMonthlyTotalConsumption(userId);
+        const data = await firebaseUsageServices.getCachedMonthlyTotalConsumption(userId);
         set({ monthlyTotals: data });
     },
     reset: () => {

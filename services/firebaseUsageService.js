@@ -261,7 +261,7 @@ export const getCachedWeeklyReport = async (userId, deviceId, appliances) => {
             }
 
             const barData2 = predictions.weekly.map((p) => ({
-                label: `${p.label}-${p.month || new Date().getMonth() + 1}`,
+                label: p.label,
                 value: p.value,
                 dataPointText: p.value,
             }));
@@ -275,60 +275,75 @@ export const getCachedWeeklyReport = async (userId, deviceId, appliances) => {
 };
 
 export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const prevMonth = String(date.getMonth()).padStart(2, "0");
-    const usageData = [];
+    try {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const prevMonth = String(date.getMonth()).padStart(2, "0");
+        const usageData = [];
 
-    for (const appliance of appliances) {
-        let history = [];
-        let data = {};
-        let weeks = [];
+        for (const appliance of appliances) {
+            let history = [];
+            let data = {};
+            let weeks = [];
 
-        const ref1 = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${month}`);
-        const snapshot1 = await get(ref1);
+            const ref1 = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${month}`);
+            const snapshot1 = await get(ref1);
 
-        if (snapshot1.exists()) {
-            data = snapshot1.val();
-            weeks = Object.keys(data).sort();
-        }
-
-        if (weeks.length === 0 && prevMonth !== "0") {
-            const ref2 = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${prevMonth}`);
-            const snapshot2 = await get(ref2);
-
-            if (snapshot2.exists()) {
-                data = snapshot2.val();
+            if (snapshot1.exists()) {
+                data = snapshot1.val();
                 weeks = Object.keys(data).sort();
             }
+
+            if (weeks.length < 5 && prevMonth !== "00") {
+                const ref2 = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${prevMonth}`);
+                const snapshot2 = await get(ref2);
+                if (snapshot2.exists()) {
+                    const prevData = snapshot2.val();
+                    const prevWeeks = Object.keys(prevData).sort();
+                    for (const w of prevWeeks) {
+                        const d = prevData[w] || {};
+                        history.push({
+                            label: `W${w}-${prevMonth}`,
+                            value: Number((d.total_kWh ?? 0).toFixed(2)),
+                            dataPointText: Number((d.total_kWh ?? 0).toFixed(2)),
+                            date: `${(d.start_date || "").replace(`${year}-`, "")} - ${(d.end_date || "").replace(`${year}-`, "")}`,
+                            month: prevMonth,
+                        });
+                    }
+                }
+            }
+
+            for (const week of weeks) {
+                const d = data[week] || {};
+                history.push({
+                    label: `W${week}-${month}`,
+                    value: Number((d.total_kWh ?? 0).toFixed(2)),
+                    dataPointText: Number((d.total_kWh ?? 0).toFixed(2)),
+                    date: `${(d.start_date || "").replace(`${year}-`, "")} - ${(d.end_date || "").replace(`${year}-`, "")}`,
+                    month,
+                });
+            }
+
+            history.sort((a, b) => {
+                const [wa, ma] = a.label.replace("W", "").split("-");
+                const [wb, mb] = b.label.replace("W", "").split("-");
+                return ma === mb ? Number(wa) - Number(wb) : Number(ma) - Number(mb);
+            });
+
+            usageData.push({
+                applianceName: appliance.name,
+                barData: history,
+                latestKwh: history.length > 0 ? history.at(-1).value : 0,
+            });
         }
 
-        history = weeks.map((week) => {
-            const d = data[week] || {};
-            const start = (d.start_date || "").replace(`${year}-`, "");
-            const end = (d.end_date || "").replace(`${year}-`, "");
-            const total = Number((d.total_kWh ?? 0).toFixed(2));
-
-            return {
-                label: `W${week}-${month}`,
-                value: total,
-                dataPointText: total,
-                date: `${start} - ${end}`,
-                month,
-            };
-        });
-
-        usageData.push({
-            applianceName: appliance.name,
-            barData: history,
-            latestKwh: history.length > 0 ? history.at(-1).value : 0,
-        });
+        return usageData;
+    } catch (error) {
+        console.error("❌ Error in fetchWeeklyReport:", error);
+        return [];
     }
-
-    return usageData;
 };
-
 export const getCachedMonthlyReport = async (userId, deviceId, appliances) => {
     const isCached = await getMonthlyReportCache(userId, deviceId);
     if (isCached) return isCached;
@@ -388,7 +403,7 @@ export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
             const total = Number((d.total_kWh ?? 0).toFixed(2));
 
             return {
-                label: month,
+                label: getMonthName(month, 'short'),
                 value: total,
                 dataPointText: total,
                 date: `${start} - ${end}`,

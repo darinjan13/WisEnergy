@@ -3,16 +3,20 @@ import { View, Text } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 
 export default function EnergyPredictionChart({ actualData = [], predictedData = [], category }) {
+
+
     // ✅ Combine unique labels from both datasets
     const allLabels = useMemo(() => {
         const labels = new Set([
             ...(actualData || []).map((a) => a.label),
             ...(predictedData || []).map((p) => p.label),
         ]);
+
         return Array.from(labels).sort((a, b) => {
             // Sort by month then week, e.g., W5-09 < W1-10
             const [wa, ma] = a.replace("W", "").split("-");
             const [wb, mb] = b.replace("W", "").split("-");
+
             return ma === mb ? Number(wa) - Number(wb) : Number(ma) - Number(mb);
         });
     }, [actualData, predictedData]);
@@ -28,15 +32,15 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
             merged.push(
                 {
                     value: actual?.value || 0,
-                    label,
+                    label: label.replace("W0", "W"),
                     spacing: 1,
                     labelWidth: 50,
-                    labelTextStyle: { color: "white", marginLeft: -10 },
-                    frontColor: "#16a34a", // actual (green)
+                    labelTextStyle: { color: "black", marginLeft: -10 },
+                    frontColor: "#16a34a",
                 },
                 {
                     value: predicted?.value || 0,
-                    frontColor: "#f87171", // predicted (red)
+                    frontColor: "#f87171",
                 }
             );
         });
@@ -46,35 +50,35 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
 
     // ✅ Auto-adjust chart scaling
     const maxValue = Math.max(...barData.map((b) => b.value), 0) + 1;
-    const noOfSections = category === "Daily" ? Math.ceil(maxValue) : 2;
+    const noOfSections = category === "Daily" ? Math.ceil(maxValue) - 1 : 2;
 
     return (
-        <View className="bg-gray-800 p-5 rounded-2xl">
-            <Text className="text-white text-center text-base font-semibold mb-2">
+        <View className="bg-white p-5 rounded-2xl">
+            <Text className="text-black text-center text-base font-semibold mb-2">
                 Energy Usage vs Predicted
             </Text>
 
             <BarChart
                 data={barData}
-                barWidth={25}
+                barWidth={30}
                 spacing={24}
                 showValuesAsTopLabel
-                topLabelTextStyle={{ color: "white", fontSize: 10 }}
+                topLabelTextStyle={{ color: "black", fontSize: 11 }}
                 xAxisThickness={0}
                 yAxisThickness={0}
-                yAxisTextStyle={{ color: "#9CA3AF" }}
+                yAxisTextStyle={{ color: "black" }}
                 noOfSections={noOfSections}
                 maxValue={maxValue}
             />
 
             <View className="flex-row justify-center mt-3 gap-x-6">
-                <View className="flex-row items-center space-x-2">
+                <View className="flex-row items-center gap-x-2">
                     <View className="w-3 h-3 rounded-full bg-green-600" />
-                    <Text className="text-gray-300 text-xs">Actual</Text>
+                    <Text className=" text-xs">Usage</Text>
                 </View>
-                <View className="flex-row items-center space-x-2">
+                <View className="flex-row items-center gap-x-2">
                     <View className="w-3 h-3 rounded-full bg-red-400" />
-                    <Text className="text-gray-300 text-xs">Predicted</Text>
+                    <Text className="text-xs">Predicted</Text>
                 </View>
             </View>
         </View>
