@@ -67,6 +67,7 @@ export default function ResetPasswordScreen() {
                             className="ml-2 flex-1"
                             placeholder="Enter Password"
                             placeholderTextColor="#9CA3AF"
+                            autoCapitalize='none'
                             value={password}
                             onChangeText={setPassword}
                         />
@@ -82,6 +83,7 @@ export default function ResetPasswordScreen() {
                         <TextInput
                             className="ml-2 flex-1"
                             placeholder="Confirm Password"
+                            placeholderTextColor="#9CA3AF"
                             secureTextEntry
                             autoCapitalize="none"
                             value={confirmPassword}

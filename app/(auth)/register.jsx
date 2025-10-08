@@ -56,7 +56,6 @@ export default function RegisterForm() {
 
     const validateForm = () => {
         const newErrors = {};
-        setIsLoading(true);
         if (!form.firstName.trim()) newErrors.firstName = "First name is required";
         if (!form.lastName.trim()) newErrors.lastName = "Last name is required";
         if (!form.email.trim()) newErrors.email = "Email is required";
@@ -71,14 +70,12 @@ export default function RegisterForm() {
             newErrors.terms = "You must agree to the Terms & Privacy Policy";
 
         setErrors(newErrors);
-        setIsLoading(false);
+        setIsLoading(false)
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = () => {
-        setIsLoading(true);
-        console.log(form);
-
+        setIsLoading(true)
         if (!validateForm()) return;
         register(setIsLoading, form.location, form.firstName, form.lastName, form.email, form.password);
     };

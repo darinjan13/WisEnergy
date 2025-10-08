@@ -15,6 +15,11 @@ export default function BudgetModal({
 
     const handleSetMonthlyBudget = async () => {
         setLoading(true);
+        if (!budgetInput || budgetInput <= 0) {
+            alert("Enter a valid budget.");
+            setLoading(false)
+            return
+        }
         try {
             const budget_php = Number(budgetInput);
             const now = new Date();
@@ -43,10 +48,11 @@ export default function BudgetModal({
                 await update(ref(db), {
                     [`users/${auth.currentUser.uid}/budget_kwh`]: budget_kwh,
                 });
-
+                setBudgetInput(0)
                 onClose();
             } else {
                 alert("You have already set your budget 3 times this month.");
+                onClose()
             }
         } catch (error) {
             console.error("Error setting budget:", error);
@@ -64,6 +70,7 @@ export default function BudgetModal({
                             className="border border-gray-300 rounded-md p-2 mb-4"
                             placeholder="Enter budget amount"
                             keyboardType="numeric"
+                            placeholderTextColor="#9CA3AF"
                             value={budgetInput}
                             onChangeText={setBudgetInput}
                             editable={!loading}

@@ -1,5 +1,4 @@
 import { View, Text, TouchableWithoutFeedback } from 'react-native'
-import React from 'react'
 
 export default function Tooltip({ toolTip, setToolTip, content, from }) {
     if (!toolTip) return null

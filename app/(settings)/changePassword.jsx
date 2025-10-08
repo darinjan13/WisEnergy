@@ -102,7 +102,7 @@ export default function ChangePassword() {
 
             {/* Confirm Password */}
             <Text className="mb-2 text-gray-700 font-bold">Confirm Password</Text>
-            <View className="relative mb-4">
+            <View className="relative mb-6">
                 <TextInput
                     placeholder="Confirm Password"
                     placeholderTextColor="#9CA3AF"
@@ -119,19 +119,17 @@ export default function ChangePassword() {
                 </TouchableOpacity>
             </View>
 
-            <View className="flex-1 justify-end mb-8">
-                <TouchableOpacity
-                    disabled={isLoading}
-                    onPress={handleUpdatePassword}
-                    className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}
-                >
-                    {!isLoading ? (
-                        <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
-                    ) : (
-                        <ActivityIndicator size="small" color="white" />
-                    )}
-                </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+                disabled={isLoading}
+                onPress={handleUpdatePassword}
+                className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}
+            >
+                {!isLoading ? (
+                    <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
+                ) : (
+                    <ActivityIndicator size="small" color="white" />
+                )}
+            </TouchableOpacity>
         </KeyboardAvoidingView>
     );
 }

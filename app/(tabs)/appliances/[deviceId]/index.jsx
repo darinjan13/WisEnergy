@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddApplianceModal from "@/components/appliances/AddApplianceModal";
 import { format } from "date-fns-tz";
 import Tooltip from "../../../../components/ui/Tooltip";
+import { AutoSkeletonView } from "react-native-auto-skeleton";
 
 export default function DeviceDetails() {
     const insets = useSafeAreaInsets();
@@ -33,7 +34,7 @@ export default function DeviceDetails() {
     const [modalVisible, setModalVisible] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [addModal, setAddModal] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [toolTip, setToolTip] = useState(false);
 
     const [appliancePower, setAppliancePower] = useState(0);
@@ -53,10 +54,16 @@ export default function DeviceDetails() {
     useFocusEffect(
         useCallback(() => {
             const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+            const timeout = setTimeout(() => {
+                if (selectedAppliance)
+                    setIsLoading(false);
+            }, 1000);
             return () => {
+                clearTimeout(timeout)
                 backHandler.remove();
                 setAppliancesInActive();
                 setToolTip(false)
+                // setIsLoading(true)
             };
         }, [deviceAppliances])
     );
@@ -83,7 +90,7 @@ export default function DeviceDetails() {
     }, [device?.appliance_name]);
 
     const onBackPress = () => {
-        router.back()
+        router.replace("/devices")
         return true;
     };
 
@@ -184,7 +191,7 @@ export default function DeviceDetails() {
     }
 
     return (
-        <Pressable className="p-5" style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 150 }} onPress={toolTip ? () => setToolTip(false) : undefined}>
+        <View className="p-5" style={{ paddingTop: insets.top + 18 }}>
             <Header />
             <View className="mb-4 flex-row items-center">
                 <TouchableOpacity
@@ -216,34 +223,27 @@ export default function DeviceDetails() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
-                {deviceAppliances.length > 0 && (
+                <AutoSkeletonView isLoading={isLoading}>
                     <View className="mb-40 p-1">
                         <RadioButton.Group
                             onValueChange={handleSelectedAppliance}
                             value={selectedAppliance}
                         >
-                            {isLoading ? (
-                                <View className="flex-1 justify-center items-center mt-20">
-                                    <ActivityIndicator size="large" color="#166534" />
-                                    <Text className="text-gray-500 mt-2">Switching Appliance...</Text>
-                                </View>
-                            ) : (
-                                deviceAppliances.map((appliance, index) => (
-                                    <ApplianceCard
-                                        key={index}
-                                        power={appliancePower[appliance.name] || 0}
-                                        appliance={appliance}
-                                        applianceKWH={applianceKWh[appliance.name] || 0}
-                                        onEdit={() => showEditModal(appliance)}
-                                        onDelete={() => openConfirmModal(appliance.name, "delete")}
-                                        selectedAppliance={selectedAppliance}
-                                        onChange={handleSelectedAppliance}
-                                    />
-                                ))
-                            )}
+                            {deviceAppliances.map((appliance, index) => (
+                                <ApplianceCard
+                                    key={index}
+                                    power={appliancePower[appliance.name] || 0}
+                                    appliance={appliance}
+                                    applianceKWH={applianceKWh[appliance.name] || 0}
+                                    onEdit={() => showEditModal(appliance)}
+                                    onDelete={() => openConfirmModal(appliance.name, "delete")}
+                                    selectedAppliance={selectedAppliance}
+                                    onChange={handleSelectedAppliance}
+                                />
+                            ))}
                         </RadioButton.Group>
                     </View>
-                )}
+                </AutoSkeletonView>
             </ScrollView>
 
             <AddApplianceModal visible={addModal} onClose={() => setAddModal(false)} onAdd={onAdd} />
@@ -262,6 +262,7 @@ export default function DeviceDetails() {
                         <TextInput
                             editable={!isLoading}
                             placeholder="Enter Appliance name"
+                            placeholderTextColor="#9CA3AF"
                             value={applianceNickname}
                             onChangeText={setApplianceNickname}
                             className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50"
@@ -300,6 +301,6 @@ export default function DeviceDetails() {
                 onConfirm={handleDeleteConfirmed}
                 action={action}
             />
-        </Pressable>
+        </View>
     );
 }

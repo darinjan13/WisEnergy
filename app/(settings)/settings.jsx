@@ -69,7 +69,7 @@ export default function settings() {
     }
 
     return (
-        <ScrollView className="flex-1 bg-gray-100 p-10" contentContainerStyle={{ paddingBottom: insets.bottom + 60, paddingTop: insets.top - 10}}>
+        <ScrollView className="flex-1 bg-gray-100 p-10" contentContainerStyle={{ paddingBottom: insets.bottom + 60, paddingTop: insets.top - 10 }}>
             <View className="mb-6 flex-row items-center">
                 <TouchableOpacity
                     className="w-10 -ml-4"
@@ -169,7 +169,7 @@ export default function settings() {
 
                 {[
                     { label: "WisEnergy", route: "/(settings)/about" },
-                    { label: "Help and Feedback", route: "/(settings)/contactSupport" },
+                    { label: "Help & Feedback", route: "/(settings)/contactSupport" },
                     { label: "Terms of Service", route: "/(settings)/terms" },
                     { label: "Privacy Policy", route: "/(settings)/privacy" },
                 ].map((item) => (

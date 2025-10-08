@@ -4,8 +4,11 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { db, auth } from "@/firebase/firebaseConfig";
 import { ref, onValue, update } from "firebase/database";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Notifications() {
+    const insets = useSafeAreaInsets();
+
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedNotif, setSelectedNotif] = useState(null);
@@ -101,7 +104,7 @@ export default function Notifications() {
                 <Feather name="arrow-left" size={30} color="#095333" />
             </TouchableOpacity>
 
-            <ScrollView showsVerticalScrollIndicator={false} className="p-10">
+            <ScrollView showsVerticalScrollIndicator={false} className="p-10" contentContainerStyle={{ paddingBottom: insets.bottom + 50 }}>
                 {/* Header */}
                 <View className="flex-row justify-between items-center mb-6">
                     <Text className="text-2xl font-bold text-black">Notifications</Text>

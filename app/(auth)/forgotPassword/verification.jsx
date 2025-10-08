@@ -5,9 +5,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { generate_otp, verify_otp } from '@/services/apiService';
 import { Feather } from '@expo/vector-icons';
 import OTPTextInput from "react-native-otp-textinput";
-import useAuth from '@/hooks/useAuth';
-import { ref } from 'firebase/database';
+import { ref, set } from 'firebase/database';
 import SuccessModal from '@/components/Modals/SuccessModal';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../../../firebase/firebaseConfig';
+import Toast from 'react-native-toast-message';
 
 export default function CodeVerificationScreen() {
 
@@ -28,8 +30,7 @@ export default function CodeVerificationScreen() {
         });
     }
 
-    const { email, from } = useLocalSearchParams();
-    const { logout } = useAuth();
+    const { email, from, firstName, lastName, password, location } = useLocalSearchParams();
 
     const [isLoading, setIsLoading] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
@@ -44,13 +45,22 @@ export default function CodeVerificationScreen() {
 
     const handleResend = async () => {
         setTimer(300);
-        const result = await generate_otp(email)
+        try {
+            await generate_otp(email, true);
+            Toast.show({
+                type: "success",
+                text1: "OTP Resent",
+                text2: `OTP sent to ${email}`,
+            });
+        } catch (e) {
+            console.error('Resend OTP error:', e);
+            Alert.alert('Error', 'Failed to resend OTP.');
+        }
     };
 
     const verifyCode = async () => {
         setIsLoading(true);
         try {
-            // 🔐 Call backend verify endpoint
             const result = await verify_otp(email, otp);
 
             if (!result.success) {
@@ -59,20 +69,16 @@ export default function CodeVerificationScreen() {
                 return;
             }
 
-            // ✅ OTP verified — now handle flows
             if (from === "forgotPassword") {
                 router.navigate({
                     pathname: "/forgotPassword/resetpassword",
                     params: { email },
                 });
             } else if (from === "register") {
-                const { firstName, lastName, password, location } = useLocalSearchParams();
 
-                // Create Firebase Auth account
                 const res = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(res.user, { displayName: firstName + " " + lastName });
 
-                // Save user details to Realtime Database
                 await saveUserDetails(res.user.uid, location, email, firstName, lastName, "user");
 
                 Toast.show({
@@ -96,12 +102,10 @@ export default function CodeVerificationScreen() {
 
         const [local, domain] = email.split('@');
 
-        // If local part is 3 chars or less, show all + ***
         if (local.length <= 3) {
             return `${local}***@${domain}`;
         }
 
-        // Otherwise, show first 3 chars + *** + @domain
         return `${local.slice(0, 3)}***@${domain}`;
     }
 

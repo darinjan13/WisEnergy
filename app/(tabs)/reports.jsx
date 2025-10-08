@@ -17,6 +17,7 @@ import { BlurView } from "expo-blur";
 import { set } from "date-fns";
 import { getMonthName } from "../../utils/dateHelper";
 import EnergyPredictionChart from "../../components/reports/EnergyPredictionChart";
+import { AutoSkeletonView } from "react-native-auto-skeleton";
 
 export default function reports() {
     const scheme = useColorScheme();
@@ -31,15 +32,13 @@ export default function reports() {
 
     const [reportData, setReportData] = useState([]);
     const [reports, setReports] = useState([]);
-    const [reportsTotal, setReportsTotal] = useState([]);
     const [lineData1, setLineData1] = useState([]);
+    const [reportsTotal, setReportsTotal] = useState([]);
     const [lineData2, setLineData2] = useState([]);
 
-
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [reportLoading, setReportLoading] = useState(true);
-    const [totalReportLoading, setTotalReportLoading] = useState(true)
     const [selectedAppliance, setSelectedAppliance] = useState(null);
 
     const [maxProgress, setMaxProgress] = useState(10);
@@ -48,13 +47,17 @@ export default function reports() {
 
     useFocusEffect(
         useCallback(() => {
-            setIsLoading(true)
+            // setIsLoading(true)
             fetchAllMonthlyTotalConsumption(auth.currentUser?.uid)
             fetchAllBudget(auth.currentUser?.uid)
+            fetchDailyTotals(auth.currentUser?.uid);
+            fetchWeeklyTotals(auth.currentUser?.uid);
+            fetchMonthlyTotals(auth.currentUser?.uid);
+
             const timeout = setTimeout(() => {
                 if (reportHistory !== null)
                     setIsLoading(false);
-            }, 500);
+            }, 1000);
             if (userAppliances.length != 0 && userDevices.length != 0) {
                 const result = userDevices.map((device) => {
                     const matched = userAppliances.find(appliance => appliance.id === device.id);
@@ -70,8 +73,6 @@ export default function reports() {
                 }).filter(Boolean);
                 setReportData(result)
             }
-
-
             return () => {
                 setReportCategory("Daily")
                 clearTimeout(timeout)
@@ -81,74 +82,20 @@ export default function reports() {
     );
 
     useEffect(() => {
-        if (devices.length === 0) setDevices();
-        // if (userAppliances.length === 0) fetchUserAppliances();
-    }, [devices])
-
-    useEffect(() => {
-        const userId = auth.currentUser?.uid;
-        if (!userId || reportData.length === 0) return;
-
-        console.log("⚙️ Prefetching in background...");
-
-        (async () => {
-            const start = Date.now();
-            try {
-                // For ALL devices (totals)
-                await Promise.allSettled([
-                    fetchDailyTotals(userId),
-                    fetchWeeklyTotals(userId),
-                    fetchMonthlyTotals(userId),
-                ]);
-
-                const timeTaken = ((Date.now() - start) / 1000).toFixed(1);
-                console.log(`✅ Background prefetch complete in ${timeTaken}s`);
-                // setReportsTotal(dailyTotals)
-
-                // ✅ Turn off spinner after prefetch
-                setTotalReportLoading(false);
-            } catch (error) {
-                console.error("⚠️ Background prefetch failed:", error);
-                setTotalReportLoading(false);
-            }
-        })();
-    }, [reportData]);
-
-    useEffect(() => {
-        if (!selectedDevice) return;
-
-        const t = setTimeout(() => {
-            if (selectedDevice === "All Devices") {
-                if (dailyTotals.length > 0)
-                    setTotalReportLoading(false);
-
-            } else {
-                setReportLoading(true);
-            }
-        }, 2000);
-
-        return () => clearTimeout(t);
-    }, [reportCategory, selectedDevice]);
-
-    useEffect(() => {
-        if (selectedDevice != undefined) {
-
+        if (selectedDevice === undefined) return
+        const timeout = setTimeout(() => {
             if (reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] == undefined) {
                 reportData.find((device) => {
-
                     if (device.device_id == selectedDevice) {
                         switch (reportCategory) {
-                            case "Daily":
-                                setMaxProgress(50);
-                                waitForDailyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
-                                break;
                             case "Weekly":
-                                setMaxProgress(10);
-                                waitForWeeklyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
+                                setReportLoading(false);
+                                break;
+                            case "Daily":
+                                setReportLoading(false);
                                 break;
                             case "Monthly":
-                                setMaxProgress(10);
-                                waitForMonthlyReport(auth.currentUser?.uid, selectedDevice, device.appliances);
+                                setReportLoading(false);
                                 break;
                             default:
                                 break;
@@ -160,41 +107,77 @@ export default function reports() {
                 setReportLoading(false);
                 setReports(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] || []);
             }
-        }
-
-        if (selectedDevice === "All Devices") {
-            switch (reportCategory) {
-                case "Daily":
-                    setReportsTotal("")
-                    setTotalReportLoading(true);
-                    setReportsTotal(dailyTotals)
-                    break;
-                case "Weekly":
-                    setReportsTotal("")
-                    setTotalReportLoading(true);
-                    setReportsTotal(weeklyTotals)
-                    break;
-                case "Monthly":
-                    setReportsTotal("")
-                    setTotalReportLoading(true);
-                    setReportsTotal(monthlyTotals)
-                    break;
-            }
+            if (selectedDevice === "All Devices")
+                switch (reportCategory) {
+                    case "Daily":
+                        setReportsTotal(dailyTotals)
+                        setReportLoading(false);
+                        break;
+                    case "Weekly":
+                        setReportsTotal(weeklyTotals)
+                        setReportLoading(false);
+                        break;
+                    case "Monthly":
+                        setReportsTotal(monthlyTotals)
+                        setReportLoading(false);
+                        break;
+                }
+        }, 1000);
+        return () => {
+            clearTimeout(timeout)
         }
     }, [selectedDevice, reportCategory, dailyTotals, weeklyTotals, monthlyTotals])
 
     useEffect(() => {
-        if (reports.length > 0) {
-            setReportLoading(false)
-        } else {
-            setReportLoading(true)
+        if (devices.length === 0) setDevices();
+        // if (userAppliances.length === 0) fetchUserAppliances();
+    }, [devices])
+
+    const fetchDailyReport1 = async (user_id, selectedDevice, appliances) => {
+        setReportLoading(true);
+        await fetchDailyReport(user_id, selectedDevice, appliances);
+    }
+    const fetchWeeklyReport1 = async (user_id, selectedDevice, appliances) => {
+        setReportLoading(true);
+        await fetchWeeklyReport(user_id, selectedDevice, appliances);
+    }
+    const fetchMonthlyReport1 = async (user_id, selectedDevice, appliances) => {
+        setReportLoading(true);
+        await fetchMonthlyReport(user_id, selectedDevice, appliances);
+    }
+
+    useEffect(() => {
+        if (selectedDevice != undefined) {
+            setReportLoading(true); // Set loading when category or device changes
+            if (reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] == undefined) {
+                reportData.find((device) => {
+                    if (device.device_id == selectedDevice) {
+                        switch (reportCategory) {
+                            case "Weekly":
+                                setMaxProgress(50);
+                                fetchWeeklyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                                break;
+                            case "Daily":
+                                setMaxProgress(10);
+                                fetchDailyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                                break;
+                            case "Monthly":
+                                setMaxProgress(10);
+                                fetchMonthlyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
+                                break;
+                            default:
+                                break;
+                        }
+                        fetchAllLatestKwh(auth.currentUser?.uid, selectedDevice)
+                    }
+                })
+            }
         }
-    }, [reports])
+    }, [selectedDevice, reportCategory])
 
     useEffect(() => {
         setLineData1(allMonthlyTotalConsumption)
         setLineData2(allBudget)
-
     }, [allMonthlyTotalConsumption, allBudget])
 
     useEffect(() => {
@@ -275,7 +258,10 @@ export default function reports() {
                             {category?.map((label, index) => (
                                 <TouchableOpacity
                                     key={index}
-                                    onPress={() => setReportCategory(label)}
+                                    onPress={() => {
+                                        setReportCategory(label);
+                                        setReportLoading(true); // Set loading when category changes
+                                    }}
                                     className={`px-4 py-2 rounded-full border ${label === reportCategory ? "bg-green-700 border-green-700" : "bg-white border-gray-300"}`}
                                 >
                                     <Text className={`${label === reportCategory ? "text-white" : "text-black"} font-semibold`}>{label}</Text>
@@ -300,8 +286,8 @@ export default function reports() {
                                             backgroundColor: "#fff",
                                         }}
                                         itemStyle={{
-                                            color: "#000", // dropdown item text color
-                                            backgroundColor: "#fff", // ✅ dropdown background
+                                            color: "#000",
+                                            backgroundColor: "#fff",
                                         }}
                                         selectedValue={selectedDevice}
                                         onValueChange={(itemValue) => {
@@ -334,31 +320,15 @@ export default function reports() {
                                 <Text className="text-2xl font-bold text-[#14532d] mb-4">
                                     Overall Energy Consumption ({reportCategory})
                                 </Text>
-                                <View
-                                    style={styles.cardShadow}
-                                    className="bg-white p-4 rounded-2xl shadow-sm mb-4"
-                                >
-                                    {!totalReportLoading ? (
+                                <AutoSkeletonView isLoading={reportLoading}>
+                                    <View
+                                        style={styles.cardShadow}
+                                        className="bg-white p-4 rounded-2xl shadow-sm mb-4"
+                                    >
                                         <View className="w-full">
                                             <EnergyPredictionChart
                                                 actualData={reportsTotal?.[0]?.barData}
                                                 predictedData={reportsTotal?.[0]?.barData2}
-                                                // actualData={
-                                                //     (reportCategory === "Daily"
-                                                //         ? dailyTotals
-                                                //         : reportCategory === "Weekly"
-                                                //             ? weeklyTotals
-                                                //             : monthlyTotals
-                                                //     )?.[0]?.barData || []
-                                                // }
-                                                // predictedData={
-                                                //     (reportCategory === "Daily"
-                                                //         ? dailyTotals
-                                                //         : reportCategory === "Weekly"
-                                                //             ? weeklyTotals
-                                                //             : monthlyTotals
-                                                //     )?.[0]?.barData2 || []
-                                                // }
                                                 category={reportCategory}
                                             />
                                             {reportCategory === "Weekly" &&
@@ -371,16 +341,8 @@ export default function reports() {
                                                     </Text>
                                                 )}
                                         </View>
-
-                                    ) : (
-                                        <View className="h-full p-4 flex-1 items-center justify-center">
-                                            <ActivityIndicator size="large" color="#166534" />
-                                            <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                                                Loading total consumption data…
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
+                                    </View>
+                                </AutoSkeletonView>
                             </>
                         ) : (
                             <>
@@ -391,7 +353,14 @@ export default function reports() {
                                     style={styles.cardShadow}
                                     className="bg-white p-4 rounded-2xl shadow-sm mb-4"
                                 >
-                                    {!reportLoading ? (
+                                    {reportLoading ? (
+                                        <View className="h-40 p-4 flex-1 items-center justify-center">
+                                            <ActivityIndicator size="large" color="#166534" />
+                                            <Text className="text-gray-500 mt-4 text-lg font-semibold">
+                                                Loading appliance usage data…
+                                            </Text>
+                                        </View>
+                                    ) : reports.length > 0 ? (
                                         reports.map((item, index) => {
                                             const powerUsed = item.latestKwh ?? 0;
                                             const totalUsage = reports.reduce(
@@ -406,13 +375,6 @@ export default function reports() {
                                                     key={item.applianceName + index}
                                                     onPress={() => {
                                                         setModalVisible(true);
-                                                        console.log([
-                                                            {
-                                                                "barData": item.barData,
-                                                                "barData2": item.barData2
-                                                            }
-                                                        ]);
-
                                                         setSelectedAppliance(item);
                                                     }}
                                                     className="mb-4"
@@ -434,10 +396,9 @@ export default function reports() {
                                             );
                                         })
                                     ) : (
-                                        <View className="h-full p-4 flex-1 items-center justify-center">
-                                            <ActivityIndicator size="large" color="#166534" />
-                                            <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                                                Loading your reports data…
+                                        <View className="h-40 p-4 flex-1 items-center justify-center">
+                                            <Text className="text-gray-500 text-lg font-semibold">
+                                                No appliance usage data available.
                                             </Text>
                                         </View>
                                     )}
@@ -453,7 +414,7 @@ export default function reports() {
                         <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
                             <Text style={styles.closeButtonText}>X</Text>
                         </TouchableOpacity>
-                        <EnergyPredictionChart category={reportCategory} actualData={selectedAppliance?.barData} predictedData={selectedAppliance?.barData2} />
+                        <ApplianceUsage category={reportCategory} data={selectedAppliance} />
                     </View>
                 </BlurView>
             </Modal>

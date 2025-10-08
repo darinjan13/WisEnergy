@@ -80,7 +80,7 @@ export default function EditProfile() {
                     className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
                 />
                 <Text className="mb-2 text-gray-700 font-bold">Email Address</Text>
-                <View className="flex-row items-center border border-gray-300 rounded-md p-4 bg-[#F9F9F9]">
+                <View className="flex-row items-center border border-gray-300 rounded-md p-4 bg-[#F9F9F9] mb-6">
                     <TextInput
                         className="flex-1 text-gray-500"
                         editable={false}
@@ -90,15 +90,15 @@ export default function EditProfile() {
                         <Fontisto name="locked" className="mr-2" size={16} color="gray" />
                     </TouchableOpacity>
                 </View>
-
+                <TouchableOpacity disabled={isLoading} onPress={handleUpdate} className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}>
+                    {!isLoading ? (
+                        <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
+                    ) : (
+                        <ActivityIndicator size="small" color="white" />
+                    )}
+                </TouchableOpacity>
                 <View className="flex-1 justify-end mb-8">
-                    <TouchableOpacity disabled={isLoading} onPress={handleUpdate} className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}>
-                        {!isLoading ? (
-                            <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
-                        ) : (
-                            <ActivityIndicator size="small" color="white" />
-                        )}
-                    </TouchableOpacity>
+
                 </View>
             </View>
         </KeyboardAvoidingView>

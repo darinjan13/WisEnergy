@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Pressable } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import Toast from 'react-native-toast-message';
@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import Tooltip from "../../components/ui/Tooltip.jsx";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { AutoSkeletonIgnoreView, AutoSkeletonView } from "react-native-auto-skeleton";
 
 export default function devices() {
     const insets = useSafeAreaInsets();
@@ -37,13 +38,9 @@ export default function devices() {
     useFocusEffect(
         useCallback(() => {
             if (devices.length === 0) setDevices();
-            // if (userAppliances.length === 0) fetchUserAppliances();
             const timeout = setTimeout(() => {
-                if (devices.length > 0 && userAppliances.length > 0) {
-                    setIsLoading(false);
-                }
-            }, 250);
-            setIsLoading(false);
+                setIsLoading(false);
+            }, 2000);
             return () => {
                 clearTimeout(timeout)
                 setIsLoading(true)
@@ -153,131 +150,127 @@ export default function devices() {
     }
 
     return (
-        <GestureHandlerRootView>
-            <Pressable className="bg-gray-100" onPress={toolTip ? () => setToolTip(false) : undefined}>
-                <ScrollView className="p-5" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
-                    <Header />
-                    {isLoading || disableDevice ? (
-                        <View className="h-screen -mt-36 items-center justify-center">
-                            <ActivityIndicator size="large" color="#166534" />
-                            <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                                Loading devices...
-                            </Text>
+        <View>
+            <ScrollView className="p-5" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
+                <Header />
+                <AutoSkeletonView isLoading={isLoading}>
+                    <AutoSkeletonIgnoreView>
+                        <View className="flex-row items-center justify-between mb-10">
+                            <View className="flex-row items-center gap-x-2">
+                                <Text className="text-2xl font-bold text-[#2E4F4F]">Devices</Text>
+                                <TouchableOpacity
+                                    onPress={() => setToolTip(!toolTip)}
+                                    className="p-1"
+                                >
+                                    <Feather name="info" size={18} color="gray" />
+                                </TouchableOpacity>
+                            </View>
+                            <Tooltip toolTip={toolTip} setToolTip content={`This section lists all IoT devices connected to your WisEnergy account.\nPair a device to start monitoring energy consumption in real time.`} from="Devices" />
+                            <TouchableOpacity className=" rounded-3xl bg-white items-center justify-center">
+                                <Feather className="p-1" onPress={showAddDeviceModal} name="plus" size={20} color="#2E4F4F" />
+                            </TouchableOpacity>
+                        </View>
+                    </AutoSkeletonIgnoreView>
+                    {userDevices.length > 0 ? (
+                        <View>
+                            {userDevices.map((userDevice, index) => (
+                                <DeviceCard key={index} disabled={disableDevice || isLoading} onPress={() => handleDecivcePressed(userDevice)} deviceData={userDevice} editDevice={() => showEditModal(userDevice)} deleteDevice={() => openConfirmModal(userDevice.id, "delete")} />
+                            ))}
                         </View>
                     ) : (
-                        <>
-                            < View className="flex-row items-center justify-between mb-10">
-                                <View className="flex-row items-center gap-x-2">
-                                    <Text className="text-2xl font-bold text-[#2E4F4F]">Devices</Text>
-                                    <TouchableOpacity
-                                        onPress={() => setToolTip(!toolTip)}
-                                        className="p-1"
-                                    >
-                                        <Feather name="info" size={18} color="gray" />
-                                    </TouchableOpacity>
-                                </View>
-                                <Tooltip toolTip={toolTip} setToolTip content={`This section lists all IoT devices connected to your WisEnergy account.\nPair a device to start monitoring energy consumption in real time.`} from="Devices" />
-                                <TouchableOpacity className=" rounded-3xl bg-white items-center justify-center">
-                                    <Feather className="p-1" onPress={showAddDeviceModal} name="plus" size={20} color="#2E4F4F" />
-                                </TouchableOpacity>
+                        <AutoSkeletonIgnoreView>
+                            <View className="flex-1 justify-center items-center">
+                                <IconButton icon="lightning-bolt-outline" size={64} iconColor="#9CA3AF" />
+                                <Text className="text-gray-500 mt-4 text-lg font-semibold">
+                                    No devices added yet
+                                </Text>
+                                <Text className="text-gray-400 mt-1 text-sm">
+                                    Tap the plus icon to add one
+                                </Text>
                             </View>
-                            {userDevices.length > 0 ? (
-                                <View>
-                                    {userDevices.map((userDevice, index) => (
-                                        <DeviceCard key={index} disabled={disableDevice} onPress={() => handleDecivcePressed(userDevice)} deviceData={userDevice} editDevice={() => showEditModal(userDevice)} deleteDevice={() => openConfirmModal(userDevice.id, "delete")} />
-                                    ))}
-                                </View>
-                            ) : (
-                                <View className="flex-1 justify-center items-center">
-                                    <IconButton icon="lightning-bolt-outline" size={64} iconColor="#9CA3AF" />
-                                    <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                                        No devices added yet
-                                    </Text>
-                                    <Text className="text-gray-400 mt-1 text-sm">
-                                        Tap the plus icon to add one
-                                    </Text>
-                                </View>
-                            )
-                            }
-                        </>)}
-                </ScrollView >
+                        </AutoSkeletonIgnoreView>
+                    )
+                    }
+                </AutoSkeletonView>
+            </ScrollView >
 
 
-                <Modal
-                    animationType="fade"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
-                >
-                    <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
-                        <View className="bg-white rounded-xl p-6 w-11/12">
-                            <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">{action === "edit" ? "Edit Device" : "Add Device"}</Text>
-                            <TextInput
-                                editable={!isLoading}
-                                placeholder="Enter Device name"
-                                value={device_nickname}
-                                onChangeText={setDeviceNickname}
-                                className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50"
-                            />
-                            {action !== "edit" ? (<>
-                                <View className="border border-gray-300 rounded-xl mb-4 overflow-hidden">
-                                    <Picker
-                                        selectedValue={selectedUnpairedDevice}
-                                        onValueChange={(itemValue) => setSelectedUnpairedDevice(itemValue)}
-                                    >
-                                        <Picker.Item label="Select Device" value={null} />
-                                        {unpairedDevices.map((device, idx) => (
-                                            <Picker.Item
-                                                key={idx}
-                                                label={device.label || device.name || `Device ${idx + 1}`}
-                                                value={device.value || device.id || device}
-                                            />
-                                        ))}
-                                    </Picker>
-
-                                </View>
-                                <View className="border border-gray-300 rounded-lg mb-6 bg-gray-50 flex-row items-center">
-                                    <TextInput
-                                        editable={!isLoading}
-                                        className="flex-1 p-4 text-base text-gray-800"
-                                        placeholder="Enter Device password"
-                                        secureTextEntry={!showPassword}
-                                        value={deviceCode}
-                                        onChangeText={setDeviceCode}
-                                    />
-                                    <IconButton className="" onPress={() => setShowPassword(!showPassword)} icon={showPassword ? "eye-off" : "eye-outline"} iconColor="gray" />
-
-                                </View></>
-                            ) : null}
-
-                            <View className="flex-row justify-end">
-                                <TouchableOpacity
-                                    className="px-4 py-2 bg-gray-300 rounded-lg mr-4"
-                                    onPress={() => { setModalVisible(false); setAction(null); setDeviceNickname(""); setSelectedUnpairedDevice(""); setDeviceCode(""); }}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
+                    <View className="bg-white rounded-xl p-6 w-11/12">
+                        <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">{action === "edit" ? "Edit Device" : "Add Device"}</Text>
+                        <TextInput
+                            editable={!isLoading}
+                            placeholder="Enter Device name"
+                            placeholderTextColor="#9CA3AF"
+                            value={device_nickname}
+                            onChangeText={setDeviceNickname}
+                            className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50"
+                        />
+                        {action !== "edit" ? (<>
+                            <View className="border border-gray-300 rounded-xl mb-4 overflow-hidden">
+                                <Picker
+                                    selectedValue={selectedUnpairedDevice}
+                                    onValueChange={(itemValue) => setSelectedUnpairedDevice(itemValue)}
                                 >
-                                    <Text className="text-gray-700 font-semibold">Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    disabled={isLoading}
-                                    className="px-4 py-2 bg-green-700 rounded-lg"
-                                    onPress={() => {
-                                        if (action === "edit") {
-                                            handleEditConfirmed();
-                                        } else {
-                                            handleAddDevice();
-                                        }
-                                    }}>
-                                    <Text className="text-white font-semibold">{action === "edit" ? "Confirm" : "Add"}</Text>
-                                </TouchableOpacity>
+                                    <Picker.Item label="Select Device" value={null} color="#6b7280" />
+                                    {unpairedDevices.map((device, idx) => (
+                                        <Picker.Item
+                                            key={idx}
+                                            label={device.label || device.name || `Device ${idx + 1}`}
+                                            value={device.value || device.id || device}
+                                        />
+                                    ))}
+                                </Picker>
+
                             </View>
+                            <View className="border border-gray-300 rounded-lg mb-6 bg-gray-50 flex-row items-center">
+                                <TextInput
+                                    editable={!isLoading}
+                                    className="flex-1 p-4 text-base text-gray-800"
+                                    placeholderTextColor="#9CA3AF"
+                                    placeholder="Enter Device password"
+                                    secureTextEntry={!showPassword}
+                                    value={deviceCode}
+                                    onChangeText={setDeviceCode}
+                                />
+                                <IconButton className="" onPress={() => setShowPassword(!showPassword)} icon={showPassword ? "eye-off" : "eye-outline"} iconColor="gray" />
+
+                            </View></>
+                        ) : null}
+
+                        <View className="flex-row justify-end">
+                            <TouchableOpacity
+                                className="px-4 py-2 bg-gray-300 rounded-lg mr-4"
+                                onPress={() => { setModalVisible(false); setAction(null); setDeviceNickname(""); setSelectedUnpairedDevice(""); setDeviceCode(""); }}
+                            >
+                                <Text className="text-gray-700 font-semibold">Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                disabled={isLoading}
+                                className="px-4 py-2 bg-green-700 rounded-lg"
+                                onPress={() => {
+                                    if (action === "edit") {
+                                        handleEditConfirmed();
+                                    } else {
+                                        handleAddDevice();
+                                    }
+                                }}>
+                                <Text className="text-white font-semibold">{action === "edit" ? "Confirm" : "Add"}</Text>
+                            </TouchableOpacity>
                         </View>
-                    </BlurView>
-                </Modal>
-                <ConfirmModal visible={showConfirmModal} onCancel={() => {
-                    setShowConfirmModal(false);
-                    setDeviceId(null);
-                }} onConfirm={handleDeleteConfirmed} action={action} />
-            </Pressable >
-        </GestureHandlerRootView>
+                    </View>
+                </BlurView>
+            </Modal>
+            <ConfirmModal visible={showConfirmModal} onCancel={() => {
+                setShowConfirmModal(false);
+                setDeviceId(null);
+            }} onConfirm={handleDeleteConfirmed} action={action} />
+        </View >
     );
 }
