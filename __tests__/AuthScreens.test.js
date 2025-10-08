@@ -13,13 +13,14 @@ jest.mock("../hooks/useAuth", () => ({
     }),
 }));
 
-describe("Authentication Module Unit Tests", () => {
-    test("Case-001: Login fails with invalid email", async () => {
+describe("Case-001: Login invalid email format", () => {
+    test("User enters invalid email format and sees error message", async () => {
         render(<LoginForm />);
 
         fireEvent.changeText(screen.getByPlaceholderText(/email/i), "invalidEmail");
+        fireEvent.changeText(screen.getByPlaceholderText(/password/i), "password123");
 
-        // press the actual Sign In button (last occurrence)
+        // press the Sign In button (last occurrence)
         fireEvent.press(screen.getAllByText(/sign in/i).pop());
 
         await waitFor(() =>
