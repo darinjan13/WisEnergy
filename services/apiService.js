@@ -34,22 +34,20 @@ export const predict_usage = async (userId, deviceId, applianceName) => {
         const response = await api.get(`/predict/${userId}/${deviceId}/${applianceName}`);
         const { daily, weekly } = response.data || {};
 
-        // Transform daily (object -> array with label/value)
         const dailyPredictions = daily
             ? Object.entries(daily).map(([date, obj]) => ({
-                date,                          // full date
-                label: date.slice(5),          // e.g. "08-26"
+                date,
+                label: date.slice(5),
                 value: Number(obj.predicted_kWh.toFixed(2)),
             }))
             : [];
 
-        // Transform weekly (array -> array with label/value)
         const weeklyPredictions = weekly
             ? weekly.map((w) => {
                 const { year, month, week, data } = w;
                 return {
-                    weekKey: `W${week} (${month}/${year})`, // readable key
-                    label: `W${week}-${month}`,                      // shorter chart label
+                    weekKey: `W${week} (${month}/${year})`,
+                    label: `W${week}-${month}`,
                     value: Number(data.predicted_kWh.toFixed(2)),
                     timestamp: data.timestamp,
                 };
@@ -70,7 +68,6 @@ export const predict_totals = async (userId) => {
         const response = await api.get(`/predict/totals/${userId}`);
         const { daily, weekly } = response.data || {};
 
-        // ---------- DAILY TOTALS ----------
         const dailyPredictions = daily
             ? Object.entries(daily).map(([date, obj]) => ({
                 date,
@@ -79,13 +76,12 @@ export const predict_totals = async (userId) => {
             }))
             : [];
 
-        // ---------- WEEKLY TOTALS ----------
         const weeklyPredictions = weekly
             ? weekly.map((w) => {
                 const { year, month, week, data } = w;
                 return {
                     weekKey: `W${week} (${month}/${year})`,
-                    label: `W${week}-${month}`, // 👈 add month suffix to make unique
+                    label: `W${week}-${month}`,
                     value: Number(data.predicted_kWh?.toFixed(2) || 0),
                     timestamp: data.timestamp || null,
                 };
