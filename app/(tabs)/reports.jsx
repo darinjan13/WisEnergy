@@ -2,21 +2,18 @@ import { useCallback, useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, useColorScheme } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BarChart } from "react-native-gifted-charts";
 
-import Header from "../../components/ui/Header";
-import { auth } from "../../firebase/firebaseConfig";
+import Header from "@/components/ui/Header";
+import { auth } from "@/firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
-import { useBudgetStore, useDeviceStore, useUsageStore } from "../../store/firebaseStore";
+import { useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
 import { Picker } from "@react-native-picker/picker";
-import ApplianceUsage from "../../components/reports/ApplianceUsage"
+import ApplianceUsage from "@/components/reports/ApplianceUsage"
 import { Ionicons } from "@expo/vector-icons";
-import CustomProgressBar from "../../components/reports/CustomProgressBar";
+import CustomProgressBar from "@/components/reports/CustomProgressBar";
 import { BlurView } from "expo-blur";
-import { set } from "date-fns";
-import { getMonthName } from "../../utils/dateHelper";
-import EnergyPredictionChart from "../../components/reports/EnergyPredictionChart";
+import EnergyPredictionChart from "@/components/reports/EnergyPredictionChart";
 import { AutoSkeletonView } from "react-native-auto-skeleton";
 
 export default function reports() {
@@ -76,61 +73,35 @@ export default function reports() {
             return () => {
                 setReportCategory("Daily")
                 clearTimeout(timeout)
+                clearTimeout(timeout1)
                 setIsLoading(true)
             };
         }, [devices, userAppliances, userDevices])
     );
 
+    let timeout1
     useEffect(() => {
         if (selectedDevice === undefined) return
-        const timeout = setTimeout(() => {
-            if (reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] == undefined) {
-                reportData.find((device) => {
-                    if (device.device_id == selectedDevice) {
-                        switch (reportCategory) {
-                            case "Weekly":
-                                setReportLoading(false);
-                                break;
-                            case "Daily":
-                                setReportLoading(false);
-                                break;
-                            case "Monthly":
-                                setReportLoading(false);
-                                break;
-                            default:
-                                break;
-                        }
-                        fetchAllLatestKwh(auth.currentUser?.uid, selectedDevice)
-                    }
-                })
-            } else {
-                setReportLoading(false);
-                setReports(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] || []);
-            }
-            if (selectedDevice === "All Devices")
+        timeout1 = setTimeout(() => {
+            if (selectedDevice === "All Devices") {
                 switch (reportCategory) {
                     case "Daily":
                         setReportsTotal(dailyTotals)
-                        setReportLoading(false);
                         break;
                     case "Weekly":
                         setReportsTotal(weeklyTotals)
-                        setReportLoading(false);
                         break;
                     case "Monthly":
                         setReportsTotal(monthlyTotals)
-                        setReportLoading(false);
                         break;
                 }
-        }, 1000);
-        return () => {
-            clearTimeout(timeout)
-        }
+            }
+            setReportLoading(false);
+        }, 2000);
     }, [selectedDevice, reportCategory, dailyTotals, weeklyTotals, monthlyTotals])
 
     useEffect(() => {
         if (devices.length === 0) setDevices();
-        // if (userAppliances.length === 0) fetchUserAppliances();
     }, [devices])
 
     const fetchDailyReport1 = async (user_id, selectedDevice, appliances) => {
@@ -148,7 +119,7 @@ export default function reports() {
 
     useEffect(() => {
         if (selectedDevice != undefined) {
-            setReportLoading(true); // Set loading when category or device changes
+            setReportLoading(true);
             if (reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] == undefined) {
                 reportData.find((device) => {
                     if (device.device_id == selectedDevice) {
@@ -184,7 +155,7 @@ export default function reports() {
         if (Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0) {
             setReports(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] || []);
         }
-    }, [reportHistory])
+    }, [reportHistory, reportCategory, selectedDevice])
 
     useEffect(() => {
         if (reportData.length > 0) setSelectedDevice("All Devices");
@@ -259,8 +230,9 @@ export default function reports() {
                                 <TouchableOpacity
                                     key={index}
                                     onPress={() => {
+                                        setReportsTotal([])
                                         setReportCategory(label);
-                                        setReportLoading(true); // Set loading when category changes
+                                        setReportLoading(true);
                                     }}
                                     className={`px-4 py-2 rounded-full border ${label === reportCategory ? "bg-green-700 border-green-700" : "bg-white border-gray-300"}`}
                                 >
@@ -326,20 +298,17 @@ export default function reports() {
                                         className="bg-white p-4 rounded-2xl shadow-sm mb-4"
                                     >
                                         <View className="w-full">
-                                            <EnergyPredictionChart
-                                                actualData={reportsTotal?.[0]?.barData}
-                                                predictedData={reportsTotal?.[0]?.barData2}
-                                                category={reportCategory}
-                                            />
-                                            {reportCategory === "Weekly" &&
-                                                weeklyTotals?.[0]?.barData?.length > 0 && (
-                                                    <Text className="text-gray-500 text-center mt-3 text-sm">
-                                                        Month of{" "}
-                                                        <Text className="font-semibold text-gray-700">
-                                                            {getMonthName(weeklyTotals[0].barData[0]?.month || "", "long")}
-                                                        </Text>
-                                                    </Text>
-                                                )}
+                                            {reportsTotal.length > 0 ? (
+                                                <EnergyPredictionChart
+                                                    actualData={reportsTotal?.[0]?.barData}
+                                                    predictedData={reportsTotal?.[0]?.barData2}
+                                                    category={reportCategory}
+                                                />
+                                            ) : (
+                                                <Text className="text-gray-500 mt-4 text-lg font-semibold">
+                                                    No data yet…
+                                                </Text>
+                                            )}
                                         </View>
                                     </View>
                                 </AutoSkeletonView>
@@ -353,55 +322,50 @@ export default function reports() {
                                     style={styles.cardShadow}
                                     className="bg-white p-4 rounded-2xl shadow-sm mb-4"
                                 >
-                                    {reportLoading ? (
-                                        <View className="h-40 p-4 flex-1 items-center justify-center">
-                                            <ActivityIndicator size="large" color="#166534" />
-                                            <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                                                Loading appliance usage data…
-                                            </Text>
-                                        </View>
-                                    ) : reports.length > 0 ? (
-                                        reports.map((item, index) => {
-                                            const powerUsed = item.latestKwh ?? 0;
-                                            const totalUsage = reports.reduce(
-                                                (sum, r) => sum + (r.latestKwh ?? 0),
-                                                0
-                                            );
-                                            const percent =
-                                                totalUsage > 0 ? (powerUsed / totalUsage) * 100 : 0;
+                                    <AutoSkeletonView isLoading={reportLoading}>
+                                        {reports.length > 0 ? (
+                                            reports.map((item, index) => {
+                                                const powerUsed = item.latestKwh ?? 0;
+                                                const totalUsage = reports.reduce(
+                                                    (sum, r) => sum + (r.latestKwh ?? 0),
+                                                    0
+                                                );
+                                                const percent =
+                                                    totalUsage > 0 ? (powerUsed / totalUsage) * 100 : 0;
 
-                                            return (
-                                                <TouchableOpacity
-                                                    key={item.applianceName + index}
-                                                    onPress={() => {
-                                                        setModalVisible(true);
-                                                        setSelectedAppliance(item);
-                                                    }}
-                                                    className="mb-4"
-                                                >
-                                                    <View className="w-full flex-row items-center">
-                                                        <Text className="w-24">{item.applianceName}</Text>
-                                                        <View className="flex-1">
-                                                            <CustomProgressBar
-                                                                progress={percent}
-                                                                maxProgress={100}
-                                                                color="#4CAF50"
-                                                            />
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={item.applianceName + index}
+                                                        onPress={() => {
+                                                            setModalVisible(true);
+                                                            setSelectedAppliance(item);
+                                                        }}
+                                                        className="mb-4"
+                                                    >
+                                                        <View className="w-full flex-row items-center">
+                                                            <Text className="w-24">{item.applianceName}</Text>
+                                                            <View className="flex-1">
+                                                                <CustomProgressBar
+                                                                    progress={percent}
+                                                                    maxProgress={100}
+                                                                    color="#4CAF50"
+                                                                />
+                                                            </View>
+                                                            <Text className="ml-2 text-gray-600 text-sm">
+                                                                {powerUsed.toFixed(2)} kWh
+                                                            </Text>
                                                         </View>
-                                                        <Text className="ml-2 text-gray-600 text-sm">
-                                                            {powerUsed.toFixed(2)} kWh
-                                                        </Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                            );
-                                        })
-                                    ) : (
-                                        <View className="h-40 p-4 flex-1 items-center justify-center">
-                                            <Text className="text-gray-500 text-lg font-semibold">
-                                                No appliance usage data available.
-                                            </Text>
-                                        </View>
-                                    )}
+                                                    </TouchableOpacity>
+                                                );
+                                            })
+                                        ) : (
+                                            <View className="h-40 p-4 flex-1 items-center justify-center">
+                                                <Text className="text-gray-500 text-lg font-semibold h-full w-full">
+                                                    No appliance usage data available.
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </AutoSkeletonView>
                                 </View>
                             </>
                         )}

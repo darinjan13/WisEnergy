@@ -2,15 +2,15 @@ import { create } from 'zustand';
 import * as firebaseDevicesServices from '../services/firebaseDevicesService'
 import * as firebaseUsageServices from '../services/firebaseUsageService'
 import * as firebaseBudgetServices from '../services/firebaseBudgetService'
-import { daily_ai_insights } from '@/services/apiService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as firebaseNotificationServices from '../services/firebaseNotificationService'
+import { daily_ai_insights } from '@/services/apiService'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export const useDeviceStore = create((set, get) => ({
     devices: [],
     userDevices: [],
     unpairedDevices: [],
     userAppliances: [],
-    todayTrend: null,
     _unsubUserAppliances: null,
     setDevices: async () => {
         const data = await firebaseDevicesServices.fetchDevices();
@@ -299,6 +299,7 @@ export const useUsageStore = create((set, get) => ({
         set({
             monthlyTotalConsumption: 0,
             _unsubMonthly: null,
+            allMonthlyTotalConsumption: [],
             latestKwh: [],
             reportHistory: { daily: {}, weekly: {}, monthly: {} },
             summaryPerDevice: {},
@@ -352,11 +353,6 @@ export const useBudgetStore = create((set, get) => ({
 
         set({ locationRate });
     },
-    fetchMonthlyBudget: async (userId) => {
-
-        const monthlyBudget = await firebaseBudgetServices.fetchMonthlyBudget(userId);
-        set({ monthlyBudget });
-    },
     fetchAllBudget: async (userId) => {
         const allBudget = await firebaseBudgetServices.fetchAllBudget(userId);
         set({ allBudget });
@@ -369,13 +365,80 @@ export const useBudgetStore = create((set, get) => ({
             monthlyBudget: null,
             _unsubBudget: null,
             percentUsed: 0,
+            allBudget: []
         })
     }
 }));
+
+export const useNotificationStore = create((set, get) => ({
+    notifications: [],
+    loading: false,
+    hasMore: true,
+    lastTimestamp: null,
+    PAGE_SIZE: 5,
+
+    /** Fetch first page or refresh list */
+    fetchNotifications: async (userId) => {
+        if (!userId) return;
+        set({ loading: true });
+
+        const { notifications, newLastTimestamp, hasMore } =
+            await firebaseNotificationServices.fetchUserNotifications(userId, null, get().PAGE_SIZE);
+
+        set({
+            notifications,
+            lastTimestamp: newLastTimestamp,
+            hasMore,
+            loading: false,
+        });
+    },
+    loadMoreNotifications: async (userId) => {
+        const { lastTimestamp, PAGE_SIZE, notifications } = get();
+        if (!userId || !lastTimestamp) return;
+        set({ loading: true });
+
+        const { notifications: newData, newLastTimestamp, hasMore } =
+            await firebaseNotificationServices.fetchUserNotifications(userId, lastTimestamp, PAGE_SIZE);
+
+        // 🧠 remove duplicates (same Firebase ID)
+        const existingIds = new Set(notifications.map((n) => n.id));
+        const merged = [
+            ...notifications,
+            ...newData.filter((n) => !existingIds.has(n.id)),
+        ];
+
+        set({
+            notifications: merged,
+            lastTimestamp: newLastTimestamp,
+            hasMore,
+            loading: false,
+        });
+    },
+    markAllAsRead: async (userId) => {
+        const { notifications } = get();
+        if (!userId) return;
+
+        await firebaseNotificationServices.markAllNotificationsRead(userId, notifications);
+
+        const now = new Date().toISOString();
+        set({
+            notifications: notifications.map((n) => ({ ...n, read_at: now })),
+        });
+    },
+    reset: () => {
+        set({
+            notifications: [],
+            loading: false,
+            hasMore: true,
+            lastTimestamp: null,
+        });
+    },
+}))
 
 export const clearStates = () => {
     useDeviceStore.getState().reset();
     useUsageStore.getState().reset();
     useBudgetStore.getState().reset();
     useAiGeneratedStore.getState().reset();
+    useNotificationStore.getState().reset();
 };

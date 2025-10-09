@@ -96,10 +96,10 @@ export default function useAuth() {
 
     const logout = useCallback(async (setIsLoading) => {
         try {
-            router.replace("/(auth)/login");
             clearStates();
             clearCache();
             await signOut(auth);
+            router.replace("/(auth)/login");
             unsubscribeFromMonthlyTotalConsumption();
             unsubscribeToBudget();
             unsubscribeFromUserAppliances()

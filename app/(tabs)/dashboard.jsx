@@ -12,7 +12,7 @@ import { useAiGeneratedStore, useBudgetStore, useDeviceStore, useUsageStore } fr
 import CustomProgressBar from '@/components/reports/CustomProgressBar';
 import AIInsightsCarousel from '@/components/ai/Messages';
 import Tooltip from '@/components/ui/Tooltip';
-import { AutoSkeletonView } from 'react-native-auto-skeleton';
+import { AutoSkeletonIgnoreView, AutoSkeletonView } from 'react-native-auto-skeleton';
 
 export default function Dashboard() {
     const insets = useSafeAreaInsets();
@@ -61,7 +61,7 @@ export default function Dashboard() {
                 if (locationRate > 0) {
                     setIsLoading(false);
                 }
-            }, 2000);
+            }, 1000);
             return () => {
                 setIsLoading(true)
                 clearTimeout(timeout)
@@ -165,7 +165,7 @@ export default function Dashboard() {
             <ScrollView className="p-5 bg-white" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
                 <Header />
                 <AutoSkeletonView isLoading={isLoading}>
-                    <View className="p-6 mb-6 items-center relative">
+                    <View className="p-6 mb-6 items-center">
                         <PieChart
                             donut
                             radius={80}
@@ -186,31 +186,31 @@ export default function Dashboard() {
                             )}
                             textColor="black"
                         />
-                        {monthlyBudget === null ? (
-                            <Text className="text-red-600 text-sm mt-2">
-                                No budget is set, set budget first on budget page.
-                            </Text>
+                        <AutoSkeletonIgnoreView>
+                            {monthlyBudget === null && !isLoading ? (
+                                <Text className="text-red-600 text-sm mt-2">
+                                    No budget is set, set budget first on budget page.
+                                </Text>
 
-                        ) : efficiency === 0 && monthlyBudget.budget_kwh === monthlyTotalConsumption && (
-                            <Text className="text-red-600 text-sm mt-2">
-                                You've exceeded your budget! Try reducing energy usage.
-                            </Text>
-                        )}
-                        {efficiency > 0 && efficiency < 10 && (
-                            <Text className="text-yellow-600 text-sm mt-2">
-                                You're close to exceeding your budget! Monitor your usage.
-                            </Text>
-                        )}
-                        <Tooltip
-                            toolTip={toolTip}
-                            setToolTip={setToolTip}
-                            content={`Energy Efficiency Index shows how your current energy consumption compares to your monthly budget.A higher score means you're using less of your budget. Yellow indicates you're near your budget, and red means you've exceeded it.`}
-                            from="Dashboard"
-                        />
+                            ) : efficiency === 0 && monthlyBudget?.budget_kwh === monthlyTotalConsumption && (
+                                <Text className="text-red-600 text-sm mt-2">
+                                    You've exceeded your budget! Try reducing energy usage.
+                                </Text>
+                            )}
+                            {efficiency > 0 && efficiency < 10 && (
+                                <Text className="text-yellow-600 text-sm mt-2">
+                                    You're close to exceeding your budget! Monitor your usage.
+                                </Text>
+                            )}
+                        </AutoSkeletonIgnoreView>
                     </View >
-
-                    {/* Rest of the dashboard remains unchanged */}
-                    < View className="flex-row justify-between items-center mb-6" >
+                    <Tooltip
+                        toolTip={toolTip}
+                        setToolTip={setToolTip}
+                        content={`Energy Efficiency Index shows how your current energy consumption compares to your monthly budget.A higher score means you're using less of your budget. Yellow indicates you're near your budget, and red means you've exceeded it.`}
+                        from="Dashboard"
+                    />
+                    <View className="flex-row justify-between items-center mb-6" >
                         <View className="bg-white rounded-2xl p-4 w-[55%] h-full" style={styles.cardShadow}>
                             <Text className="text-2xl font-extrabold mb-6">
                                 Welcome Back, {userName}!
@@ -356,7 +356,7 @@ export default function Dashboard() {
                         )}
                         <TouchableOpacity
                             onPress={() => setSelectedBar(null)}
-                            className="mt-6 py-3 bg-emerald-600 rounded-lg"
+                            className="mt-6 py-3 bg-red-600 rounded-lg"
                         >
                             <Text className="text-white text-center font-semibold text-base">
                                 Close

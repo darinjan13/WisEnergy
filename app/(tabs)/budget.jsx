@@ -1,18 +1,15 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Modal, TouchableOpacity, TextInput, ScrollView, StyleSheet, TouchableWithoutFeedback, Pressable } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PieChart } from 'react-native-gifted-charts';
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import Header from "../../components/ui/Header";
-import { get, ref, serverTimestamp, set, update } from "firebase/database";
-import { db, auth } from "../../firebase/firebaseConfig";
+import Header from "@/components/ui/Header";
+import { auth } from "@/firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
-import { ActivityIndicator } from "react-native-paper";
-import { BlurView } from "expo-blur";
-import { useAiGeneratedStore, useBudgetStore, useUsageStore } from "../../store/firebaseStore";
-import BudgetModal from "../../components/budget/SetBudget";
-import AIInsightsCarousel from "../../components/ai/Messages";
-import Tooltip from "../../components/ui/Tooltip";
+import { useAiGeneratedStore, useBudgetStore, useUsageStore } from "@/store/firebaseStore";
+import BudgetModal from "@/components/budget/SetBudget";
+import AIInsightsCarousel from "@/components/ai/Messages";
+import Tooltip from "@/components/ui/Tooltip";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AutoSkeletonIgnoreView, AutoSkeletonView } from "react-native-auto-skeleton";
 
@@ -43,7 +40,7 @@ export default function Budget() {
         if (locationRate > 0) {
           setLoading(false);
         }
-      }, 2000);
+      }, 1000);
       return () => {
         setModalVisible(false);
         setToolTip(false)
@@ -84,7 +81,6 @@ export default function Budget() {
                 <Feather name="info" size={18} color="gray" />
               </TouchableOpacity>
             </AutoSkeletonIgnoreView>
-            <Tooltip toolTip={toolTip} setToolTip content={`The Energy Budget lets you set a monthly spending goal for electricity.\n WisEnergy estimates your costs based on device data and current rates.`} />
 
           </View>
           <View className="items-center justify-center my-6">
@@ -163,6 +159,7 @@ export default function Budget() {
           </View>
         </AutoSkeletonView>
       </ScrollView >
+      <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`The Energy Budget lets you set a monthly spending goal for electricity.\n WisEnergy estimates your costs based on device data and current rates.`} from="Budget" />
       <BudgetModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}

@@ -40,7 +40,7 @@ export default function devices() {
             if (devices.length === 0) setDevices();
             const timeout = setTimeout(() => {
                 setIsLoading(false);
-            }, 2000);
+            }, 1000);
             return () => {
                 clearTimeout(timeout)
                 setIsLoading(true)
@@ -159,14 +159,14 @@ export default function devices() {
                             <View className="flex-row items-center gap-x-2">
                                 <Text className="text-2xl font-bold text-[#2E4F4F]">Devices</Text>
                                 <TouchableOpacity
+                                    disabled={isLoading}
                                     onPress={() => setToolTip(!toolTip)}
                                     className="p-1"
                                 >
                                     <Feather name="info" size={18} color="gray" />
                                 </TouchableOpacity>
                             </View>
-                            <Tooltip toolTip={toolTip} setToolTip content={`This section lists all IoT devices connected to your WisEnergy account.\nPair a device to start monitoring energy consumption in real time.`} from="Devices" />
-                            <TouchableOpacity className=" rounded-3xl bg-white items-center justify-center">
+                            <TouchableOpacity disabled={isLoading} className=" rounded-3xl bg-white items-center justify-center">
                                 <Feather className="p-1" onPress={showAddDeviceModal} name="plus" size={20} color="#2E4F4F" />
                             </TouchableOpacity>
                         </View>
@@ -193,8 +193,7 @@ export default function devices() {
                     }
                 </AutoSkeletonView>
             </ScrollView >
-
-
+            <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`This section lists all IoT devices connected to your WisEnergy account.\nPair a device to start monitoring energy consumption in real time.`} from="Devices" />
             <Modal
                 animationType="fade"
                 transparent={true}

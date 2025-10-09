@@ -55,7 +55,7 @@ export default function DeviceDetails() {
         useCallback(() => {
             const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
             const timeout = setTimeout(() => {
-                if (selectedAppliance)
+                if (device)
                     setIsLoading(false);
             }, 1000);
             return () => {
@@ -63,7 +63,6 @@ export default function DeviceDetails() {
                 backHandler.remove();
                 setAppliancesInActive();
                 setToolTip(false)
-                // setIsLoading(true)
             };
         }, [deviceAppliances])
     );
@@ -141,7 +140,6 @@ export default function DeviceDetails() {
             counter++;
         }
 
-        // save with unique name
         await set(appliancesRef, {
             appliance_nickname,
             added_at: today,
@@ -216,13 +214,12 @@ export default function DeviceDetails() {
                         <Feather name="info" size={18} color="gray" />
                     </TouchableOpacity>
                 </View>
-                <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`Devices track energy for one appliance at a time. If you switch the appliance (e.g., from Refrigerator to Electric Fan), the device will start recording consumption for the new appliance. You can switch back anytime.`} from="Devices" />
-                <TouchableOpacity onPress={showAddModal} className="rounded-3xl bg-white items-center justify-center">
+                <TouchableOpacity disabled={isLoading} onPress={showAddModal} className="rounded-3xl bg-white items-center justify-center">
                     <Feather className="p-1" name="plus" size={20} color="#136B1E" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 200 }}>
                 <AutoSkeletonView isLoading={isLoading}>
                     <View className="mb-40 p-1">
                         <RadioButton.Group
@@ -245,6 +242,7 @@ export default function DeviceDetails() {
                     </View>
                 </AutoSkeletonView>
             </ScrollView>
+            <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`Devices track energy for one appliance at a time. If you switch the appliance (e.g., from Refrigerator to Electric Fan), the device will start recording consumption for the new appliance. You can switch back anytime.`} from="Devices" />
 
             <AddApplianceModal visible={addModal} onClose={() => setAddModal(false)} onAdd={onAdd} />
 
