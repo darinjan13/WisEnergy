@@ -42,7 +42,7 @@ export default function ResetPasswordScreen() {
     return (
 
         <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior={Platform.OS === "android" ? "padding" : "height"}
             className="flex-1"
         >
             <View className="h-full p-6 bg-white">

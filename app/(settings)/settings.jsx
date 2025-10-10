@@ -18,8 +18,6 @@ export default function settings() {
     const [systemUpdates, setSystemUpdates] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingUI, setIsLoadingUI] = useState(true);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -59,50 +57,6 @@ export default function settings() {
             logout(setIsLoading);
         }, 1000);
     }
-    const handleDeleteAccount = async () => {
-        Alert.alert(
-            "Delete Account",
-            "Are you sure you want to delete your account? This action cannot be undone after 30 days.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Yes, Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const userId = auth.currentUser?.uid;
-                            if (!userId) return;
-
-                            // Schedule deletion for 30 days later
-                            const deletionDate = new Date();
-                            deletionDate.setDate(deletionDate.getDate() + 30);
-                            const formattedDate = deletionDate.toISOString().replace("T", " ").split(".")[0];
-
-                            const userRef = ref(db, `users/${userId}`);
-                            await update(userRef, { deletion_date: formattedDate });
-
-                            // Optional: immediately disable notifications
-                            await update(userRef, {
-                                notify_smart_recommendation: false,
-                                notify_high_usage_alerts: false,
-                                notify_system_updates: false,
-                            });
-
-                            Alert.alert(
-                                "Account Scheduled for Deletion",
-                                "Your account will be permanently deleted in 30 days. You can contact support to restore it before that date."
-                            );
-
-                            await signOut(auth);
-                        } catch (error) {
-                            console.error("Error scheduling deletion:", error);
-                            Alert.alert("Error", "Unable to process your request. Please try again later.");
-                        }
-                    },
-                },
-            ]
-        );
-    };
 
     if (isLoadingUI) {
         return (
@@ -162,12 +116,12 @@ export default function settings() {
                     {[
                         { label: "Edit Profile", route: "/(settings)/editProfile" },
                         { label: "Change password", route: "/(settings)/changePassword" },
-                        { label: "Delete account", onPress: () => setShowDeleteModal(true) },
+                        { label: "Delete account", route: "/(settings)/deleteAccount"},
                     ].map((item) => (
                         <TouchableOpacity
                             key={item.label}
                             className="flex-row justify-between items-center py-3 ml-12"
-                            onPress={item.onPress || (() => router.push(item.route))}
+                            onPress={() => router.push(item.route)}
                         >
                             <Text className={width < 720 ? "text-sm text-gray-800" : "text-gray-800"}>
                                 {item.label}
@@ -245,77 +199,6 @@ export default function settings() {
                     </View>
                 </TouchableOpacity>
             </ScrollView>
-            <Modal
-                transparent
-                animationType="fade"
-                visible={showDeleteModal}
-                onRequestClose={() => setShowDeleteModal(false)}
-            >
-                <View className="flex-1 items-center justify-center bg-black/40">
-                    <View className="bg-white rounded-2xl w-80 p-6 items-center shadow-lg">
-                        <Feather name="alert-triangle" size={36} color="#dc2626" />
-                        <Text className="text-lg font-bold text-gray-800 mt-3">
-                            Delete Account?
-                        </Text>
-                        <Text className="text-sm text-gray-600 text-center mt-2 mb-4">
-                            Your account will be permanently deleted 30 days from now.
-                            You may contact support to cancel deletion before that date.
-                        </Text>
-
-                        <View className="flex-row justify-between w-full mt-2">
-                            <TouchableOpacity
-                                className="flex-1 mr-2 bg-gray-200 py-2 rounded-lg items-center"
-                                onPress={() => setShowDeleteModal(false)}
-                            >
-                                <Text className="text-gray-800 font-semibold">Cancel</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                disabled={isDeleting}
-                                onPress={async () => {
-                                    try {
-                                        setIsDeleting(true);
-                                        const userId = auth.currentUser?.uid;
-                                        if (!userId) return;
-
-                                        // Schedule deletion after 30 days
-                                        const deletionDate = new Date();
-                                        deletionDate.setDate(deletionDate.getDate() + 30);
-                                        const formattedDate = deletionDate
-                                            .toISOString()
-                                            .replace("T", " ")
-                                            .split(".")[0];
-
-                                        const userRef = ref(db, `users/${userId}`);
-                                        await update(userRef, {
-                                            deletion_date: formattedDate,
-                                            notify_smart_recommendation: false,
-                                            notify_high_usage_alerts: false,
-                                            notify_system_updates: false,
-                                        });
-
-                                        setShowDeleteModal(false);
-                                        await logout(setIsDeleting);
-                                    } catch (error) {
-                                        console.error("Error scheduling deletion:", error);
-                                        setShowDeleteModal(false);
-                                    } finally {
-                                        setIsDeleting(false);
-                                    }
-                                }}
-                                className={`flex-1 ml-2 py-2 rounded-lg items-center ${isDeleting ? "bg-red-400" : "bg-red-600"
-                                    }`}
-                            >
-                                {!isDeleting ? (
-                                    <Text className="text-white font-semibold">Confirm</Text>
-                                ) : (
-                                    <ActivityIndicator size="small" color="#fff" />
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
         </View>
     );
 }

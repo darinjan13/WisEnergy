@@ -8,6 +8,7 @@ import {
     endAt,
     get,
     update,
+    remove,
 } from "firebase/database";
 
 export const fetchUserNotifications = async (userId, lastTimestamp, PAGE_SIZE = 10) => {
@@ -70,4 +71,13 @@ export const markAllNotificationsRead = async (userId, notifications = []) => {
     });
 
     await update(ref(db), updates);
+};
+export const deleteNotification = async (userId, notifId) => {
+    if (!userId || !notifId) return;
+    try {
+        const notifRef = ref(db, `notifications/${userId}/${notifId}`);
+        await remove(notifRef); // ✅ Proper way to delete in Realtime Database
+    } catch (e) {
+        console.error("⚠️ Failed to delete notification:", e);
+    }
 };

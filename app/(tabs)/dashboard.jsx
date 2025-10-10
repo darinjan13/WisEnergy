@@ -18,17 +18,17 @@ export default function Dashboard() {
     const insets = useSafeAreaInsets();
     const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
-    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption } = useUsageStore();
-    const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget } = useBudgetStore();
-    const [efficiency, setEfficiency] = useState(0); // Default to 50
-    const [efficiencyColor, setEfficiencyColor] = useState('#16a34a'); // Default green
+    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, weeklyTotals, fetchWeeklyTotals } = useUsageStore();
+    const { locationRate, fetchLocationRate, monthlyBudget, fetchPercentUsed, subscribeToBudget } = useBudgetStore();
+    const [efficiency, setEfficiency] = useState(0);
+    const [efficiencyColor, setEfficiencyColor] = useState('#16a34a');
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
     const [selectedBar, setSelectedBar] = useState(null);
     const [hourlyData, setHourlyData] = useState([]);
     const [toolTip, setToolTip] = useState(false);
     const [userName, setUserName] = useState("");
     const [isLoading, setIsLoading] = useState(true)
-
+    const [weeklySavings, setWeeklySavings] = useState(0);
     useFocusEffect(
         useCallback(() => {
             const userId = auth?.currentUser?.uid;
@@ -38,6 +38,7 @@ export default function Dashboard() {
                 if (devices.length === 0) {
                     await setDevices();
                 }
+                await calculateWeeklySavings(userId);
 
                 listenToUserAppliances(userId);
 
@@ -69,6 +70,36 @@ export default function Dashboard() {
             }
         }, [locationRate])
     )
+    useEffect(() => {
+        const userId = auth?.currentUser?.uid;
+        if (userId && locationRate > 0) {
+            calculateWeeklySavings(userId);
+        }
+    }, [weeklyTotals, locationRate]);
+
+    const calculateWeeklySavings = async (userId) => {
+        try {
+            if (!userId) return;
+
+            if (!weeklyTotals || weeklyTotals.length === 0) {
+                await fetchWeeklyTotals(userId);
+            }
+
+            const weeklyData = weeklyTotals[0]?.barData || [];
+            if (weeklyData.length < 2) return;
+
+            const sorted = [...weeklyData].sort((a, b) => a.label.localeCompare(b.label));
+            const lastTwo = sorted.slice(-2);
+
+            const prevWeek = lastTwo[0]?.value || 0;
+            const currentWeek = lastTwo[1]?.value || 0;
+
+            const diff = (prevWeek - currentWeek) * (locationRate || 0);
+            setWeeklySavings(Number(diff.toFixed(2)));
+        } catch (err) {
+            console.error("Error computing weekly savings:", err);
+        }
+    };
 
     useEffect(() => {
         if (totalEnergyConsumption <= 0) {
@@ -122,7 +153,7 @@ export default function Dashboard() {
                         '#16a34a'
             );
         } else {
-            setEfficiencyColor('#16a34a'); // Default green
+            setEfficiencyColor('#16a34a');
         }
     }, [locationRate, monthlyTotalConsumption, monthlyBudget]);
 
@@ -215,9 +246,25 @@ export default function Dashboard() {
                             <Text className="text-2xl font-extrabold mb-6">
                                 Welcome Back, {userName}!
                             </Text>
-                            <Text className="text-gray-600">
-                                You've saved 150 this week compared to last!
-                            </Text>
+                            {weeklySavings > 0 ? (
+                                <View className="flex-row items-center">
+                                    <Feather name="trending-down" size={18} color="#16a34a" />
+                                    <Text className="text-green-700 ml-2 text-base font-medium">
+                                        You've saved ₱{weeklySavings} this week compared to last!
+                                    </Text>
+                                </View>
+                            ) : weeklySavings < 0 ? (
+                                <View className="flex-row items-center">
+                                    <Feather name="trending-up" size={18} color="#dc2626" />
+                                    <Text className="text-red-600 ml-2 text-base font-medium">
+                                        Energy usage increased this week.
+                                    </Text>
+                                </View>
+                            ) : (
+                                <Text className="text-gray-500 text-base">
+                                    Keep tracking your usage to see weekly changes!
+                                </Text>
+                            )}
                         </View>
                         <View className="w-[43%] flex-col h-full">
                             <View className="bg-white rounded-xl p-4 mb-3 items-center" style={styles.cardShadow}>

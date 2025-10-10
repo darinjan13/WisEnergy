@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { auth } from "../../firebase/firebaseConfig";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ChangePassword() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [currentPassword, setCurrentPassword] = useState("");
@@ -53,7 +55,7 @@ export default function ChangePassword() {
     };
 
     return (
-        <KeyboardAvoidingView behavior="padding" className="flex-1 bg-white p-10">
+        <KeyboardAvoidingView behavior={Platform.OS === "android" ? "padding" : "height"} style={{paddingTop: insets.top + 10}} className="flex-1 bg-white p-10">
             <TouchableOpacity
                 onPress={() => router.back()}
                 className="w-10 -ml-5 mb-10"

@@ -1,12 +1,14 @@
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { auth } from "../../firebase/firebaseConfig";
 import { useEffect, useState } from "react";
 import { updateProfile } from "firebase/auth";
 import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
 import { Feather, Fontisto } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function EditProfile() {
+    const insets = useSafeAreaInsets();
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false);
     const [firstName, setFirstName] = useState("");
@@ -56,7 +58,7 @@ export default function EditProfile() {
     }
 
     return (
-        <KeyboardAvoidingView behavior="padding" className="flex-1 bg-white p-10">
+        <KeyboardAvoidingView behavior={Platform.OS === "android" ? "padding" : "height"} style={{ flex: 1, paddingTop: insets.top + 10 }} className="flex-1 bg-white p-10">
             <TouchableOpacity
                 onPress={() => router.back()}
                 className="w-10 -ml-5 mb-10"
@@ -69,6 +71,8 @@ export default function EditProfile() {
                 <TextInput
                     placeholder="First Name"
                     value={firstName}
+                    placeholderTextColor="#9CA3AF"
+                    autoCapitalize
                     onChangeText={setFirstName}
                     className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
                 />
@@ -76,6 +80,8 @@ export default function EditProfile() {
                 <TextInput
                     placeholder="Last Name"
                     value={lastName}
+                    placeholderTextColor="#9CA3AF"
+                    autoCapitalize
                     onChangeText={setLastName}
                     className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
                 />

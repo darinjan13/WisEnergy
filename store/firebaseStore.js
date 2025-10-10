@@ -27,10 +27,6 @@ export const useDeviceStore = create((set, get) => ({
         const updatedDevices = await firebaseDevicesServices.setDeviceApplianceName(devices, deviceId, applianceName);
         set({ devices: updatedDevices });
     },
-    // fetchUserAppliances: async () => {
-    //     const userAppliances = await firebaseDevicesServices.fetchUserAppliances();
-    //     set({ userAppliances });
-    // },
     listenToUserAppliances: (userId) => {
         const unsubscribe = firebaseDevicesServices.listenToUserAppliances(userId,
             (userAppliances) => {
@@ -424,6 +420,17 @@ export const useNotificationStore = create((set, get) => ({
         set({
             notifications: notifications.map((n) => ({ ...n, read_at: now })),
         });
+    },
+    deleteNotification: async (userId, notifId) => {
+        if (!userId || !notifId) return;
+        try {
+            await firebaseNotificationServices.deleteNotification(userId, notifId);
+            set({
+                notifications: get().notifications.filter((n) => n.id !== notifId),
+            });
+        } catch (e) {
+            console.error("⚠️ Failed to delete notification:", e);
+        }
     },
     reset: () => {
         set({

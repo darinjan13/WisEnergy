@@ -330,8 +330,6 @@ export default function reports() {
                                                     (sum, r) => sum + (r.latestKwh ?? 0),
                                                     0
                                                 );
-                                                const percent =
-                                                    totalUsage > 0 ? (powerUsed / totalUsage) * 100 : 0;
 
                                                 return (
                                                     <TouchableOpacity
@@ -346,8 +344,8 @@ export default function reports() {
                                                             <Text className="w-24">{item.applianceName}</Text>
                                                             <View className="flex-1">
                                                                 <CustomProgressBar
-                                                                    progress={percent}
-                                                                    maxProgress={100}
+                                                                    progress={powerUsed}
+                                                                    maxProgress={totalUsage}
                                                                     color="#4CAF50"
                                                                 />
                                                             </View>
@@ -372,16 +370,52 @@ export default function reports() {
                     </View>
                 )}
             </ScrollView>
-            <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-                <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
-                    <View className="bg-white rounded-xl p-6 w-11/12">
-                        <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                            <Text style={styles.closeButtonText}>X</Text>
+            <Modal
+                animationType="fade"
+                transparent
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <BlurView
+                    intensity={100}
+                    tint="dark"
+                    className="flex-1 justify-center items-center px-4"
+                >
+                    <View
+                        className="bg-white rounded-2xl p-5 w-full max-w-[420px] shadow-lg"
+                        style={{ maxHeight: "85%" }}
+                    >
+                        {/* Close Button */}
+                        <TouchableOpacity
+                            onPress={() => setModalVisible(false)}
+                            className="absolute top-3 right-3 z-10"
+                        >
+                            <View className="bg-red-600 w-8 h-8 rounded-full items-center justify-center">
+                                <Text className="text-white font-bold text-base">×</Text>
+                            </View>
                         </TouchableOpacity>
-                        <ApplianceUsage category={reportCategory} data={selectedAppliance} />
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text className="text-lg font-bold text-center mb-4 text-gray-800">
+                                {selectedAppliance?.applianceName || "Appliance Details"}
+                            </Text>
+
+                            {selectedAppliance?.barData?.length ? (
+                                <EnergyPredictionChart
+                                    actualData={selectedAppliance.barData}
+                                    predictedData={selectedAppliance.barData2}
+                                    category={reportCategory}
+                                />
+                            ) : (
+                                <Text className="text-gray-500 text-center text-base mt-6">
+                                    No prediction data available for this appliance yet.
+                                </Text>
+                            )}
+                        </ScrollView>
                     </View>
                 </BlurView>
             </Modal>
+
         </View >
     );
 }

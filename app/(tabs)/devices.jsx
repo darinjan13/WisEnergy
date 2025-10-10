@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Pressable } from "react-native";
+import { useCallback, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, useColorScheme } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import Toast from 'react-native-toast-message';
 import { BlurView } from "expo-blur";
 import { Feather } from "@expo/vector-icons";
-import { ActivityIndicator, IconButton } from "react-native-paper";
+import { IconButton } from "react-native-paper";
 
 import ConfirmModal from "../../components/ui/ConfirmModal.jsx";
 import DeviceCard from "../../components/appliances/DeviceCard";
@@ -13,10 +13,11 @@ import { useDeviceStore } from "../../store/firebaseStore.js";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import Tooltip from "../../components/ui/Tooltip.jsx";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AutoSkeletonIgnoreView, AutoSkeletonView } from "react-native-auto-skeleton";
 
 export default function devices() {
+    const scheme = useColorScheme();
+    const isDark = scheme === "dark";
     const insets = useSafeAreaInsets();
 
     const { devices, setDevices, userDevices, unpairedDevices, addDevice, userAppliances, updateDeviceNickname, deleteDevice } = useDeviceStore();
@@ -166,8 +167,8 @@ export default function devices() {
                                     <Feather name="info" size={18} color="gray" />
                                 </TouchableOpacity>
                             </View>
-                            <TouchableOpacity disabled={isLoading} className=" rounded-3xl bg-white items-center justify-center">
-                                <Feather className="p-1" onPress={showAddDeviceModal} name="plus" size={20} color="#2E4F4F" />
+                            <TouchableOpacity disabled={isLoading} onPress={showAddDeviceModal} className=" rounded-3xl bg-white items-center justify-center">
+                                <Feather className="p-1" name="plus" size={20} color="#2E4F4F" />
                             </TouchableOpacity>
                         </View>
                     </AutoSkeletonIgnoreView>
@@ -214,6 +215,15 @@ export default function devices() {
                         {action !== "edit" ? (<>
                             <View className="border border-gray-300 rounded-xl mb-4 overflow-hidden">
                                 <Picker
+                                    dropdownIconColor={isDark ? "#000" : "#000"}
+                                    style={{
+                                        color: "#000",
+                                        backgroundColor: "#fff",
+                                    }}
+                                    itemStyle={{
+                                        color: "#000",
+                                        backgroundColor: "#fff",
+                                    }}
                                     selectedValue={selectedUnpairedDevice}
                                     onValueChange={(itemValue) => setSelectedUnpairedDevice(itemValue)}
                                 >
