@@ -18,7 +18,7 @@ export default function Dashboard() {
     const insets = useSafeAreaInsets();
     const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
-    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, weeklyTotals, fetchWeeklyTotals } = useUsageStore();
+    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, weeklyTotals, fetchWeeklyTotals, dailyTotals, fetchDailyTotals } = useUsageStore();
     const { locationRate, fetchLocationRate, monthlyBudget, fetchPercentUsed, subscribeToBudget } = useBudgetStore();
     const [efficiency, setEfficiency] = useState(0);
     const [efficiencyColor, setEfficiencyColor] = useState('#16a34a');
@@ -81,25 +81,41 @@ export default function Dashboard() {
         try {
             if (!userId) return;
 
-            if (!weeklyTotals || weeklyTotals.length === 0) {
-                await fetchWeeklyTotals(userId);
-            }
+            if (!weeklyTotals?.length) await fetchWeeklyTotals(userId);
+            if (!dailyTotals?.length) await fetchDailyTotals(userId);
 
             const weeklyData = weeklyTotals[0]?.barData || [];
-            if (weeklyData.length < 2) return;
+            if (weeklyData.length < 1) return;
 
-            const sorted = [...weeklyData].sort((a, b) => a.label.localeCompare(b.label));
-            const lastTwo = sorted.slice(-2);
+            const sortedWeeks = [...weeklyData].sort((a, b) =>
+                a.label.localeCompare(b.label)
+            );
 
-            const prevWeek = lastTwo[0]?.value || 0;
-            const currentWeek = lastTwo[1]?.value || 0;
+            const prevWeek = sortedWeeks[sortedWeeks.length - 1]?.value || 0;
 
-            const diff = (prevWeek - currentWeek) * (locationRate || 0);
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const lastSunday = new Date(today);
+            lastSunday.setDate(today.getDate() - dayOfWeek);
+            const lastSundayLocal = new Date(lastSunday.getTime() + 8 * 60 * 60 * 1000);
+
+            const currentWeekDays = dailyTotals[0]?.barData?.filter((d) => {
+                const dDate = new Date(d.date);
+                return dDate > lastSundayLocal;
+            }) || [];
+
+            const currentWeekTotal = currentWeekDays.reduce(
+                (sum, d) => sum + (d.value || 0),
+                0
+            );
+            const diff = (prevWeek - currentWeekTotal) * (locationRate || 0);
+
             setWeeklySavings(Number(diff.toFixed(2)));
         } catch (err) {
             console.error("Error computing weekly savings:", err);
         }
     };
+
 
     useEffect(() => {
         if (totalEnergyConsumption <= 0) {
@@ -203,8 +219,8 @@ export default function Dashboard() {
                             innerRadius={60}
                             strokeWidth={0}
                             data={[
-                                { value: 100 - efficiency, color: "#e5e7eb" }, // Gray for remaining
-                                { value: efficiency, color: efficiencyColor }, // Dynamic color
+                                { value: 100 - efficiency, color: "#e5e7eb" },
+                                { value: efficiency, color: efficiencyColor },
                             ]}
                             centerLabelComponent={() => (
                                 <View className="items-center">
@@ -243,13 +259,13 @@ export default function Dashboard() {
                     />
                     <View className="flex-row justify-between items-center mb-6" >
                         <View className="bg-white rounded-2xl p-4 w-[55%] h-full" style={styles.cardShadow}>
-                            <Text className="text-2xl font-extrabold mb-6">
+                            <Text className="text-xl font-extrabold mb-6">
                                 Welcome Back, {userName}!
                             </Text>
                             {weeklySavings > 0 ? (
                                 <View className="flex-row items-center">
-                                    <Feather name="trending-down" size={18} color="#16a34a" />
-                                    <Text className="text-green-700 ml-2 text-base font-medium">
+                                    <Feather name="trending-down" size={15} color="#16a34a" />
+                                    <Text className="text-green-700 ml-2 text-base font-sm">
                                         You've saved ₱{weeklySavings} this week compared to last!
                                     </Text>
                                 </View>
@@ -298,10 +314,10 @@ export default function Dashboard() {
                         >
                             {todayTrend?.buckets && Object.keys(todayTrend.buckets).length > 0 ? (
                                 Object.entries(todayTrend.buckets).map(([label, value], i) => (
-                                    <TouchableOpacity key={i} className="items-center" onPress={() => handleBarPress(label)}>
+                                    <TouchableOpacity key={i} className="items-center mx-3" onPress={() => handleBarPress(label)}>
                                         <View className="w-6 bg-green-600 rounded-md" style={{ height: value * 100 }} />
                                         <Text className="text-md mt-1 text-gray-500">{value.toFixed(2)}</Text>
-                                        <Text className="text-sm mt-1 text-gray-500">{label}</Text>
+                                        <Text className="text-sm mt-1 text-gray-500">{label.split("-")[0]}</Text>
                                     </TouchableOpacity>
                                 ))
                             ) : (

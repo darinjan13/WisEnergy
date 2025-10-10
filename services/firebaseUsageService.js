@@ -447,7 +447,7 @@ export const getCachedDailyTotalConsumption = async (userId) => {
 
 export const fetchDailyTotalConsumption = async (userId) => {
     try {
-        const dates = getLastNDays(5);
+        const dates = getLastNDays(7);
         const usageData = [];
 
         const history = [];

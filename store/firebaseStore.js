@@ -160,11 +160,6 @@ export const useUsageStore = create((set, get) => ({
     },
     summaryPerDevice: {},
     totalConsumptionByDate: {},
-    lastFetched: {
-        daily: null,
-        weekly: null,
-        monthly: null
-    },
     todayTrend: null,
     topAppliances: [],
 
@@ -288,7 +283,6 @@ export const useUsageStore = create((set, get) => ({
         set({ monthlyTotals: data });
     },
     reset: () => {
-        // cleanup listener if still active
         const unsubMonthly = get()._unsubMonthly;
         if (unsubMonthly) unsubMonthly();
 
@@ -299,8 +293,6 @@ export const useUsageStore = create((set, get) => ({
             latestKwh: [],
             reportHistory: { daily: {}, weekly: {}, monthly: {} },
             summaryPerDevice: {},
-            totalConsumptionByDate: {},
-            lastFetched: { daily: null, weekly: null, monthly: null },
             todayTrend: null,
             topAppliances: [],
             dailyTotals: [],
