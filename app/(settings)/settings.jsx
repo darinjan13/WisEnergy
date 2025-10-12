@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Switch, ScrollView, ActivityIndicator, BackHandler, useWindowDimensions, Alert, Modal } from "react-native";
+import { useCallback, useState } from "react";
+import { View, Text, TouchableOpacity, Switch, ScrollView, ActivityIndicator, BackHandler, useWindowDimensions } from "react-native";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useAuth from "../../hooks/useAuth";
-import { auth, db } from "../../firebase/firebaseConfig";
+import useAuth from "@/hooks/useAuth";
+import { auth, db } from "@/firebase/firebaseConfig";
 import { onValue, ref, update } from "firebase/database";
 
 export default function settings() {
@@ -116,7 +116,7 @@ export default function settings() {
                     {[
                         { label: "Edit Profile", route: "/(settings)/editProfile" },
                         { label: "Change password", route: "/(settings)/changePassword" },
-                        { label: "Delete account", route: "/(settings)/deleteAccount"},
+                        { label: "Delete account", route: "/(settings)/deleteAccount" },
                     ].map((item) => (
                         <TouchableOpacity
                             key={item.label}

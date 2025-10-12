@@ -12,8 +12,8 @@ import {
 } from "react-native";
 import { Feather, Fontisto, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import AuthHeader from "../../components/ui/AuthHeader";
-import useAuth from "../../hooks/useAuth";
+import AuthHeader from "@/components/ui/AuthHeader";
+import useAuth from "@/hooks/useAuth";
 import { Checkbox } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";

@@ -1,6 +1,5 @@
-import { AntDesign, Entypo, Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { AntDesign, Entypo, Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Divider } from 'react-native-paper';
 

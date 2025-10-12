@@ -1,7 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
-import Privacy from "../../components/ui/Privacy";
+import Privacy from "@/components/ui/Privacy";
 
 export default function PrivacyPolicy() {
     const router = useRouter();

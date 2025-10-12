@@ -6,17 +6,21 @@ import * as predictionServices from './apiService'
 import { format } from "date-fns-tz";
 import { getDailyReportCache, getDailyTotalsCache, getMonthlyReportCache, getMonthlyTotalsCache, getWeeklyReportCache, getWeeklyTotalsCache, saveDailyReportCache, saveDailyTotalsCache, saveMonthlyReportCache, saveMonthlyTotalsCache, saveWeeklyReportCache, saveWeeklyTotalsCache } from '../utils/asyncStorageUtils';
 
-export const listenToLatestPower = (userId, deviceId, applianceName, date, callback, latestKwh) => {
+export const listenToLatestPower = (userId, deviceId, applianceName, date, callback) => {
     const powerRef = ref(db, `usage/${userId}/${deviceId}/${applianceName}/${date}`);
     const latestPowerQuery = query(powerRef, orderByKey(), limitToLast(1));
+
+    // ✅ Correct usage
     const unsubscribe = onValue(latestPowerQuery, (snapshot) => {
         let latestPower = null;
-        snapshot.forEach(childSnap => {
-            latestPower = childSnap.val().power;
+        snapshot.forEach((childSnap) => {
+            latestPower = childSnap.val()?.power || 0;
         });
         callback(latestPower);
     });
-    return () => off(powerRef, 'value', unsubscribe);
+
+    // ✅ Proper cleanup
+    return unsubscribe;
 };
 
 // export const listenToLatestKwh = (userId, deviceId, applianceName, callback) => {
@@ -287,6 +291,7 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
             let data = {};
             let weeks = [];
 
+            // 🔹 Fetch current month's weekly data
             const ref1 = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${month}`);
             const snapshot1 = await get(ref1);
 
@@ -295,12 +300,15 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
                 weeks = Object.keys(data).sort();
             }
 
-            if (weeks.length < 5 && prevMonth !== "00") {
+            // ✅ Only fetch previous month if current month has < 2 weeks
+            if (weeks.length < 2 && prevMonth !== "00") {
                 const ref2 = ref(db, `weekly_summary/${userId}/${deviceId}/${appliance.name}/${year}/${prevMonth}`);
                 const snapshot2 = await get(ref2);
+
                 if (snapshot2.exists()) {
                     const prevData = snapshot2.val();
                     const prevWeeks = Object.keys(prevData).sort();
+
                     for (const w of prevWeeks) {
                         const d = prevData[w] || {};
                         history.push({
@@ -314,6 +322,7 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
                 }
             }
 
+            // 🔹 Always include current month’s weeks
             for (const week of weeks) {
                 const d = data[week] || {};
                 history.push({
@@ -325,15 +334,17 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
                 });
             }
 
+            // 🔹 Sort chronologically
             history.sort((a, b) => {
                 const [wa, ma] = a.label.replace("W", "").split("-");
                 const [wb, mb] = b.label.replace("W", "").split("-");
                 return ma === mb ? Number(wa) - Number(wb) : Number(ma) - Number(mb);
             });
 
+            // 🔹 Push final result for this appliance
             usageData.push({
                 applianceName: appliance.name,
-                barData: history,
+                barData: history.slice(-5),
                 latestKwh: history.length > 0 ? history.at(-1).value : 0,
             });
         }
@@ -344,6 +355,7 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
         return [];
     }
 };
+
 export const getCachedMonthlyReport = async (userId, deviceId, appliances) => {
     const isCached = await getMonthlyReportCache(userId, deviceId);
     if (isCached) return isCached;
@@ -527,12 +539,14 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
             weeks = Object.keys(data).sort();
         }
 
-        if (weeks.length < 5 && prevMonth !== "0") {
+        // ✅ Only fetch from previous month if this month has less than 2 weeks
+        if (weeks.length < 2 && prevMonth !== "0") {
             const ref2 = ref(db, `weekly_total_consumption/${userId}/${year}/${prevMonth}`);
             const snapshot2 = await get(ref2);
             if (snapshot2.exists()) {
                 const prevData = snapshot2.val();
                 const prevWeeks = Object.keys(prevData).sort();
+
                 for (const w of prevWeeks) {
                     const d = prevData[w] || {};
                     history.push({
@@ -546,6 +560,7 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
             }
         }
 
+        // ✅ Always include current month's weeks
         for (const week of weeks) {
             const d = data[week] || {};
             history.push({
@@ -557,6 +572,7 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
             });
         }
 
+        // ✅ Sort by month then week number
         history.sort((a, b) => {
             const [wa, ma] = a.label.replace("W", "").split("-");
             const [wb, mb] = b.label.replace("W", "").split("-");
@@ -575,6 +591,7 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
         return [];
     }
 };
+
 
 export const getCachedMonthlyTotalConsumption = async (userId) => {
     const isCached = await getMonthlyTotalsCache(userId);

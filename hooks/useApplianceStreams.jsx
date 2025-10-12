@@ -16,7 +16,10 @@ export default function useApplianceStreams({ appliances, userId, deviceId, setA
                     (power) => {
                         setAppliancePower(prev => ({
                             ...prev,
-                            [appliance.name]: power
+                            [deviceId]: {
+                                ...(prev[deviceId] || {}),
+                                [appliance.name]: power
+                            }
                         }));
                     }
                 )

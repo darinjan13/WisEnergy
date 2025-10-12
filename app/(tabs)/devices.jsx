@@ -6,13 +6,13 @@ import { BlurView } from "expo-blur";
 import { Feather } from "@expo/vector-icons";
 import { IconButton } from "react-native-paper";
 
-import ConfirmModal from "../../components/ui/ConfirmModal.jsx";
-import DeviceCard from "../../components/appliances/DeviceCard";
-import Header from "../../components/ui/Header.jsx";
-import { useDeviceStore } from "../../store/firebaseStore.js";
+import ConfirmModal from "@/components/ui/ConfirmModal.jsx";
+import DeviceCard from "@/components/appliances/DeviceCard";
+import Header from "@/components/ui/Header.jsx";
+import { useDeviceStore } from "@/store/firebaseStore.js";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
-import Tooltip from "../../components/ui/Tooltip.jsx";
+import Tooltip from "@/components/ui/Tooltip.jsx";
 import { AutoSkeletonIgnoreView, AutoSkeletonView } from "react-native-auto-skeleton";
 
 export default function Devices() {
@@ -196,7 +196,7 @@ export default function Devices() {
                     <AutoSkeletonIgnoreView>
                         <View className="flex-row items-center justify-between mb-10">
                             <View className="flex-row items-center gap-x-2">
-                                <Text className="text-2xl font-bold text-[#2E4F4F]">Devices</Text>
+                                <Text className="text-2xl font-bold text-green-800">Devices</Text>
                                 <TouchableOpacity
                                     disabled={isLoading}
                                     onPress={() => setToolTip(!toolTip)}

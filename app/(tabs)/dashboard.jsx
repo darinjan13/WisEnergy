@@ -70,52 +70,78 @@ export default function Dashboard() {
             }
         }, [locationRate])
     )
-    useEffect(() => {
-        const userId = auth?.currentUser?.uid;
-        if (userId && locationRate > 0) {
-            calculateWeeklySavings(userId);
-        }
-    }, [weeklyTotals, locationRate]);
 
     const calculateWeeklySavings = async (userId) => {
         try {
             if (!userId) return;
 
+            // Ensure data loaded
             if (!weeklyTotals?.length) await fetchWeeklyTotals(userId);
             if (!dailyTotals?.length) await fetchDailyTotals(userId);
 
             const weeklyData = weeklyTotals[0]?.barData || [];
-            if (weeklyData.length < 1) return;
+            const dailyData = dailyTotals[0]?.barData || [];
+            if (!weeklyData.length || !dailyData.length) return;
 
-            const sortedWeeks = [...weeklyData].sort((a, b) =>
-                a.label.localeCompare(b.label)
-            );
+            // 🔹 Sort weeks chronologically (month then week)
+            const sortedWeeks = [...weeklyData].sort((a, b) => {
+                const [wa, ma] = a.label.replace("W", "").split("-");
+                const [wb, mb] = b.label.replace("W", "").split("-");
 
-            const prevWeek = sortedWeeks[sortedWeeks.length - 1]?.value || 0;
+                const monthA = parseInt(ma, 10);
+                const monthB = parseInt(mb, 10);
+                const weekA = parseInt(wa, 10);
+                const weekB = parseInt(wb, 10);
 
-            const today = new Date();
-            const dayOfWeek = today.getDay();
-            const lastSunday = new Date(today);
-            lastSunday.setDate(today.getDate() - dayOfWeek);
-            const lastSundayLocal = new Date(lastSunday.getTime() + 8 * 60 * 60 * 1000);
+                return monthA === monthB ? weekA - weekB : monthA - monthB;
+            });
 
-            const currentWeekDays = dailyTotals[0]?.barData?.filter((d) => {
+            // 🔹 Convert PH time (ensures same reference)
+            const now = new Date();
+            const nowPH = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+
+            // 🔹 Filter only fully completed weeks (endDate <= last Sunday PH)
+            const filteredWeeks = sortedWeeks.filter((w) => {
+                const [startStr, endStr] = w.date.split(" - ");
+                const [endMonth, endDay] = endStr.split("-");
+                const endDatePH = new Date(`${nowPH.getFullYear()}-${endMonth}-${endDay}T23:59:59+08:00`);
+                return endDatePH < nowPH; // last full week only
+            });
+
+            // ✅ Last full week (Mon–Sun)
+            const lastWeekTotal = filteredWeeks.at(-1)?.value || 0;
+
+            // 🔹 Compute current week (Mon → today PH)
+            const todayPH = new Date(nowPH);
+            const dayOfWeek = todayPH.getDay(); // 0=Sun, 1=Mon...
+            const mondayThisWeek = new Date(todayPH);
+            mondayThisWeek.setDate(todayPH.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            mondayThisWeek.setHours(0, 0, 0, 0);
+
+            // 🔹 Daily data filter (Mon–Today)
+            const currentWeekDays = dailyData.filter((d) => {
                 const dDate = new Date(d.date);
-                return dDate > lastSundayLocal;
-            }) || [];
+                return dDate >= mondayThisWeek && dDate <= todayPH;
+            });
 
             const currentWeekTotal = currentWeekDays.reduce(
                 (sum, d) => sum + (d.value || 0),
                 0
             );
-            const diff = (prevWeek - currentWeekTotal) * (locationRate || 0);
+
+            // 🔹 Peso difference
+            const diff = (lastWeekTotal - currentWeekTotal) * (locationRate || 0);
+
+            console.log(
+                `📅 Last Week Total: ${lastWeekTotal} kWh | Current Week (Mon–Today): ${currentWeekTotal.toFixed(2)} kWh`
+            );
+            console.log(`💰 Weekly Savings: ₱${diff.toFixed(2)}`);
 
             setWeeklySavings(Number(diff.toFixed(2)));
         } catch (err) {
             console.error("Error computing weekly savings:", err);
         }
     };
-
 
     useEffect(() => {
         if (totalEnergyConsumption <= 0) {
@@ -286,7 +312,7 @@ export default function Dashboard() {
                             <View className="bg-white rounded-xl p-4 mb-3 items-center" style={styles.cardShadow}>
                                 <View className="flex-row items-center">
                                     <MaterialCommunityIcons name="power-plug-outline" size={30} color="gray" />
-                                    <Text className="text-3xl font-bold text-green-600">
+                                    <Text className="text-xl font-bold text-green-600">
                                         {userDevices?.length}
                                     </Text>
                                 </View>
@@ -295,7 +321,7 @@ export default function Dashboard() {
                             <View className="bg-white rounded-xl p-4 items-center" style={styles.cardShadow}>
                                 <View className="flex-row items-center">
                                     <MaterialCommunityIcons name="lightning-bolt-outline" size={30} color="gray" />
-                                    <Text className="text-3xl font-bold text-green-600">{totalEnergyConsumption.toFixed(2)}</Text>
+                                    <Text className="text-xl font-bold text-green-600">{totalEnergyConsumption.toFixed(2)}</Text>
                                 </View>
                                 <Text className="text-gray-500 text-xs italic">
                                     Total Energy Consumption(kWh)
@@ -304,7 +330,7 @@ export default function Dashboard() {
                         </View>
                     </View >
                     <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
-                        <Text className="text-2xl font-extrabold mb-2">Today's Energy Trend</Text>
+                        <Text className="text-2xl font-semibold mb-2">Today's Energy Trend</Text>
                         <Text className="text-gray-500 text-sm mb-4">
                             Tap a bar to see exact time range & kWh
                         </Text>
@@ -352,13 +378,33 @@ export default function Dashboard() {
                         <Text className="text-sm text-black mb-4">See which appliances are consuming the most energy</Text>
                         {topAppliances.length > 0 ? (
                             topAppliances.map((appliance, i) => (
-                                <View key={i} className="flex-row justify-center gap-x-10 mb-2 items-center">
+                                <View key={i} className="relative flex-row items-center justify-between mb-2 mx-10">
+                                    {/* Left side */}
                                     <View className="flex-row items-center">
-                                        <MaterialCommunityIcons name={`numeric-${i + 1}-circle`} size={20} color="green" />
-                                        <Text className="text-gray-700 ml-2">{appliance.name}</Text>
+                                        <MaterialCommunityIcons
+                                            name={`numeric-${i + 1}-circle`}
+                                            size={22}
+                                            color="#136B1E"
+                                        />
+                                        <Text className="ml-2 text-gray-700 font-medium">
+                                            {appliance.name}
+                                        </Text>
                                     </View>
-                                    <FontAwesome6 name="arrow-right-long" size={15} color="gray" />
-                                    <Text className="font-semibold">{appliance.kwh} kWh</Text>
+
+                                    {/* Center arrow (absolutely centered) */}
+                                    <FontAwesome6
+                                        name="arrow-right-long"
+                                        size={14}
+                                        color="gray"
+                                        style={{
+                                            position: "absolute",
+                                            left: "50%",
+                                            transform: [{ translateX: -7 }], // half icon width
+                                        }}
+                                    />
+
+                                    {/* Right side */}
+                                    <Text className="font-semibold text-gray-800">{appliance.kwh} kWh</Text>
                                 </View>
                             ))
                         ) : (

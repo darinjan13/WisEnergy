@@ -109,6 +109,7 @@ export default function useAuth() {
         try {
             clearStates();
             clearCache();
+            // await AsyncStorage.removeItem('rememberedUser')
             await signOut(auth);
             router.replace("/(auth)/login");
             Toast.show({

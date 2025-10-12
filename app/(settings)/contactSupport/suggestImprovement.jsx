@@ -1,4 +1,4 @@
-import FeedbackForm from '../../../components/settings/FeedbackForm';
+import FeedbackForm from '@/components/settings/FeedbackForm';
 
 export default function SuggestImprovementScreen() {
 
