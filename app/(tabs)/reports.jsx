@@ -9,7 +9,6 @@ import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
 import { useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
 import { Picker } from "@react-native-picker/picker";
-import ApplianceUsage from "@/components/reports/ApplianceUsage"
 import { Ionicons } from "@expo/vector-icons";
 import CustomProgressBar from "@/components/reports/CustomProgressBar";
 import { BlurView } from "expo-blur";
@@ -20,9 +19,9 @@ export default function reports() {
     const scheme = useColorScheme();
     const isDark = scheme === "dark";
     const insets = useSafeAreaInsets();
-    const { devices, setDevices, fetchUserAppliances, userAppliances, userDevices } = useDeviceStore();
-    const { reportHistory, fetchDailyReport, fetchWeeklyReport, fetchMonthlyReport, monthlyTotalConsumption, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, latestKwh, fetchAllLatestKwh, dailyTotals, weeklyTotals, monthlyTotals, fetchDailyTotals, fetchWeeklyTotals, fetchMonthlyTotals } = useUsageStore();
-    const { monthlyBudget, allBudget, fetchAllBudget } = useBudgetStore();
+    const { devices, setDevices, userAppliances, userDevices } = useDeviceStore();
+    const { reportHistory, fetchDailyReport, fetchWeeklyReport, fetchMonthlyReport, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, fetchAllLatestKwh, dailyTotals, weeklyTotals, monthlyTotals, fetchDailyTotals, fetchWeeklyTotals, fetchMonthlyTotals } = useUsageStore();
+    const { allBudget, fetchAllBudget } = useBudgetStore();
 
     const [reportCategory, setReportCategory] = useState("Daily");
     const [selectedDevice, setSelectedDevice] = useState();
@@ -44,7 +43,6 @@ export default function reports() {
 
     useFocusEffect(
         useCallback(() => {
-            // setIsLoading(true)
             fetchAllMonthlyTotalConsumption(auth.currentUser?.uid)
             fetchAllBudget(auth.currentUser?.uid)
             fetchDailyTotals(auth.currentUser?.uid);
@@ -165,6 +163,7 @@ export default function reports() {
         return (
             <ScrollView className="h-full p-5" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingTop: insets.top }}>
                 <Header />
+                <Text className="text-2xl font-bold text-green-800 mb-4">Reports</Text>
                 <View className="h-screen -mt-36 items-center justify-center">
                     <ActivityIndicator size="large" color="#166534" />
                     <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
@@ -184,13 +183,14 @@ export default function reports() {
                 <Header />
                 {reportData.length === 0 ? (
                     <View className="h-screen -mt-36 items-center justify-center">
+                        <Text className="text-2xl font-bold text-green-800 mb-4">Reports</Text>
                         <Ionicons name="bar-chart-outline" size={64} color="#9CA3AF" />
                         <Text className="text-gray-500 mt-4 text-lg font-semibold">You have no devices added yet. Please add a device to view reports.</Text>
                     </View>
                 ) : (
                     <View className="flex-1">
-                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Usage Report</Text>
-                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Savings Over Time</Text>
+                        <Text className="text-2xl font-bold text-green-800 mb-4">Reports</Text>
+                        <Text className="text-2xl font-bold text-green-800 mb-4">Savings Over Time</Text>
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
                             <LineChart
                                 data={lineData1}
@@ -224,7 +224,7 @@ export default function reports() {
                                 </View>
                             </View>
                         </View>
-                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Consumption</Text>
+                        <Text className="text-2xl font-bold text-green-800 mb-4">Energy Consumption</Text>
                         <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl shadow-sm justify-between items-center">
                             {category?.map((label, index) => (
                                 <TouchableOpacity
@@ -289,7 +289,7 @@ export default function reports() {
 
                         {selectedDevice === "All Devices" ? (
                             <>
-                                <Text className="text-2xl font-bold text-[#14532d] mb-4">
+                                <Text className="text-2xl font-bold text-green-800 mb-4">
                                     Overall Energy Consumption ({reportCategory})
                                 </Text>
                                 <AutoSkeletonView isLoading={reportLoading}>
@@ -315,7 +315,7 @@ export default function reports() {
                             </>
                         ) : (
                             <>
-                                <Text className="text-2xl font-bold text-[#14532d] mb-4">
+                                <Text className="text-2xl font-bold text-green-800 mb-4">
                                     Appliance Usage
                                 </Text>
                                 <View

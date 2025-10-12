@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { auth, db } from "../../firebase/firebaseConfig";
+import { auth, db } from "@/firebase/firebaseConfig";
 import { ref, update } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { BlurView } from "expo-blur";
