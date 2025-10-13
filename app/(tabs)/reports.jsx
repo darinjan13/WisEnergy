@@ -9,7 +9,7 @@ import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
 import { useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
 import { Picker } from "@react-native-picker/picker";
-import { Ionicons } from "@expo/vector-icons";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import CustomProgressBar from "@/components/reports/CustomProgressBar";
 import { BlurView } from "expo-blur";
 import EnergyPredictionChart from "@/components/reports/EnergyPredictionChart";
@@ -390,8 +390,8 @@ export default function reports() {
                             onPress={() => setModalVisible(false)}
                             className="absolute top-3 right-3 z-10"
                         >
-                            <View className="bg-red-600 w-8 h-8 rounded-full items-center justify-center">
-                                <Text className="text-white font-bold text-base">×</Text>
+                            <View className="bg-red-600 w-10 h-10 rounded-full items-center justify-center">
+                                <AntDesign name='close' size={15} color="white" />
                             </View>
                         </TouchableOpacity>
 

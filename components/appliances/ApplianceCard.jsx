@@ -8,7 +8,7 @@ export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, 
         <View>
             <Card className="mb-5" style={{ backgroundColor: 'white' }}>
                 <Card.Title
-                    title={`${appliance.name.replace(/_/, ' ')} (${appliance.nickname || " "})`}
+                    title={`${appliance.name.replaceAll("_", ' ')} (${appliance.nickname || " "})`}
                     subtitle={`Added at: ${appliance.added_at || 'N/A'}`}
                     titleStyle={cardStyles.title}
                     subtitleStyle={cardStyles.subtitle}
