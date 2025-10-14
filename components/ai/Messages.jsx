@@ -14,7 +14,7 @@ const AIInsightsCarousel = ({ insights, from }) => {
                 width={width - 80}
                 height={
                     Object.keys(heights).length > 0
-                        ? Math.max(...Object.values(heights))
+                        ? Math.max(...Object.values(heights)) + 10
                         : 80
                 }
                 autoPlay={false}

@@ -108,7 +108,6 @@ export default function RegisterForm() {
     return (
         <View style={{ flex: 1, backgroundColor: "#166534", paddingTop: insets.top }}>
             <AuthHeader />
-
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={{
@@ -117,13 +116,14 @@ export default function RegisterForm() {
                     borderTopLeftRadius: 40,
                     borderTopRightRadius: 40,
                     paddingBottom: insets.bottom + 10,
+                    marginTop: -5
                 }}
             >
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ padding: 20, paddingBottom: 50 }}
                 >
-                    <Text className="text-2xl font-bold text-center text-gray-800 mb-10">
+                    <Text className="text-xl font-bold text-center text-gray-800 mb-5">
                         Create A New Account
                     </Text>
 
@@ -131,7 +131,7 @@ export default function RegisterForm() {
                         <View className="flex-1">
                             <View
                                 className={`flex-row items-center bg-gray-100 border ${errors.firstName ? "border-red-500" : "border-gray-300"
-                                    } rounded-md p-3`}
+                                    } rounded-md py-1 px-2`}
                             >
                                 <Feather name="user" size={18} color="gray" />
                                 <TextInput
@@ -152,7 +152,7 @@ export default function RegisterForm() {
                         <View className="flex-1">
                             <View
                                 className={`flex-row items-center bg-gray-100 border ${errors.lastName ? "border-red-500" : "border-gray-300"
-                                    } rounded-md p-3`}
+                                    } rounded-md py-1 px-2`}
                             >
                                 <Feather name="user" size={18} color="gray" />
                                 <TextInput
@@ -175,7 +175,7 @@ export default function RegisterForm() {
                     <View className="mb-4">
                         <View
                             className={`flex-row items-center bg-gray-100 border ${errors.email ? "border-red-500" : "border-gray-300"
-                                } rounded-md p-3`}
+                                } rounded-md py-1 px-2`}
                         >
                             <MaterialIcons name="email" size={18} color="gray" />
                             <TextInput
@@ -215,7 +215,7 @@ export default function RegisterForm() {
                                 style={{
                                     flex: 1,
                                     color: form.location ? "black" : "#6b7280",
-                                    padding: 3,
+                                    padding: 1,
                                 }}
                             >
                                 <Picker.Item label="Select Location" value="" color="#6b7280" />
@@ -238,7 +238,7 @@ export default function RegisterForm() {
                     <View className="mb-4">
                         <View
                             className={`flex-row items-center bg-gray-100 border ${errors.password ? "border-red-500" : "border-gray-300"
-                                } rounded-md p-3`}
+                                } rounded-md py-1 px-2`}
                         >
                             <Fontisto name="locked" size={18} color="gray" />
                             <TextInput
@@ -270,7 +270,7 @@ export default function RegisterForm() {
                     <View className="mb-4">
                         <View
                             className={`flex-row items-center bg-gray-100 border ${errors.confirmPassword ? "border-red-500" : "border-gray-300"
-                                } rounded-md p-3`}
+                                } rounded-md py-1 px-2`}
                         >
                             <Fontisto name="locked" size={18} color="gray" />
                             <TextInput
@@ -305,7 +305,7 @@ export default function RegisterForm() {
                             status={acceptTerms ? "checked" : "unchecked"}
                             onPress={() => setAcceptTerms(!acceptTerms)}
                         />
-                        <Text className="text-gray-600">
+                        <Text className="text-gray-600 text-sm">
                             I agree to the{" "}
                             <Text
                                 onPress={() => {
@@ -376,7 +376,7 @@ export default function RegisterForm() {
                     tint="light"
                     className="flex-1 justify-center items-center bg-black/40"
                 >
-                    <View className="bg-white rounded-xl p-5 w-11/12 h-[80%]">
+                    <View className="bg-white rounded-xl p-5 w-11/12 h-[80%] shadow-2xl">
                         {choice === "terms" ? (
                             <TermsOfService
                                 source={"register"}

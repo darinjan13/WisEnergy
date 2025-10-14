@@ -19,6 +19,25 @@ export default function settings() {
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingUI, setIsLoadingUI] = useState(true);
 
+    const getInitials = () => {
+        const name = auth.currentUser?.displayName?.trim();
+        if (!name) return "U";
+
+        // Split into words and remove empty strings
+        const parts = name.split(" ").filter(Boolean);
+
+        if (parts.length === 1) {
+            // Single name only (e.g., "Cher")
+            return parts[0][0].toUpperCase();
+        }
+
+        // ✅ First letter of first name + first letter of last name
+        const firstInitial = parts[0][0].toUpperCase();
+        const lastInitial = parts[parts.length - 1][0].toUpperCase();
+
+        return `${firstInitial}${lastInitial}`;
+    };
+
     useFocusEffect(
         useCallback(() => {
             const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
@@ -43,7 +62,6 @@ export default function settings() {
         setter((prev) => {
             const newVal = !prev;
 
-            // Update Firebase under /users/{uid}/{key}
             const userRef = ref(db, `users/${auth.currentUser.uid}`);
             update(userRef, { [key]: newVal });
 
@@ -79,7 +97,7 @@ export default function settings() {
                             if (router.canGoBack()) {
                                 router.back();
                             } else {
-                                router.replace('/(tabs)/dashboard'); // fallback to home/tabs if no history
+                                router.replace('/(tabs)/dashboard');
                             }
                         }}
                     >
@@ -91,7 +109,7 @@ export default function settings() {
                     {/* Avatar */}
                     <View className="h-14 w-14 rounded-md bg-[#136B1E] items-center justify-center mr-4">
                         <Text className="text-white text-lg font-bold">
-                            {auth.currentUser?.displayName?.[0] ?? "U"}
+                            {getInitials()}
                         </Text>
                     </View>
 

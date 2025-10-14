@@ -5,7 +5,6 @@ import { getMonthName } from '../../utils/dateHelper';
 
 export default function EnergyPredictionChart({ actualData = [], predictedData = [], category }) {
 
-
     const allLabels = useMemo(() => {
         const labels = new Set([
             ...(actualData || []).map((a) => a.label),

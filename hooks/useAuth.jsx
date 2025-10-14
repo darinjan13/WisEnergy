@@ -1,11 +1,11 @@
 // hooks/useAuth.js
 import { useState, useEffect, useCallback } from "react";
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { get, ref, set, update } from "firebase/database";
-import { clearStates, useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
+import { clearStates } from "@/store/firebaseStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generate_otp } from "@/services/apiService";
 import { clearCache } from "@/utils/asyncStorageUtils";
@@ -37,7 +37,7 @@ export default function useAuth() {
                     emailExists = true;
                 }
             });
-            
+
             if (emailExists) {
                 setIsLoading(false);
                 return { success: false, code: "email-exists" };
@@ -122,7 +122,7 @@ export default function useAuth() {
     const logout = useCallback(async (setIsLoading) => {
         try {
             clearStates();
-            // clearCache();
+            clearCache();
             await AsyncStorage.removeItem('rememberedUser')
             await signOut(auth);
             router.replace("/(auth)/login");

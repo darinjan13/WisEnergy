@@ -19,8 +19,8 @@ export default function Dashboard() {
     const insets = useSafeAreaInsets();
     const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
-    const { monthlyTotalConsumption, subscribeToMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, weeklyTotals, fetchWeeklyTotals, dailyTotals, fetchDailyTotals } = useUsageStore();
-    const { locationRate, fetchLocationRate, monthlyBudget, fetchPercentUsed, subscribeToBudget } = useBudgetStore();
+    const { monthlyTotalConsumption, fetchLatestMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, weeklyTotals, fetchTotals, dailyTotals } = useUsageStore();
+    const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, fetchMonthlyBudget } = useBudgetStore();
     const [efficiency, setEfficiency] = useState(0);
     const [efficiencyColor, setEfficiencyColor] = useState('#16a34a');
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
@@ -45,10 +45,10 @@ export default function Dashboard() {
 
                 listenToUserAppliances(userId);
 
-                if (locationRate === 0 || monthlyBudget === null) {
+                if (locationRate === 0 || monthlyBudget === null || monthlyTotalConsumption === 0) {
                     await fetchLocationRate(userId);
-                    subscribeToBudget(userId);
-                    subscribeToMonthlyTotalConsumption(userId);
+                    await fetchMonthlyBudget(userId);
+                    await fetchLatestMonthlyTotalConsumption(userId);
                 }
 
                 if (!todayTrend) {
@@ -78,66 +78,53 @@ export default function Dashboard() {
         try {
             if (!userId) return;
 
-            // Ensure data loaded
-            if (!weeklyTotals?.length) await fetchWeeklyTotals(userId);
-            if (!dailyTotals?.length) await fetchDailyTotals(userId);
+            // ✅ Load data if not cached yet
+            if (!weeklyTotals?.length) await fetchTotals("Weekly", userId);
+            if (!dailyTotals?.length) await fetchTotals("Daily", userId);
 
             const weeklyData = weeklyTotals[0]?.barData || [];
             const dailyData = dailyTotals[0]?.barData || [];
             if (!weeklyData.length || !dailyData.length) return;
 
-            // 🔹 Sort weeks chronologically (month then week)
+            // 🔹 Sort week labels chronologically
             const sortedWeeks = [...weeklyData].sort((a, b) => {
-                const [wa, ma] = a.label.replace("W", "").split("-");
-                const [wb, mb] = b.label.replace("W", "").split("-");
+                const endA = a.date?.split(" - ")[1]?.trim().replace("–", "-");
+                const endB = b.date?.split(" - ")[1]?.trim().replace("–", "-");
+                if (!endA || !endB) return 0;
 
-                const monthA = parseInt(ma, 10);
-                const monthB = parseInt(mb, 10);
-                const weekA = parseInt(wa, 10);
-                const weekB = parseInt(wb, 10);
-
-                return monthA === monthB ? weekA - weekB : monthA - monthB;
+                const dateA = new Date(`2025-${endA}T23:59:59+08:00`);
+                const dateB = new Date(`2025-${endB}T23:59:59+08:00`);
+                return dateA - dateB;
             });
 
-            // 🔹 Convert PH time (ensures same reference)
+            // 🔹 Convert to PH time
             const now = new Date();
             const nowPH = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
-            // 🔹 Filter only fully completed weeks (endDate <= last Sunday PH)
-            const filteredWeeks = sortedWeeks.filter((w) => {
-                const [startStr, endStr] = w.date.split(" - ");
-                const [endMonth, endDay] = endStr.split("-");
-                const endDatePH = new Date(`${nowPH.getFullYear()}-${endMonth}-${endDay}T23:59:59+08:00`);
-                return endDatePH < nowPH; // last full week only
-            });
+            // ✅ Get last full week (Mon–Sun)
+            const lastWeekTotal = sortedWeeks.at(-1)?.value || 0;
 
-            // ✅ Last full week (Mon–Sun)
-            const lastWeekTotal = filteredWeeks.at(-1)?.value || 0;
-
-            // 🔹 Compute current week (Mon → today PH)
+            // 🔹 Get Monday of current week
             const todayPH = new Date(nowPH);
-            const dayOfWeek = todayPH.getDay(); // 0=Sun, 1=Mon...
+            const dayOfWeek = todayPH.getDay(); // 0=Sun
             const mondayThisWeek = new Date(todayPH);
             mondayThisWeek.setDate(todayPH.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
             mondayThisWeek.setHours(0, 0, 0, 0);
 
-            // 🔹 Daily data filter (Mon–Today)
+            // 🔹 Filter daily data (Mon → today)
             const currentWeekDays = dailyData.filter((d) => {
-                const dDate = new Date(d.date);
+                if (!d.date) return false;
+                const dDate = new Date(`${d.date}T00:00:00+08:00`);
                 return dDate >= mondayThisWeek && dDate <= todayPH;
             });
 
-            const currentWeekTotal = currentWeekDays.reduce(
-                (sum, d) => sum + (d.value || 0),
-                0
-            );
+            const currentWeekTotal = currentWeekDays.reduce((sum, d) => sum + (d.value || 0), 0);
 
-            // 🔹 Peso difference
+            // 🔹 Compute peso savings
             const diff = (lastWeekTotal - currentWeekTotal) * (locationRate || 0);
 
-            console.log(
-                `📅 Last Week Total: ${lastWeekTotal} kWh | Current Week (Mon–Today): ${currentWeekTotal.toFixed(2)} kWh`
-            );
+            console.log(`📅 Last Week Total: ${lastWeekTotal} kWh`);
+            console.log(`📅 Current Week (Mon–Today): ${currentWeekTotal.toFixed(2)} kWh`);
             console.log(`💰 Weekly Savings: ₱${diff.toFixed(2)}`);
 
             setWeeklySavings(Number(diff.toFixed(2)));
@@ -168,7 +155,9 @@ export default function Dashboard() {
     }, [allMonthlyTotalConsumption]);
 
     useEffect(() => {
-        if (lastMonthKwh > 0 && monthlyTotalConsumption > 0) {
+        if (locationRate > 0 && lastMonthKwh > 0 && monthlyTotalConsumption > 0) {
+            fetchPercentUsed(monthlyTotalConsumption)
+
             const pctVsLast = (monthlyTotalConsumption / lastMonthKwh) * 100;
             const rawEff = 100 - pctVsLast;
             const finalEff = Math.max(0, Math.min(100, Math.round(rawEff)));
@@ -183,7 +172,7 @@ export default function Dashboard() {
             setEfficiency(0);
             setEfficiencyColor('#16a34a'); // default green when no data
         }
-    }, [monthlyTotalConsumption, lastMonthKwh]);
+    }, [monthlyTotalConsumption, lastMonthKwh, locationRate]);
 
 
     useEffect(() => {
@@ -210,6 +199,7 @@ export default function Dashboard() {
         }
 
         if (lastMonthKwh > 0 && monthlyTotalConsumption > 0) {
+            fetchPercentUsed(monthlyTotalConsumption)
             const pctVsLast = (monthlyTotalConsumption / lastMonthKwh) * 100;
             const rawEff = 100 - pctVsLast;
             const finalEff = Math.max(0, Math.min(100, Math.round(rawEff)));
@@ -258,6 +248,27 @@ export default function Dashboard() {
             value: filtered.reduce((a, b) => a + b.value, 0),
         });
     };
+
+    useEffect(() => {
+        const userId = auth?.currentUser?.uid;
+        if (!userId) return;
+
+        const fetchInitialData = async () => {
+            if (insights.length === 0) {
+                console.log("Fetching AI Insights");
+                const now = Date.now();
+                const todayStr = format(now, "yyyy-MM-dd", { timeZone: "Asia/Manila" });
+                await fetchDailyAiGeneratedContent(userId, todayStr);
+            }
+
+            if (topAppliances.length === 0) {
+                console.log("Fetching top Appliances");
+                await fetchTopAppliances(userId);
+            }
+        };
+
+        fetchInitialData();
+    }, []);
 
     return (
         <View>
@@ -349,14 +360,14 @@ export default function Dashboard() {
                                     <MaterialCommunityIcons name="lightning-bolt-outline" size={30} color="gray" />
                                     <Text className="text-xl font-bold text-green-600">{totalEnergyConsumption.toFixed(2)}</Text>
                                 </View>
-                                <Text className="text-gray-500 text-xs italic">
+                                <Text className="text-gray-500 text-[9px] italic">
                                     Total Energy Consumption(kWh)
                                 </Text>
                             </View>
                         </View>
                     </View >
                     <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
-                        <Text className="text-2xl font-semibold mb-2">Today's Energy Trend</Text>
+                        <Text className="text-xl font-semibold mb-2">Today's Energy Trend</Text>
                         <Text className="text-gray-500 text-sm mb-4">
                             Tap a bar to see exact time range & kWh
                         </Text>
@@ -380,7 +391,7 @@ export default function Dashboard() {
                         </View>
                     </View>
                     <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
-                        <Text className="text-2xl font-extrabold mb-2">Monthly Goals</Text>
+                        <Text className="text-xl font-extrabold mb-2">Monthly Goals</Text>
                         <Text className="text-sm text-black mb-4">Monitor your estimated monthly energy bills against your set target.</Text>
                         {monthlyBudget !== null ? (
                             <View><View className="flex-row justify-between">
@@ -400,7 +411,7 @@ export default function Dashboard() {
                         )}
                     </View>
                     <View className="bg-white rounded-2xl p-4 mb-6" style={styles.cardShadow}>
-                        <Text className="text-2xl font-extrabold mb-4">Top Appliances</Text>
+                        <Text className="text-xl font-extrabold mb-4">Top Appliances</Text>
                         <Text className="text-sm text-black mb-4">See which appliances are consuming the most energy</Text>
                         {topAppliances.length > 0 ? (
                             topAppliances.map((appliance, i) => (
@@ -438,7 +449,7 @@ export default function Dashboard() {
                         )}
                     </View>
                     <View className="bg-white rounded-2xl p-4" style={styles.cardShadow}>
-                        <Text className="text-2xl font-extrabold mb-4">AI Insights</Text>
+                        <Text className="text-xl font-extrabold mb-4">AI Insights</Text>
                         {insights && insights.length > 0 ? (
                             <AIInsightsCarousel insights={insights} />
                         ) : (
@@ -469,7 +480,7 @@ export default function Dashboard() {
                             className="absolute top-3 right-3 z-10"
                         >
                             <View className="bg-red-600 w-10 h-10 rounded-full items-center justify-center">
-                                <AntDesign name='close' size={15} color="white" />
+                                <AntDesign name='close' size={12} color="white" />
                             </View>
                         </TouchableOpacity>
                         {hourlyData.length > 0 ? (

@@ -70,7 +70,7 @@ export default function Budget() {
         <AutoSkeletonView isLoading={loading}>
           <View className="mb-4 rounded-2xl flex-row gap-x-2">
             <AutoSkeletonIgnoreView>
-              <Text className="text-2xl font-bold text-green-800 mb-1">Monthly Budget</Text>
+              <Text className="text-xl font-bold text-green-800 mb-1">Monthly Budget</Text>
             </AutoSkeletonIgnoreView>
             <AutoSkeletonIgnoreView>
               <TouchableOpacity
@@ -96,7 +96,7 @@ export default function Budget() {
             <Text className="absolute text-4xl font-bold">{usedKWh > 0 ? `${Math.round(percentUsed)}%` : "0%"}</Text>
           </View>
 
-          <Text className="text-center font-bold text-green-800 text-2xl mb-5">UNDER BUDGET</Text>
+          <Text className="text-center font-bold text-green-800 text-xl mb-5">UNDER BUDGET</Text>
           {
             budgetKWh > 0 && (
               <View className="flex-row justify-between mb-4">
@@ -122,24 +122,24 @@ export default function Budget() {
             <View style={styles.cardShadow} className="flex-1 bg-white px-4 py-3 rounded-xl mr-2">
               <Text className="text-xs text-gray-500">Budget</Text>
               <Text className="text-green-700 font-bold text-lg">₱{budget.toLocaleString()}</Text>
-              <Text className="text-xs text-gray-400">{budgetKWh.toFixed(1)} kWh</Text>
+              <Text className="text-xs text-gray-400">{budgetKWh?.toFixed(1)} kWh</Text>
             </View>
             <View style={styles.cardShadow} className="flex-1 bg-white px-4 py-3 rounded-xl mx-1">
               <Text className="text-xs text-gray-500">Estimated Cost</Text>
               <Text className="text-orange-600 font-bold text-lg">₱{estimatedCost.toFixed(2)}</Text>
-              <Text className="text-xs text-gray-400">{usedKWh.toFixed(1)} kWh</Text>
+              <Text className="text-xs text-gray-400">{usedKWh?.toFixed(1)} kWh</Text>
             </View>
             <View style={styles.cardShadow} className="flex-1 bg-white px-4 py-3 rounded-xl ml-2">
               <Text className="text-xs text-gray-500">Remaining</Text>
-              <Text className="text-blue-700 font-bold text-lg">₱{remaining.toFixed(2)}</Text>
-              <Text className="text-xs text-gray-400">{remainingKWh.toFixed(1)} kWh</Text>
+              <Text className="text-blue-700 font-bold text-lg">₱{remaining?.toFixed(2)}</Text>
+              <Text className="text-xs text-gray-400">{remainingKWh?.toFixed(1)} kWh</Text>
             </View>
           </View>
 
           <View className="bg-white px-4 py-3 rounded-xl mb-6" style={styles.cardShadow}>
             <Text className="text-sm text-gray-500 mb-1">Electricity Rate</Text>
             <View className="flex-row items-center">
-              <Text className="text-lg font-semibold text-green-700">₱{locationRate.toFixed(2)}/kWh</Text>
+              <Text className="text-lg font-semibold text-green-700">₱{locationRate?.toFixed(2)}/kWh</Text>
 
             </View>
           </View>
@@ -147,10 +147,10 @@ export default function Budget() {
           <View className="bg-white p-4 rounded-xl" style={styles.cardShadow}>
             <View className=" flex-row">
               <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color="#16a34a" />
-              <Text className="text-2xl font-extrabold mb-4">Smart Recommendations</Text>
+              <Text className="text-xl font-extrabold mb-4">Smart Recommendations</Text>
             </View>
             {recommendations && recommendations.length > 0 ? (
-              <View className="" style={{ maxHeight: 400 }}>
+              <View className="" style={{ maxHeight: 600 }}>
                 <AIInsightsCarousel insights={recommendations} from="budget" />
               </View>
             ) : (

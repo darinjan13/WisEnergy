@@ -3,6 +3,7 @@ import * as firebaseDevicesServices from '../services/firebaseDevicesService'
 import * as firebaseUsageServices from '../services/firebaseUsageService'
 import * as firebaseBudgetServices from '../services/firebaseBudgetService'
 import * as firebaseNotificationServices from '../services/firebaseNotificationService'
+import { persistWithExpiry } from "@/utils/persistWithExpiry";
 import { daily_ai_insights } from '@/services/apiService'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { format } from 'date-fns-tz';
@@ -169,159 +170,143 @@ export const useAiGeneratedStore = create((set) => ({
 }));
 
 
-export const useUsageStore = create((set, get) => ({
-    monthlyTotalConsumption: 0,
-    allMonthlyTotalConsumption: [],
-    _unsubMonthly: null,
-    latestKwh: [],
-    reportHistory: {
-        daily: {},
-        weekly: {},
-        monthly: {}
-    },
-    summaryPerDevice: {},
-    totalConsumptionByDate: {},
-    todayTrend: null,
-    topAppliances: [],
-
-    dailyTotals: [],
-    weeklyTotals: [],
-    monthlyTotals: [],
-    fetchTopAppliances: async (userId) => {
-        try {
-            const top = await firebaseUsageServices.fetchTopAppliances(userId);
-            set({ topAppliances: top });
-            return top;
-        } catch (err) {
-            console.error("Error in store.fetchTopAppliances:", err);
-            set({ topAppliances: [] });
-            return [];
-        }
-    },
-    subscribeToMonthlyTotalConsumption: (userId) => {
-        if (get()._unsubMonthly) return;
-
-        const unsubscribe = firebaseUsageServices.fetchMonthlyTotalConsumptionRealtime(userId, (currentConsumption) => {
-            set({ monthlyTotalConsumption: currentConsumption });
-        });
-
-        set({ _unsubMonthly: unsubscribe });
-    },
-
-    unsubscribeFromMonthlyTotalConsumption: () => {
-        const unsubMonthly = get()._unsubMonthly
-        if (unsubMonthly) {
-            unsubMonthly();
-            set({ _unsubMonthly: null })
-        }
-
-    },
-
-    fetchAllLatestKwh: async (userId, deviceId) => {
-        const latestKwh = await firebaseUsageServices.fetchAllLatestKwh(userId, deviceId);
-        set({
-            latestKwh
-        });
-    },
-
-    updateLatestKwh: async () => {
-        const { latestKwh } = get();
-        const updatedLatestKwh = await firebaseUsageServices.updateLatestKwh(latestKwh);
-        set({ latestKwh: updatedLatestKwh });
-    },
-
-    fetchDailyReport: async (userId, deviceId, appliances) => {
-
-        const data = await firebaseUsageServices.getCachedDailyReport(userId, deviceId, appliances);
-        set(state => ({
-            reportHistory: {
-                ...state.reportHistory,
-                daily: {
-                    ...state.reportHistory.daily,
-                    [deviceId]: data
-                }
-            }
-        }))
-    },
-    fetchWeeklyReport: async (userId, deviceId, appliances) => {
-        const data = await firebaseUsageServices.getCachedWeeklyReport(userId, deviceId, appliances);
-
-        set(state => ({
-            reportHistory: {
-                ...state.reportHistory,
-                weekly: {
-                    ...state.reportHistory.weekly,
-                    [deviceId]: data
-                }
-            }
-        }))
-    },
-
-    fetchMonthlyReport: async (userId, deviceId, appliances) => {
-        const data = await firebaseUsageServices.getCachedMonthlyReport(userId, deviceId, appliances);
-
-        set(state => ({
-            reportHistory: {
-                ...state.reportHistory,
-                monthly: {
-                    ...state.reportHistory.monthly,
-                    [deviceId]: data
-                }
-            }
-        }))
-    },
-
-    fetchDailyKwh: async (userId) => {
-        const dailyKwh = await firebaseUsageServices.fetchDailyKwh(userId)
-
-        set({
-            reports: dailyKwh
-        })
-    },
-    fetchAllMonthlyTotalConsumption: async (userId) => {
-        const allMonthlyTotalConsumption = await firebaseUsageServices.fetchAllMonthlyTotalConsumption(userId)
-
-        set({ allMonthlyTotalConsumption })
-    },
-    fetchTodayTrend: async (userId) => {
-        const todayTrend = await firebaseUsageServices.fetchTodayTrend(userId);
-        set({
-            todayTrend
-        })
-    },
-    fetchDailyTotals: async (userId) => {
-        const data = await firebaseUsageServices.getCachedDailyTotalConsumption(userId);
-        set({ dailyTotals: data });
-    },
-
-    fetchWeeklyTotals: async (userId) => {
-        const data = await firebaseUsageServices.getCachedWeeklyTotalConsumption(userId);
-        set({ weeklyTotals: data });
-    },
-
-    fetchMonthlyTotals: async (userId) => {
-        const data = await firebaseUsageServices.getCachedMonthlyTotalConsumption(userId);
-        set({ monthlyTotals: data });
-    },
-    reset: () => {
-        const unsubMonthly = get()._unsubMonthly;
-        if (unsubMonthly) unsubMonthly();
-
-        set({
+export const useUsageStore = create(
+    persistWithExpiry(
+        (set, get) => ({
+            // ---------- STATE ----------
             monthlyTotalConsumption: 0,
-            _unsubMonthly: null,
             allMonthlyTotalConsumption: [],
-            latestKwh: [],
+            latestKwh: {},
             reportHistory: { daily: {}, weekly: {}, monthly: {} },
-            summaryPerDevice: {},
-            todayTrend: null,
-            topAppliances: [],
             dailyTotals: [],
             weeklyTotals: [],
             monthlyTotals: [],
-        });
-    },
-}));
+            topAppliances: [],
+            todayTrend: null,
+
+            // ---------- FETCH FUNCTIONS ----------
+            fetchTopAppliances: async (userId) => {
+                try {
+                    const data = await firebaseUsageServices.fetchTopAppliances(userId);
+                    set({ topAppliances: data });
+                } catch (err) {
+                    console.error("⚠️ fetchTopAppliances:", err);
+                    set({ topAppliances: [] });
+                }
+            },
+
+            fetchTodayTrend: async (userId) => {
+                try {
+                    const trend = await firebaseUsageServices.fetchTodayTrend(userId);
+                    set({ todayTrend: trend });
+                } catch (err) {
+                    console.error("⚠️ fetchTodayTrend:", err);
+                    set({ todayTrend: null });
+                }
+            },
+
+            fetchLatestMonthlyTotalConsumption: async (userId) => {
+                try {
+                    const total = await firebaseUsageServices.fetchLatestMonthlyTotalConsumption(userId);
+                    set({ monthlyTotalConsumption: total });
+                } catch (err) {
+                    console.error("⚠️ fetchLatestMonthlyTotalConsumption:", err);
+                    set({ monthlyTotalConsumption: 0 });
+                }
+            },
+
+            fetchAllMonthlyTotalConsumption: async (userId) => {
+                try {
+                    const all = await firebaseUsageServices.fetchAllMonthlyTotalConsumption(userId);
+                    set({ allMonthlyTotalConsumption: all });
+                } catch (err) {
+                    console.error("⚠️ fetchAllMonthlyTotalConsumption:", err);
+                    set({ allMonthlyTotalConsumption: [] });
+                }
+            },
+
+            fetchAllLatestKwh: async (userId, deviceId) => {
+                try {
+                    const latest = await firebaseUsageServices.fetchAllLatestKwh(userId, deviceId);
+                    set({ latestKwh: latest });
+                } catch (err) {
+                    console.error("⚠️ fetchAllLatestKwh:", err);
+                    set({ latestKwh: {} });
+                }
+            },
+
+            // ---------- REPORT FETCH (per category) ----------
+            fetchReport: async (category, userId, deviceId, appliances) => {
+                try {
+                    const map = {
+                        Daily: firebaseUsageServices.fetchDailyReport,
+                        Weekly: firebaseUsageServices.fetchWeeklyReport,
+                        Monthly: firebaseUsageServices.fetchMonthlyReport,
+                    };
+                    const fn = map[category];
+                    if (!fn) return;
+
+                    const data = await fn(userId, deviceId, appliances);
+                    set((state) => ({
+                        reportHistory: {
+                            ...state.reportHistory,
+                            [category.toLowerCase()]: {
+                                ...state.reportHistory[category.toLowerCase()],
+                                [deviceId]: data,
+                            },
+                        },
+                    }));
+                } catch (err) {
+                    console.error("⚠️ fetchReport:", err);
+                }
+            },
+
+            // ---------- TOTAL FETCH (for All Devices view) ----------
+            fetchTotals: async (category, userId) => {
+                try {
+                    const map = {
+                        Daily: firebaseUsageServices.fetchDailyTotalConsumption,
+                        Weekly: firebaseUsageServices.fetchWeeklyTotalConsumption,
+                        Monthly: firebaseUsageServices.fetchMonthlyTotalConsumption,
+                    };
+                    const fn = map[category];
+                    if (!fn) return;
+
+                    const data = await fn(userId);
+                    set({ [`${category.toLowerCase()}Totals`]: data });
+                } catch (err) {
+                    console.error("⚠️ fetchTotals:", err);
+                }
+            },
+
+            // ---------- RESET ----------
+            reset: () =>
+                set({
+                    monthlyTotalConsumption: 0,
+                    allMonthlyTotalConsumption: [],
+                    latestKwh: {},
+                    reportHistory: { daily: {}, weekly: {}, monthly: {} },
+                    dailyTotals: [],
+                    weeklyTotals: [],
+                    monthlyTotals: [],
+                    topAppliances: [],
+                    todayTrend: null,
+                }),
+        }),
+        {
+            name: "usage-store",
+            ttl: 1000 * 60 * 60, // 1 hour expiry
+            partialize: (state) => ({
+                reportHistory: state.reportHistory,
+                dailyTotals: state.dailyTotals,
+                weeklyTotals: state.weeklyTotals,
+                monthlyTotals: state.monthlyTotals,
+                topAppliances: state.topAppliances,
+                allMonthlyTotalConsumption: state.allMonthlyTotalConsumption,
+            }),
+        }
+    )
+);
 
 export const useBudgetStore = create((set, get) => ({
     locationRate: 0,
@@ -330,23 +315,14 @@ export const useBudgetStore = create((set, get) => ({
     _unsubBudget: null,
     percentUsed: 0,
 
-    subscribeToBudget: (userId) => {
-        if (get()._unsubBudget) return;
-
-        const unsubscribe = firebaseBudgetServices.fetchMonthlyBudget(userId, (currentBudget) => {
-            set({ monthlyBudget: currentBudget });
-        });
-
-        set({ _unsubBudget: unsubscribe });
-    },
-
-    unsubscribeToBudget: () => {
-        const unsubBudget = get()._unsubBudget
-        if (unsubBudget) {
-            unsubBudget();
-            set({ _unsubBudget: null, monthlyBudget: null })
+    fetchMonthlyBudget: async (userId) => {
+        try {
+            const currentBudget = await firebaseBudgetServices.fetchMonthlyBudget(userId);
+            set({ monthlyBudget: currentBudget || null });
+        } catch (error) {
+            console.error("Error loading monthly budget:", error);
+            set({ monthlyBudget: null });
         }
-
     },
 
     fetchPercentUsed: (usedKwh) => {
@@ -367,12 +343,9 @@ export const useBudgetStore = create((set, get) => ({
         set({ allBudget });
     },
     reset: () => {
-        const unsubBudget = get()._unsubBudget;
-        if (unsubBudget) unsubBudget();
         set({
             locationRate: 0,
             monthlyBudget: null,
-            _unsubBudget: null,
             percentUsed: 0,
             allBudget: []
         })

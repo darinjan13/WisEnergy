@@ -39,7 +39,7 @@ export default function Tooltip({ toolTip, setToolTip, content, from }) {
                     shadowColor: "#000",
                 }}
             >
-                <Text className="text-gray-600 text-sm text-center">{content}</Text>
+                <Text className="text-gray-600 text-xs text-center">{content}</Text>
             </View>
         </Pressable>
     );

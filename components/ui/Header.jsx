@@ -6,23 +6,23 @@ import { auth } from '../../firebase/firebaseConfig';
 const Header = () => {
     // ✅ Extract initials from display name
     const getInitials = () => {
-  const name = auth.currentUser?.displayName?.trim();
-  if (!name) return "U";
+        const name = auth.currentUser?.displayName?.trim();
+        if (!name) return "U";
 
-  // Split into words and remove empty strings
-  const parts = name.split(" ").filter(Boolean);
+        // Split into words and remove empty strings
+        const parts = name.split(" ").filter(Boolean);
 
-  if (parts.length === 1) {
-    // Single name only (e.g., "Cher")
-    return parts[0][0].toUpperCase();
-  }
+        if (parts.length === 1) {
+            // Single name only (e.g., "Cher")
+            return parts[0][0].toUpperCase();
+        }
 
-  // ✅ First letter of first name + first letter of last name
-  const firstInitial = parts[0][0].toUpperCase();
-  const lastInitial = parts[parts.length - 1][0].toUpperCase();
+        // ✅ First letter of first name + first letter of last name
+        const firstInitial = parts[0][0].toUpperCase();
+        const lastInitial = parts[parts.length - 1][0].toUpperCase();
 
-  return `${firstInitial}${lastInitial}`;
-};
+        return `${firstInitial}${lastInitial}`;
+    };
 
     return (
         <View className="flex-row justify-between items-center h-16 mb-4">

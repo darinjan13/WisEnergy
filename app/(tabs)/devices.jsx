@@ -238,7 +238,7 @@ export default function Devices() {
                     )}
                 </AutoSkeletonView>
             </ScrollView>
-            <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`Lists all your connected WisEnergy devices. Pair a new one to start real-time energy monitoring.`} from="Devices" />
+            <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`Lists all your connected WisEnergy devices.\n Pair a new one to start real-time energy monitoring.`} from="Devices" />
             <Modal
                 animationType="fade"
                 transparent={true}
