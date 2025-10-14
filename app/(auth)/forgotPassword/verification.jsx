@@ -14,13 +14,17 @@ import Toast from 'react-native-toast-message';
 export default function CodeVerificationScreen() {
 
     const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
+        const formatName = (name) => {
+            if (!name) return "";
+            return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+        };
         const userRef = ref(db, "users/" + user_id);
         const now = new Date();
         const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
         set(userRef, {
             email: email,
-            first_name: first_name,
-            last_name: last_name,
+            first_name: formatName(first_name),
+            last_name: formatName(last_name),
             location: location,
             role: role,
             created_at: offsetDate.toISOString(),

@@ -1,11 +1,11 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
-import { Text, View, BackHandler, Alert, ScrollView, Modal, TextInput, TouchableOpacity, Pressable } from "react-native";
+import { Text, View, BackHandler, Alert, ScrollView, Modal, TextInput, TouchableOpacity } from "react-native";
 
 import { auth, db } from "@/firebase/firebaseConfig"
 import ApplianceCard from "@/components/appliances/ApplianceCard";
 import { ActivityIndicator, RadioButton } from "react-native-paper";
-import { useDeviceStore, useUsageStore } from "@/store/firebaseStore";
+import { useDeviceStore } from "@/store/firebaseStore";
 import Header from "@/components/ui/Header";
 import useApplianceStreams from "@/hooks/useApplianceStreams";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -16,7 +16,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddApplianceModal from "@/components/appliances/AddApplianceModal";
 import { format } from "date-fns-tz";
-import Tooltip from "../../../../components/ui/Tooltip";
+import Tooltip from "@/components/ui/Tooltip";
 import { AutoSkeletonView } from "react-native-auto-skeleton";
 
 export default function DeviceDetails() {
@@ -54,14 +54,14 @@ export default function DeviceDetails() {
     useFocusEffect(
         useCallback(() => {
             const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+
             const timeout = setTimeout(() => {
-                if (device)
-                    setIsLoading(false);
+                setIsLoading(false);
             }, 1000);
             return () => {
+                if (!router.canGoBack()) setIsLoading(true);
                 clearTimeout(timeout)
                 backHandler.remove();
-                setAppliancesInActive();
                 setToolTip(false)
             };
         }, [deviceAppliances])
@@ -75,14 +75,8 @@ export default function DeviceDetails() {
         setApplianceKWh,
     });
 
-    const setAppliancesInActive = () => {
-        deviceAppliances.forEach(appliance => {
-            setApplianceActive(auth.currentUser.uid, deviceId, appliance.name, false);
-        });
-    };
-
     useEffect(() => {
-        if (device && device.appliance_name) {
+        if (device && device.appliance_name && selectedAppliance !== device.appliance_name) {
             setOnlyOneActive(auth.currentUser.uid, deviceId, device.appliance_name);
             setSelectedAppliance(device.appliance_name);
         }
@@ -94,6 +88,7 @@ export default function DeviceDetails() {
     };
 
     const handleSelectedAppliance = async (value) => {
+        if (value === selectedAppliance) return;
         setIsLoading(true);
         await setDeviceApplianceName(deviceId, value);
         setOnlyOneActive(auth.currentUser.uid, deviceId, value);
@@ -222,23 +217,25 @@ export default function DeviceDetails() {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 200 }}>
                 <AutoSkeletonView isLoading={isLoading}>
                     <View className="mb-40 p-1">
-                        <RadioButton.Group
-                            onValueChange={handleSelectedAppliance}
-                            value={selectedAppliance}
-                        >
-                            {deviceAppliances.map((appliance, index) => (
-                                <ApplianceCard
-                                    key={index}
-                                    power={appliancePower[appliance.name] || 0}
-                                    appliance={appliance}
-                                    applianceKWH={applianceKWh[appliance.name] || 0}
-                                    onEdit={() => showEditModal(appliance)}
-                                    onDelete={() => openConfirmModal(appliance.name, "delete")}
-                                    selectedAppliance={selectedAppliance}
-                                    onChange={handleSelectedAppliance}
-                                />
-                            ))}
-                        </RadioButton.Group>
+                        {selectedAppliance !== "" && (
+                            <RadioButton.Group
+                                onValueChange={handleSelectedAppliance}
+                                value={selectedAppliance}
+                            >
+                                {deviceAppliances.map((appliance, index) => (
+                                    <ApplianceCard
+                                        key={index}
+                                        power={appliancePower[deviceId]?.[appliance.name] || 0}
+                                        appliance={appliance}
+                                        applianceKWH={applianceKWh[deviceId]?.[appliance.name] || 0}
+                                        onEdit={() => showEditModal(appliance)}
+                                        onDelete={() => openConfirmModal(appliance.name, "delete")}
+                                        selectedAppliance={selectedAppliance}
+                                        onChange={handleSelectedAppliance}
+                                    />
+                                ))}
+                            </RadioButton.Group>
+                        )}
                     </View>
                 </AutoSkeletonView>
             </ScrollView>

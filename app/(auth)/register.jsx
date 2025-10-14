@@ -12,14 +12,14 @@ import {
     useColorScheme,
 } from "react-native";
 import { useRouter } from "expo-router";
-import AuthHeader from "../../components/ui/AuthHeader";
+import AuthHeader from "@/components/ui/AuthHeader";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useAuth from "../../hooks/useAuth";
+import useAuth from "@/hooks/useAuth";
 import { Checkbox } from "react-native-paper";
 import { Picker } from "@react-native-picker/picker";
 import { BlurView } from "expo-blur";
-import TermsOfService from "../../components/ui/Terms";
-import Privacy from "../../components/ui/Privacy";
+import TermsOfService from "@/components/ui/Terms";
+import Privacy from "@/components/ui/Privacy";
 import {
     Feather,
     Fontisto,

@@ -8,7 +8,7 @@ import {
     Modal,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable"; // ✅ from documentation
+import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, { FadeInRight, FadeOutRight } from "react-native-reanimated";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

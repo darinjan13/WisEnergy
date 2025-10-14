@@ -1,11 +1,14 @@
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
-import { auth } from "../../firebase/firebaseConfig";
+import { auth } from "@/firebase/firebaseConfig";
 import { useEffect, useState } from "react";
 import { updateProfile } from "firebase/auth";
 import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
 import { Feather, Fontisto } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ref, update } from "firebase/database";
+import { format } from "date-fns-tz";
+import { db } from '@/firebase/firebaseConfig'
 
 export default function EditProfile() {
     const insets = useSafeAreaInsets();
@@ -37,9 +40,18 @@ export default function EditProfile() {
     const handleUpdate = async () => {
         setIsLoading(true)
         try {
-            await updateProfile(auth.currentUser, {
-                displayName: `${firstName} ${lastName}`
-            })
+            const displayName = `${firstName.trim()} ${lastName.trim()}`;
+            await updateProfile(auth.currentUser, { displayName });
+
+            const userRef = ref(db, `users/${auth.currentUser.uid}`);
+            const updatedAt = format(new Date(), "yyyy-MM-dd", { timeZone: 'PH_TZ' });
+
+            await update(userRef, {
+                displayName,
+                first_name: firstName.trim(),
+                last_name: lastName.trim(),
+                updated_at: updatedAt,
+            });
             Toast.show({
                 type: "success",
                 text1: "Update Successful",

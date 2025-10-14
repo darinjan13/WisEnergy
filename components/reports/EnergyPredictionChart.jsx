@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
 import { View, Text } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
+import { getMonthName } from '../../utils/dateHelper';
 
 export default function EnergyPredictionChart({ actualData = [], predictedData = [], category }) {
 
 
-    // ✅ Combine unique labels from both datasets
     const allLabels = useMemo(() => {
         const labels = new Set([
             ...(actualData || []).map((a) => a.label),
@@ -21,7 +21,6 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
         });
     }, [actualData, predictedData]);
 
-    // ✅ Build bar data using both datasets
     const barData = useMemo(() => {
         const merged = [];
 
@@ -29,10 +28,13 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
             const actual = actualData.find((a) => a.label === label);
             const predicted = predictedData.find((p) => p.label === label);
 
+            const [week, monthNum] = label.replace("W0", "").split("-");
+            const monthName = getMonthName(Number(monthNum), 'short')
+            const formattedLabel = `W${week}-${monthName}`;
             merged.push(
                 {
                     value: actual?.value || 0,
-                    label: label.replace("W0", "W"),
+                    label: category === "Weekly" ? formattedLabel : label.replace("W0", "W"),
                     spacing: 1,
                     labelWidth: 50,
                     labelTextStyle: { color: "black", marginLeft: -10 },
@@ -48,9 +50,8 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
         return merged;
     }, [actualData, predictedData, allLabels]);
 
-    // ✅ Auto-adjust chart scaling
     const maxValue = Math.max(...barData.map((b) => b.value), 0) + 1;
-    const noOfSections = category === "Daily" ? Math.ceil(maxValue) - 1 : 2;
+    const noOfSections = category === "Daily" ? Math.ceil(maxValue) * 2 : 2;
 
     return (
         <View className="bg-white p-5 rounded-2xl">

@@ -5,6 +5,7 @@ import * as firebaseBudgetServices from '../services/firebaseBudgetService'
 import * as firebaseNotificationServices from '../services/firebaseNotificationService'
 import { daily_ai_insights } from '@/services/apiService'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { format } from 'date-fns-tz';
 
 export const useDeviceStore = create((set, get) => ({
     devices: [],
@@ -95,43 +96,63 @@ export const useDeviceStore = create((set, get) => ({
         }),
 }));
 
+const getNextFourHourCutoff = () => {
+    const now = new Date();
+    const phDateStr = format(now, "yyyy-MM-dd HH:mm:ss", { timeZone: 'PH_TZ' });
+    const phNow = new Date(phDateStr.replace(" ", "T"));
+
+    const hour = phNow.getHours();
+    const nextBlockHour = Math.ceil((hour + 1) / 4) * 4 % 24;
+
+    const cutoff = new Date(phNow);
+    cutoff.setMinutes(0, 0, 0);
+    cutoff.setHours(nextBlockHour);
+
+    if (nextBlockHour <= hour) {
+        cutoff.setDate(cutoff.getDate() + 1);
+    }
+
+    return cutoff.getTime();
+};
+
 export const useAiGeneratedStore = create((set) => ({
     insights: [],
     recommendations: [],
 
     fetchDailyAiGeneratedContent: async (userId, date) => {
         const key = `@ai_insights:${userId}:${date}`;
-
         try {
-            // 1. Check cache
+            // 1) Read cache
             const cachedStr = await AsyncStorage.getItem(key);
             if (cachedStr) {
                 const cached = JSON.parse(cachedStr);
-
-                if (cached.timestamp === date) {
+                if (cached?.timestamp === date && cached?.expiresAt && Date.now() < cached.expiresAt) {
                     set({
                         insights: cached.data.insights || [],
                         recommendations: cached.data.recommendations || [],
                     });
                     return cached.data;
+                } else {
+                    // expired → clean up
+                    await AsyncStorage.removeItem(key);
                 }
             }
 
-            // 2. Fetch fresh
+            // 2) Fetch fresh
             const result = await daily_ai_insights(userId, date);
             if (result) {
                 const { insights = [], recommendations = [] } = result;
 
-                // update store
                 set({ insights, recommendations });
 
-                // 3. Save cache
+                // 3) Save with 4-hour PH cutoff
                 await AsyncStorage.setItem(
                     key,
                     JSON.stringify({
                         timestamp: date,
+                        expiresAt: getNextFourHourCutoff(),
                         data: { insights, recommendations },
-                    })
+                    }),
                 );
 
                 return { insights, recommendations };
@@ -160,11 +181,6 @@ export const useUsageStore = create((set, get) => ({
     },
     summaryPerDevice: {},
     totalConsumptionByDate: {},
-    lastFetched: {
-        daily: null,
-        weekly: null,
-        monthly: null
-    },
     todayTrend: null,
     topAppliances: [],
 
@@ -288,7 +304,6 @@ export const useUsageStore = create((set, get) => ({
         set({ monthlyTotals: data });
     },
     reset: () => {
-        // cleanup listener if still active
         const unsubMonthly = get()._unsubMonthly;
         if (unsubMonthly) unsubMonthly();
 
@@ -299,8 +314,6 @@ export const useUsageStore = create((set, get) => ({
             latestKwh: [],
             reportHistory: { daily: {}, weekly: {}, monthly: {} },
             summaryPerDevice: {},
-            totalConsumptionByDate: {},
-            lastFetched: { daily: null, weekly: null, monthly: null },
             todayTrend: null,
             topAppliances: [],
             dailyTotals: [],

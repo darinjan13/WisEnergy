@@ -70,7 +70,7 @@ export default function Budget() {
         <AutoSkeletonView isLoading={loading}>
           <View className="mb-4 rounded-2xl flex-row gap-x-2">
             <AutoSkeletonIgnoreView>
-              <Text className="text-3xl font-extrabold text-green-700 mb-1">Monthly Budget</Text>
+              <Text className="text-2xl font-bold text-green-800 mb-1">Monthly Budget</Text>
             </AutoSkeletonIgnoreView>
             <AutoSkeletonIgnoreView>
               <TouchableOpacity
@@ -139,23 +139,23 @@ export default function Budget() {
           <View className="bg-white px-4 py-3 rounded-xl mb-6" style={styles.cardShadow}>
             <Text className="text-sm text-gray-500 mb-1">Electricity Rate</Text>
             <View className="flex-row items-center">
-              <Text className="text-lg font-semibold text-green-700">₱{locationRate}/kWh</Text>
+              <Text className="text-lg font-semibold text-green-700">₱{locationRate.toFixed(2)}/kWh</Text>
 
             </View>
           </View>
 
-          <View className="bg-white p-4 rounded-xl flex-row" style={styles.cardShadow}>
-            <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color="#16a34a" />
-            <View className="flex">
+          <View className="bg-white p-4 rounded-xl" style={styles.cardShadow}>
+            <View className=" flex-row">
+              <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color="#16a34a" />
               <Text className="text-2xl font-extrabold mb-4">Smart Recommendations</Text>
-              {recommendations && recommendations.length > 0 ? (
-                <View style={{ maxHeight: 200 }}>
-                  <AIInsightsCarousel insights={recommendations} from="budget" />
-                </View>
-              ) : (
-                <Text className="text-gray-400">No insights available</Text>
-              )}
             </View>
+            {recommendations && recommendations.length > 0 ? (
+              <View className="" style={{ maxHeight: 400 }}>
+                <AIInsightsCarousel insights={recommendations} from="budget" />
+              </View>
+            ) : (
+              <Text className="text-gray-400">No insights available</Text>
+            )}
           </View>
         </AutoSkeletonView>
       </ScrollView >
