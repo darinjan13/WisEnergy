@@ -81,10 +81,11 @@ export default function RegisterForm() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         setIsLoading(true);
         if (!validateForm()) return;
-        register(
+
+        const result = await register(
             setIsLoading,
             form.location,
             form.firstName,
@@ -92,7 +93,17 @@ export default function RegisterForm() {
             form.email,
             form.password
         );
+
+        if (!result?.success) {
+            if (result.code === "email-exists") {
+                setErrors(prev => ({
+                    ...prev,
+                    email: "This email is already registered. Please use another.",
+                }));
+            }
+        }
     };
+
 
     return (
         <View style={{ flex: 1, backgroundColor: "#166534", paddingTop: insets.top }}>

@@ -30,6 +30,20 @@ export default function useAuth() {
 
     const register = useCallback(async (setIsLoading, location, firstName, lastName, email, password) => {
         try {
+            const usersRef = ref(db, "users");
+            const snapshot = await get(usersRef);
+
+            let emailExists = false;
+            snapshot.forEach(child => {
+                if (child.val()?.email?.toLowerCase() === email.toLowerCase()) {
+                    emailExists = true;
+                }
+            });
+            
+            if (emailExists) {
+                setIsLoading(false);
+                return { success: false, code: "email-exists" };
+            }
             const result = await generate_otp(email, true);
 
             if (result.success) {
