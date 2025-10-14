@@ -108,8 +108,8 @@ export default function useAuth() {
     const logout = useCallback(async (setIsLoading) => {
         try {
             clearStates();
-            clearCache();
-            // await AsyncStorage.removeItem('rememberedUser')
+            // clearCache();
+            await AsyncStorage.removeItem('rememberedUser')
             await signOut(auth);
             router.replace("/(auth)/login");
             Toast.show({

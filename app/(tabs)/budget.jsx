@@ -150,7 +150,7 @@ export default function Budget() {
               <Text className="text-2xl font-extrabold mb-4">Smart Recommendations</Text>
             </View>
             {recommendations && recommendations.length > 0 ? (
-              <View className="" style={{ maxHeight: 200 }}>
+              <View className="" style={{ maxHeight: 400 }}>
                 <AIInsightsCarousel insights={recommendations} from="budget" />
               </View>
             ) : (

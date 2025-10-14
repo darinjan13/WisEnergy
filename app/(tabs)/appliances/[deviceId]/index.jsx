@@ -56,8 +56,7 @@ export default function DeviceDetails() {
             const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
 
             const timeout = setTimeout(() => {
-                if (selectedAppliance)
-                    setIsLoading(false);
+                setIsLoading(false);
             }, 1000);
             return () => {
                 if (!router.canGoBack()) setIsLoading(true);
@@ -228,7 +227,7 @@ export default function DeviceDetails() {
                                         key={index}
                                         power={appliancePower[deviceId]?.[appliance.name] || 0}
                                         appliance={appliance}
-                                        applianceKWH={applianceKWh[appliance.name] || 0}
+                                        applianceKWH={applianceKWh[deviceId]?.[appliance.name] || 0}
                                         onEdit={() => showEditModal(appliance)}
                                         onDelete={() => openConfirmModal(appliance.name, "delete")}
                                         selectedAppliance={selectedAppliance}

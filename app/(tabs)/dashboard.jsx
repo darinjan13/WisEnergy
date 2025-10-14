@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { Feather, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Dimensions } from 'react-native';
+import { AntDesign, Feather, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns-tz';
@@ -15,6 +15,7 @@ import Tooltip from '@/components/ui/Tooltip';
 import { AutoSkeletonIgnoreView, AutoSkeletonView } from 'react-native-auto-skeleton';
 
 export default function Dashboard() {
+    const screenWidth = Dimensions.get('window').width;
     const insets = useSafeAreaInsets();
     const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
@@ -29,6 +30,8 @@ export default function Dashboard() {
     const [userName, setUserName] = useState("");
     const [isLoading, setIsLoading] = useState(true)
     const [weeklySavings, setWeeklySavings] = useState(0);
+    const [lastMonthKwh, setLastMonthKwh] = useState(0);
+
     useFocusEffect(
         useCallback(() => {
             const userId = auth?.currentUser?.uid;
@@ -151,28 +154,37 @@ export default function Dashboard() {
             );
             setTotalEnergyConsumption(total)
         }
+        if (allMonthlyTotalConsumption.length > 1) {
+            // Sort chronologically by month index (Jan–Dec)
+            const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const sorted = [...allMonthlyTotalConsumption].sort(
+                (a, b) => monthOrder.indexOf(a.label) - monthOrder.indexOf(b.label)
+            );
+
+            // Last month’s total (previous item before current)
+            const last = sorted[sorted.length - 2]?.value || 0;
+            setLastMonthKwh(last);
+        }
     }, [allMonthlyTotalConsumption]);
 
     useEffect(() => {
-        const userId = auth?.currentUser?.uid;
-        if (!userId) return;
+        if (lastMonthKwh > 0 && monthlyTotalConsumption > 0) {
+            const pctVsLast = (monthlyTotalConsumption / lastMonthKwh) * 100;
+            const rawEff = 100 - pctVsLast;
+            const finalEff = Math.max(0, Math.min(100, Math.round(rawEff)));
 
-        const fetchInitialData = async () => {
-            if (insights.length === 0) {
-                console.log("Fetching AI Insights");
-                const now = Date.now();
-                const todayStr = format(now, "yyyy-MM-dd", { timeZone: "Asia/Manila" });
-                await fetchDailyAiGeneratedContent(userId, todayStr);
-            }
+            setEfficiency(finalEff);
+            setEfficiencyColor(
+                finalEff === 0 ? '#dc2626' :      // red if equal/exceeded last month
+                    finalEff < 20 ? '#f59e0b' :       // yellow if near last month's total
+                        '#16a34a'                         // green if below last month
+            );
+        } else {
+            setEfficiency(0);
+            setEfficiencyColor('#16a34a'); // default green when no data
+        }
+    }, [monthlyTotalConsumption, lastMonthKwh]);
 
-            if (topAppliances.length === 0) {
-                console.log("Fetching top Appliances");
-                await fetchTopAppliances(userId);
-            }
-        };
-
-        fetchInitialData();
-    }, []);
 
     useEffect(() => {
         const user = auth?.currentUser;
@@ -182,22 +194,36 @@ export default function Dashboard() {
     }, []);
 
     useEffect(() => {
-        if (locationRate > 0 && monthlyTotalConsumption > 0 && monthlyBudget?.budget_php > 0) {
-            fetchPercentUsed(monthlyTotalConsumption);
+        if (locationRate > 0 && monthlyBudget?.budget_php > 0) {
+
             const budgetedKwh = monthlyBudget.budget_php / locationRate;
             const ratio = monthlyTotalConsumption / budgetedKwh;
             const efficiency = 100 - (ratio * 100);
-            const finalEfficiency = Math.max(0, efficiency.toFixed(0));
+            const finalEfficiency = Math.max(0, Math.round(efficiency));
+
             setEfficiency(finalEfficiency);
             setEfficiencyColor(
                 finalEfficiency === 0 ? '#dc2626' :
                     finalEfficiency < 10 ? '#f59e0b' :
                         '#16a34a'
             );
+        }
+
+        if (lastMonthKwh > 0 && monthlyTotalConsumption > 0) {
+            const pctVsLast = (monthlyTotalConsumption / lastMonthKwh) * 100;
+            const rawEff = 100 - pctVsLast;
+            const finalEff = Math.max(0, Math.min(100, Math.round(rawEff)));
+
+            setEfficiency(finalEff);
+            setEfficiencyColor(
+                finalEff === 0 ? '#dc2626' :
+                    finalEff < 10 ? '#f59e0b' :
+                        '#16a34a'
+            );
         } else {
             setEfficiencyColor('#16a34a');
         }
-    }, [locationRate, monthlyTotalConsumption, monthlyBudget]);
+    }, [locationRate, monthlyTotalConsumption, monthlyBudget, lastMonthKwh]);
 
     const handleBarPress = (label) => {
         const ranges = {
@@ -280,11 +306,11 @@ export default function Dashboard() {
                     <Tooltip
                         toolTip={toolTip}
                         setToolTip={setToolTip}
-                        content={`Energy Efficiency Index shows how your current energy consumption compares to your monthly budget.A higher score means you're using less of your budget. Yellow indicates you're near your budget, and red means you've exceeded it.`}
+                        content={`Compares this month's energy use to last month. 100% means you're using less, lower values mean higher usage. If no data, shows “--”.`}
                         from="Dashboard"
                     />
                     <View className="flex-row justify-between items-center mb-6" >
-                        <View className="bg-white rounded-2xl p-4 w-[55%] h-full" style={styles.cardShadow}>
+                        <View className="bg-white rounded-2xl p-4 w-[54%] h-full" style={styles.cardShadow}>
                             <Text className="text-xl font-extrabold mb-6">
                                 Welcome Back, {userName}!
                             </Text>
@@ -308,7 +334,7 @@ export default function Dashboard() {
                                 </Text>
                             )}
                         </View>
-                        <View className="w-[43%] flex-col h-full">
+                        <View className="w-[45%] flex-col h-full">
                             <View className="bg-white rounded-xl p-4 mb-3 items-center" style={styles.cardShadow}>
                                 <View className="flex-row items-center">
                                     <MaterialCommunityIcons name="power-plug-outline" size={30} color="gray" />
@@ -438,8 +464,16 @@ export default function Dashboard() {
                                 {selectedBar?.value?.toFixed(3)} kWh
                             </Text>
                         </Text>
+                        <TouchableOpacity
+                            onPress={() => setSelectedBar(null)}
+                            className="absolute top-3 right-3 z-10"
+                        >
+                            <View className="bg-red-600 w-10 h-10 rounded-full items-center justify-center">
+                                <AntDesign name='close' size={15} color="white" />
+                            </View>
+                        </TouchableOpacity>
                         {hourlyData.length > 0 ? (
-                            <View style={{ width: "100%", alignItems: "center" }}>
+                            <View style={{ width: "100%", alignItems: "center" }} className="max-w-[420px]">
                                 <BarChart
                                     data={hourlyData}
                                     barWidth={36}
@@ -452,7 +486,7 @@ export default function Dashboard() {
                                     animationDuration={800}
                                     yAxisThickness={0}
                                     xAxisThickness={0}
-                                    width={320}
+                                    width={screenWidth * 0.65} // responsive width (85% of screen)
                                     maxValue={Math.max(...hourlyData.map((d) => d.value)) * 1.2 || 1}
                                     initialSpacing={20}
                                     barBorderRadius={6}
@@ -463,17 +497,9 @@ export default function Dashboard() {
                         ) : (
                             <Text className="text-center text-gray-400">No hourly data</Text>
                         )}
-                        <TouchableOpacity
-                            onPress={() => setSelectedBar(null)}
-                            className="mt-6 py-3 bg-red-600 rounded-lg"
-                        >
-                            <Text className="text-white text-center font-semibold text-base">
-                                Close
-                            </Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
-            </Modal>
+            </Modal >
         </View >
     );
 }

@@ -46,7 +46,7 @@ export default function Devices() {
                 setDisableDevice(false);
                 setToolTip(false);
             };
-        }, [devices.length])
+        }, [devices.length, userAppliances.length])
     );
 
     const showAddDeviceModal = () => {
@@ -238,7 +238,7 @@ export default function Devices() {
                     )}
                 </AutoSkeletonView>
             </ScrollView>
-            <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`This section lists all IoT devices connected to your WisEnergy account.\nPair a device to start monitoring energy consumption in real time.`} from="Devices" />
+            <Tooltip toolTip={toolTip} setToolTip={setToolTip} content={`Lists all your connected WisEnergy devices. Pair a new one to start real-time energy monitoring.`} from="Devices" />
             <Modal
                 animationType="fade"
                 transparent={true}

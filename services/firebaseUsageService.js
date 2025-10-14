@@ -23,16 +23,14 @@ export const listenToLatestPower = (userId, deviceId, applianceName, date, callb
     return unsubscribe;
 };
 
-// export const listenToLatestKwh = (userId, deviceId, applianceName, callback) => {
-//     const kwhRef = ref(db, `appliances/${userId}/${deviceId}/${applianceName}/latest_kwh`);
+export const listenToLatestKwh = (userId, deviceId, applianceName, callback) => {
+    const kwhRef = ref(db, `appliances/${userId}/${deviceId}/${applianceName}/latest_kwh`);
 
-//     const unsubscribe = onValue(kwhRef, (snapshot) => {
-//         console.log(snapshot.val());
-
-//         callback(snapshot.val());
-//     });
-//     return () => off(kwhRef, 'value', unsubscribe);
-// };
+    const unsubscribe = onValue(kwhRef, (snapshot) => {
+        callback(snapshot.val());
+    });
+    return unsubscribe;
+};
 
 export const fetchTodayTrend = async (userId) => {
     try {
