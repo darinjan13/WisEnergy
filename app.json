@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "WisEnergy",
-    "slug": "WisEnergy",
+    "slug": "wisenergy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
