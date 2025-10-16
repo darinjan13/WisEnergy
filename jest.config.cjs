@@ -30,6 +30,8 @@ module.exports = {
         "^@expo/vector-icons$": "<rootDir>/__mocks__/@expo/vector-icons.js",
         "^react-native-safe-area-context$": "<rootDir>/__mocks__/react-native-safe-area-context.js",
         "^@react-native-async-storage/async-storage$": "<rootDir>/__mocks__/@react-native-async-storage/async-storage.js",
+        "^@/firebase/firebaseConfig$": "<rootDir>/__mocks__/firebase/firebaseConfig.js",
+        "^firebase/firebaseConfig$": "<rootDir>/__mocks__/firebase/firebaseConfig.js",
         "^\\.{0,2}/?\\.\\./?\\.\\./?firebase\\/firebaseConfig$": "<rootDir>/__mocks__/firebase/firebaseConfig.js",
         '^react-native-paper(/.*)?$': '<rootDir>/__mocks__/react-native-paper.js'
     },

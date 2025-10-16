@@ -1,10 +1,10 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
-import { Text, View, BackHandler, Alert, ScrollView, Modal, TextInput, TouchableOpacity } from "react-native";
+import { Text, View, BackHandler, Alert, ScrollView, Modal, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 
 import { auth, db } from "@/firebase/firebaseConfig"
 import ApplianceCard from "@/components/appliances/ApplianceCard";
-import { ActivityIndicator, RadioButton } from "react-native-paper";
+import { RadioButton } from "react-native-paper";
 import { useDeviceStore } from "@/store/firebaseStore";
 import Header from "@/components/ui/Header";
 import useApplianceStreams from "@/hooks/useApplianceStreams";
@@ -47,9 +47,10 @@ export default function DeviceDetails() {
 
     // keep device info in syncz
     useEffect(() => {
-        const d = devices.find(d => d.id == deviceId);
-        setDevice(d);
+        const d = devices?.find(d => d.id === deviceId);
+        setDevice(prev => (JSON.stringify(prev) === JSON.stringify(d) ? prev : d));
     }, [devices, deviceId]);
+
 
     useFocusEffect(
         useCallback(() => {
@@ -76,11 +77,12 @@ export default function DeviceDetails() {
     });
 
     useEffect(() => {
+
         if (device && device.appliance_name && selectedAppliance !== device.appliance_name) {
             setOnlyOneActive(auth.currentUser.uid, deviceId, device.appliance_name);
             setSelectedAppliance(device.appliance_name);
         }
-    }, [device?.appliance_name]);
+    }, [device]);
 
     const onBackPress = () => {
         router.replace("/devices")
@@ -120,9 +122,40 @@ export default function DeviceDetails() {
         setAddModal(true);
     };
 
+    // ✅ VALIDATION FOR NICKNAME ONLY
+
+    const validateNickname = (nickname) => {
+        const trimmed = nickname.trim();
+        if (trimmed === "") return true;
+
+        // Length limit
+        if (trimmed.length > 10) {
+            Toast.show({
+                type: "error",
+                text1: "Nickname Too Long",
+                text2: "Please keep it under 10 characters.",
+            });
+            return false;
+        }
+        // Only allow letters, numbers, spaces, underscores, hyphens
+        const validRegex = /^[A-Za-z0-9 _-]+$/;
+        if (!validRegex.test(nickname)) {
+            Toast.show({
+                type: "error",
+                text1: "Invalid Nickname",
+                text2: "Nickname contains invalid or special characters.",
+            });
+            return false;
+        }
+
+        return true;
+    };
+
     const onAdd = async ({ appliance_name, appliance_nickname }) => {
+        if (!validateNickname(appliance_nickname)) return;
         const today = format(new Date(), "yyyy-MM-dd", { timeZone: "Asia/Manila" });
         let newApplianceName = appliance_name;
+
         let appliancesRef = ref(db, `appliances/${userId}/${deviceId}/${newApplianceName}`);
 
         let snapshot = await get(appliancesRef);
@@ -140,6 +173,11 @@ export default function DeviceDetails() {
             added_at: today,
             is_active: false,
         });
+        Toast.show({
+            type: "success",
+            text1: "Appliance Added",
+            text2: `${appliance_nickname} successfully added.`,
+        });
     };
 
 
@@ -149,7 +187,7 @@ export default function DeviceDetails() {
 
             const userId = auth.currentUser?.uid;
             const newName = applianceNickname.trim();
-
+            if (!validateNickname(newName)) return;
             if (userId && applianceId && newName) {
                 const appliancesRef = ref(db, `appliances/${userId}/${deviceId}/${applianceId}`);
 
@@ -182,7 +220,6 @@ export default function DeviceDetails() {
             </View>
         );
     }
-
     return (
         <View className="p-5" style={{ paddingTop: insets.top + 18 }}>
             <Header />
@@ -209,7 +246,7 @@ export default function DeviceDetails() {
                         <Feather name="info" size={18} color="gray" />
                     </TouchableOpacity>
                 </View>
-                <TouchableOpacity disabled={isLoading} onPress={showAddModal} className="rounded-3xl bg-white items-center justify-center">
+                <TouchableOpacity testID="add-appliance-btn" disabled={isLoading} onPress={showAddModal} className="rounded-3xl bg-white items-center justify-center">
                     <Feather className="p-1" name="plus" size={20} color="#136B1E" />
                 </TouchableOpacity>
             </View>
@@ -217,25 +254,23 @@ export default function DeviceDetails() {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 200 }}>
                 <AutoSkeletonView isLoading={isLoading}>
                     <View className="mb-40 p-1">
-                        {selectedAppliance !== "" && (
-                            <RadioButton.Group
-                                onValueChange={handleSelectedAppliance}
-                                value={selectedAppliance}
-                            >
-                                {deviceAppliances.map((appliance, index) => (
-                                    <ApplianceCard
-                                        key={index}
-                                        power={appliancePower[deviceId]?.[appliance.name] || 0}
-                                        appliance={appliance}
-                                        applianceKWH={applianceKWh[deviceId]?.[appliance.name] || 0}
-                                        onEdit={() => showEditModal(appliance)}
-                                        onDelete={() => openConfirmModal(appliance.name, "delete")}
-                                        selectedAppliance={selectedAppliance}
-                                        onChange={handleSelectedAppliance}
-                                    />
-                                ))}
-                            </RadioButton.Group>
-                        )}
+                        <RadioButton.Group
+                            onValueChange={handleSelectedAppliance}
+                            value={selectedAppliance}
+                        >
+                            {deviceAppliances.map((appliance, index) => (
+                                <ApplianceCard
+                                    key={index}
+                                    power={appliancePower[deviceId]?.[appliance.name] || 0}
+                                    appliance={appliance}
+                                    applianceKWH={applianceKWh[deviceId]?.[appliance.name] || 0}
+                                    onEdit={() => showEditModal(appliance)}
+                                    onDelete={() => openConfirmModal(appliance.name, "delete")}
+                                    selectedAppliance={selectedAppliance}
+                                    onChange={handleSelectedAppliance}
+                                />
+                            ))}
+                        </RadioButton.Group>
                     </View>
                 </AutoSkeletonView>
             </ScrollView>
@@ -256,6 +291,7 @@ export default function DeviceDetails() {
                         </Text>
                         <TextInput
                             editable={!isLoading}
+                            testID="appliance-input"
                             placeholder="Enter Appliance name"
                             placeholderTextColor="#9CA3AF"
                             value={applianceNickname}
@@ -273,6 +309,7 @@ export default function DeviceDetails() {
                             <TouchableOpacity
                                 disabled={isLoading}
                                 className="px-4 py-2 bg-green-700 rounded-lg"
+                                testID="confirm-add-btn"
                                 onPress={() => {
                                     if (action === "edit") {
                                         handleEditConfirmed();

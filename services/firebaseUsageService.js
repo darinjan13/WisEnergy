@@ -417,7 +417,6 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
 
         // 🔹 Include last week of previous month if < 2 weeks this month
         let prevMonthHistory = [];
-        console.log(thisMonthWeeks.length);
 
         if (thisMonthWeeks.length < 1 && prevMonth !== "00") {
             const ref2 = ref(db, `weekly_total_consumption/${userId}/${year}/${prevMonth}`);

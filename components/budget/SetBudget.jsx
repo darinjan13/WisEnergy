@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, Alert } from "react-native";
 import { BlurView } from "expo-blur";
 import { get, ref, serverTimestamp, set, update } from "firebase/database";
 import { auth, db } from "../../firebase/firebaseConfig";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Toast from "react-native-toast-message";
 
 export default function BudgetModal({ visible, onClose, rate }) {
   const [budgetInput, setBudgetInput] = useState("");
@@ -14,14 +15,22 @@ export default function BudgetModal({ visible, onClose, rate }) {
     setLoading(true);
     setErrorMsg("");
 
-    if (!budgetInput || Number(budgetInput) <= 0) {
+    // 🧠 VALIDATION BLOCK
+    const trimmedInput = budgetInput.trim();
+    const numericValue = Number(trimmedInput);
+
+    if (
+      trimmedInput === "" ||              // empty input
+      isNaN(numericValue) ||             // not a number
+      numericValue <= 0                  // zero or negative
+    ) {
       setErrorMsg("Please enter a valid budget amount.");
       setLoading(false);
       return;
     }
 
     try {
-      const budget_php = Number(budgetInput);
+      const budget_php = numericValue;
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -45,6 +54,11 @@ export default function BudgetModal({ visible, onClose, rate }) {
           [`users/${auth.currentUser.uid}/budget_kwh`]: budget_kwh,
         });
 
+        Toast.show({
+          type: "success",
+          text1: "Setting budget.",
+          text2: " Successful setting budget!"
+        })
         setBudgetInput("");
         onClose();
       } else {
@@ -60,15 +74,9 @@ export default function BudgetModal({ visible, onClose, rate }) {
 
   return (
     <GestureHandlerRootView>
-      <Modal
-        animationType="fade"
-        transparent
-        visible={visible}
-        onRequestClose={onClose}
-      >
+      <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
         <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center px-6">
           <View className="bg-white rounded-2xl w-full max-w-md p-6 shadow-lg">
-            {/* Header */}
             <Text className="text-2xl font-bold text-center text-[#14532d] mb-2">
               Set Monthly Budget
             </Text>
@@ -76,7 +84,6 @@ export default function BudgetModal({ visible, onClose, rate }) {
               Enter your monthly energy budget to track and optimize usage.
             </Text>
 
-            {/* Input */}
             <View className="flex-row items-center border border-gray-300 rounded-lg px-3 mb-3">
               <Text className="text-gray-500 text-lg mr-1">₱</Text>
               <TextInput
@@ -90,14 +97,10 @@ export default function BudgetModal({ visible, onClose, rate }) {
               />
             </View>
 
-            {/* Error Message */}
             {errorMsg ? (
-              <Text className="text-red-500 text-center text-sm mb-3">
-                {errorMsg}
-              </Text>
+              <Text className="text-red-500 text-center text-sm mb-3">{errorMsg}</Text>
             ) : null}
 
-            {/* Buttons */}
             <View className="flex-row justify-between mt-2">
               <TouchableOpacity
                 onPress={onClose}
@@ -108,18 +111,16 @@ export default function BudgetModal({ visible, onClose, rate }) {
               </TouchableOpacity>
 
               <TouchableOpacity
+                testID="set-budget"
                 onPress={handleSetMonthlyBudget}
                 disabled={loading}
-                className={`flex-1 py-3 rounded-lg items-center ${
-                  loading ? "bg-green-400" : "bg-green-700"
-                }`}
+                className={`flex-1 py-3 rounded-lg items-center ${loading ? "bg-green-400" : "bg-green-700"
+                  }`}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text className="text-white font-semibold text-base">
-                    Set Budget
-                  </Text>
+                  <Text className="text-white font-semibold text-base">Set Budget</Text>
                 )}
               </TouchableOpacity>
             </View>

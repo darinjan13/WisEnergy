@@ -75,6 +75,7 @@ export default function AddApplianceModal({ visible, onClose, onAdd }) {
                         </TouchableOpacity>
 
                         <TouchableOpacity
+                            testID="confirm-add-btn"
                             className="flex-1 bg-green-600 rounded-xl py-3 ml-2"
                             onPress={handleAdd}
                         >

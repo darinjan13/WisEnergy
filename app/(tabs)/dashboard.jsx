@@ -20,7 +20,7 @@ export default function Dashboard() {
     const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
     const { monthlyTotalConsumption, fetchLatestMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, weeklyTotals, fetchTotals, dailyTotals } = useUsageStore();
-    const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, fetchMonthlyBudget } = useBudgetStore();
+    const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget } = useBudgetStore();
     const [efficiency, setEfficiency] = useState(0);
     const [efficiencyColor, setEfficiencyColor] = useState('#16a34a');
     const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
@@ -47,7 +47,7 @@ export default function Dashboard() {
 
                 if (locationRate === 0 || monthlyBudget === null || monthlyTotalConsumption === 0) {
                     await fetchLocationRate(userId);
-                    await fetchMonthlyBudget(userId);
+                    subscribeToBudget(userId);
                     await fetchLatestMonthlyTotalConsumption(userId);
                 }
 
@@ -122,10 +122,8 @@ export default function Dashboard() {
 
             // 🔹 Compute peso savings
             const diff = (lastWeekTotal - currentWeekTotal) * (locationRate || 0);
+            console.log("Last week", currentWeekTotal);
 
-            console.log(`📅 Last Week Total: ${lastWeekTotal} kWh`);
-            console.log(`📅 Current Week (Mon–Today): ${currentWeekTotal.toFixed(2)} kWh`);
-            console.log(`💰 Weekly Savings: ₱${diff.toFixed(2)}`);
 
             setWeeklySavings(Number(diff.toFixed(2)));
         } catch (err) {

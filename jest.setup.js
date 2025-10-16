@@ -5,14 +5,60 @@ jest.mock("react-native-gesture-handler", () => {
     return { GestureHandlerRootView: ({ children }) => <View>{children}</View> };
 });
 
+
+jest.mock("@/components/ui/Header", () => () => <></>);
+jest.mock("@/components/ui/Tooltip", () => () => <></>);
+jest.mock("@/components/appliances/AddApplianceModal", () => () => <></>);
+jest.mock("@/components/ui/ConfirmModal", () => () => <></>);
+jest.mock("@/components/appliances/ApplianceCard", () => () => <></>);
 // Mock Expo Vector Icons
 jest.mock('@expo/vector-icons', () => ({
     Ionicons: ({ name, size, color, ...props }) => <div {...props} data-icon={name} style={{ width: size, height: size, backgroundColor: color }} />,
     Feather: ({ name, size, color, ...props }) => <div {...props} data-icon={name} style={{ width: size, height: size, backgroundColor: color }} />,
     MaterialIcons: ({ name, size, color, ...props }) => <div {...props} data-icon={name} style={{ width: size, height: size, backgroundColor: color }} />,
     MaterialCommunityIcons: ({ name, size, color, ...props }) => <div {...props} data-icon={name} style={{ width: size, height: size, backgroundColor: color }} />,
+    AntDesign: ({ name, size, color, ...props }) => <div {...props} data-icon={name} style={{ width: size, height: size, backgroundColor: color }} />,
 }));
 
+jest.mock("@/components/appliances/AddApplianceModal", () => {
+    const React = require("react");
+    const { View, TextInput, TouchableOpacity, Text } = require("react-native");
+
+    return ({ visible, onAdd }) =>
+        visible ? (
+            <View testID="add-modal">
+                <TextInput testID="appliance-input" />
+                <TouchableOpacity
+                    testID="confirm-add-btn"
+                    onPress={() =>
+                        onAdd({
+                            appliance_name: "Refrigerator",
+                            appliance_nickname: "Ref",
+                        })
+                    }
+                >
+                    <Text>Add</Text>
+                </TouchableOpacity>
+            </View>
+        ) : null;
+});
+
+jest.mock("@/firebase/firebaseConfig", () => ({
+    auth: { currentUser: { uid: "test-user-id" } },
+    db: {},
+    fs: {},
+}));
+jest.mock("firebase/database", () => ({
+    ref: jest.fn(() => ({})),
+    get: jest.fn(() => Promise.resolve({ exists: () => false })),
+    set: jest.fn(() => Promise.resolve()),
+    update: jest.fn(() => Promise.resolve()),
+    remove: jest.fn(() => Promise.resolve()),
+    onValue: jest.fn(() => jest.fn()), // returns unsubscribe fn
+    query: jest.fn(),
+    orderByKey: jest.fn(),
+    limitToLast: jest.fn()
+}));
 // Mock specific font files for vector icons
 jest.mock('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf', () => '');
 
@@ -35,15 +81,29 @@ jest.mock("./services/apiService", () => ({
 }));
 
 const mockStore = {
-    devices: [{ id: "device1", device_nickname: "Test Device" }],
+    devices: [{ id: "device1", status: "paired", paired_at: "2025-10-15" }],
     userDevices: [],
     unpairedDevices: [{ label: "1caf24124b00", value: "1caf24124b00" }],
     // ... other initial state
 };
+jest.mock("@/hooks/useApplianceStreams", () => jest.fn());
 // Mock Firebase Store functions
 jest.mock("./store/firebaseStore.js", () => ({
     useDeviceStore: jest.fn(() => ({
-        ...mockStore,
+        // ...mockStore,
+        devices: [{ id: "device1", status: "paired", paired_at: "2025-10-15" }],
+        userAppliances: [
+            {
+                id: "device1",
+                appliances: [
+                    {
+                        name: "Refrigerator",
+                        nickname: "Ref",
+                        added_at: "2025-10-15",
+                    },
+                ],
+            },
+        ],
         _unsubUserAppliances: null,
         setDevices: jest.fn(() => ({ success: true })),
         setDeviceApplianceName: jest.fn(() => ({ success: true })),
@@ -78,6 +138,7 @@ jest.mock("expo-router", () => ({
         replace: jest.fn(),
         back: jest.fn(),
         navigate: jest.fn(),
+        canGoBack: jest.fn(() => true)
     },
     useFocusEffect: jest.fn((cb) => cb()),
     useLocalSearchParams: jest.fn(() => ({
@@ -87,6 +148,7 @@ jest.mock("expo-router", () => ({
         lastName: "Doe",
         password: "123456",
         location: "Cebu",
+        deviceId: "device1"
     })),
 }));
 
@@ -102,9 +164,15 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
     getItem: jest.fn(),
     removeItem: jest.fn(),
 }));
+jest.mock("@react-navigation/native", () => ({
+    useFocusEffect: (cb) => cb(),
+    useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),
+}));
 
-// Mock react-native-paper
 jest.mock("react-native-paper", () => {
+    const React = require("react");
+
+    // ───── Mock Card Component ─────
     const Card = ({ children, ...props }) => <div {...props}>{children}</div>;
     Card.Title = ({ title, subtitle, right, titleStyle, subtitleStyle, ...props }) => (
         <div {...props}>
@@ -115,12 +183,47 @@ jest.mock("react-native-paper", () => {
     );
     Card.Content = ({ children, ...props }) => <div {...props}>{children}</div>;
 
+    // ───── Mock ActivityIndicator ─────
+    const ActivityIndicator = ({ size, color }) => (
+        <div
+            data-testid="activity-indicator"
+            style={{
+                width: size === "large" ? 32 : 16,
+                height: 16,
+                backgroundColor: color,
+            }}
+        />
+    );
+
+    // ───── ✅ Add RadioButton.Group ─────
+    const RadioButton = {
+        Group: ({ children }) => <>{children}</>,
+    };
+
     return {
+        __esModule: true,
         Card,
+        RadioButton, // 👈 critical addition
         TextInput: ({ children, ...props }) => <input {...props}>{children}</input>,
         IconButton: ({ onPress, icon, iconColor, ...props }) => (
             <button onClick={onPress} {...props}>{icon}</button>
         ),
         Text: ({ children, ...props }) => <span {...props}>{children}</span>,
+        ActivityIndicator,
     };
 });
+
+// Mock expo-blur
+jest.mock("expo-blur", () => ({
+    BlurView: ({ children }) => <>{children}</>,
+}));
+
+// Mock react-native-auto-skeleton
+jest.mock("react-native-auto-skeleton", () => ({
+    AutoSkeletonView: ({ children }) => <>{children}</>,
+}));
+
+// Mock react-native-safe-area-context
+jest.mock("react-native-safe-area-context", () => ({
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));

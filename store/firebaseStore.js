@@ -32,7 +32,7 @@ export const useDeviceStore = create((set, get) => ({
     listenToUserAppliances: (userId) => {
         const unsubscribe = firebaseDevicesServices.listenToUserAppliances(userId,
             (userAppliances) => {
-                set({ userAppliances });
+                set({ userAppliances: Array.isArray(userAppliances) ? [...userAppliances] : [] });
             }
         );
 
@@ -315,14 +315,23 @@ export const useBudgetStore = create((set, get) => ({
     _unsubBudget: null,
     percentUsed: 0,
 
-    fetchMonthlyBudget: async (userId) => {
-        try {
-            const currentBudget = await firebaseBudgetServices.fetchMonthlyBudget(userId);
-            set({ monthlyBudget: currentBudget || null });
-        } catch (error) {
-            console.error("Error loading monthly budget:", error);
-            set({ monthlyBudget: null });
+    subscribeToBudget: (userId) => {
+        if (get()._unsubBudget) return;
+
+        const unsubscribe = firebaseBudgetServices.fetchMonthlyBudget(userId, (currentBudget) => {
+            set({ monthlyBudget: currentBudget });
+        });
+
+        set({ _unsubBudget: unsubscribe });
+    },
+
+    unsubscribeToBudget: () => {
+        const unsubBudget = get()._unsubBudget
+        if (unsubBudget) {
+            unsubBudget();
+            set({ _unsubBudget: null, monthlyBudget: null })
         }
+
     },
 
     fetchPercentUsed: (usedKwh) => {
@@ -343,9 +352,12 @@ export const useBudgetStore = create((set, get) => ({
         set({ allBudget });
     },
     reset: () => {
+        const unsubBudget = get()._unsubBudget;
+        if (unsubBudget) unsubBudget();
         set({
             locationRate: 0,
             monthlyBudget: null,
+            _unsubBudget: null,
             percentUsed: 0,
             allBudget: []
         })

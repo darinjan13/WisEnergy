@@ -35,7 +35,7 @@ export default function Reports() {
     const { allBudget, fetchAllBudget } = useBudgetStore();
 
     const [reportCategory, setReportCategory] = useState("Daily");
-    const [selectedDevice, setSelectedDevice] = useState();
+    const [selectedDevice, setSelectedDevice] = useState("All Devices");
     const [reportData, setReportData] = useState([]);
     const [reports, setReports] = useState([]);
     const [reportsTotal, setReportsTotal] = useState([]);
@@ -80,39 +80,56 @@ export default function Reports() {
                 if (reportHistory !== null)
                     setIsLoading(false);
             }, 1000);
+            const mapped = userDevices
+                .map((device) => {
+                    const match = userAppliances.find((a) => a.id === device.id);
+                    if (!match) return null;
+                    return {
+                        device_id: device.id,
+                        device_nickname: device.device_nickname,
+                        appliances: match.appliances || [],
+                    };
+                })
+                .filter(Boolean);
+
+            setReportData(mapped);
+            console.log("Appliances", userAppliances);
+
             return () => {
                 clearTimeout(timeout)
                 timeoutsRef.current.forEach(clearTimeout);
                 timeoutsRef.current = [];
+                setSelectedDevice("All Devices")
+                setReportData([])
             };
-        }, [])
+        }, [userDevices, userAppliances])
     );
 
     /** ---------- DEVICE/APPLIANCE SYNC ---------- */
-    useEffect(() => {
-        const devicesList = Array.isArray(userDevices) ? userDevices : [];
-        const appliancesList = Array.isArray(userAppliances) ? userAppliances : [];
+    // useEffect(() => {
+    //     const devicesList = Array.isArray(userDevices) ? userDevices : [];
+    //     const appliancesList = Array.isArray(userAppliances) ? userAppliances : [];
 
-        if (devicesList.length === 0 || appliancesList.length === 0) return;
+    //     if (devicesList.length === 0 || appliancesList.length === 0) return;
 
-        const mapped = devicesList
-            .map((device) => {
-                const match = appliancesList.find((a) => a.id === device.id);
-                if (!match) return null;
-                return {
-                    device_id: device.id,
-                    device_nickname: device.device_nickname,
-                    appliances: match.appliances || [],
-                };
-            })
-            .filter(Boolean);
+    //     const mapped = devicesList
+    //         .map((device) => {
+    //             const match = appliancesList.find((a) => a.id === device.id);
+    //             if (!match) return null;
+    //             return {
+    //                 device_id: device.id,
+    //                 device_nickname: device.device_nickname,
+    //                 appliances: match.appliances || [],
+    //             };
+    //         })
+    //         .filter(Boolean);
 
-        setReportData(mapped);
+    //     setReportData(mapped);
 
-        if (mapped.length > 0 && !selectedDevice) {
-            setSelectedDevice("All Devices");
-        }
-    }, [userDevices, userAppliances]);
+    //     if (mapped.length > 0 && !selectedDevice) {
+    //         setSelectedDevice("All Devices");
+    //     }
+    // }, [userDevices, userAppliances]);
 
     /** ---------- CATEGORY OR DEVICE CHANGE ---------- */
     useEffect(() => {
@@ -133,15 +150,15 @@ export default function Reports() {
                 return;
             }
 
-            const existing = reportHistory[reportCategory.toLowerCase()]?.[selectedDevice];
-            console.log(reportData);
+            // const existing = reportHistory[reportCategory.toLowerCase()]?.[selectedDevice];
+            // console.log("Existing", existing);
 
-            if (!existing) {
-                const device = reportData?.find((d) => d.device_id === selectedDevice);
-                if (device) {
-                    await fetchReport(reportCategory, uid, selectedDevice, device.appliances);
-                }
+            // if (!existing) {
+            const device = reportData?.find((d) => d.device_id === selectedDevice);
+            if (device) {
+                await fetchReport(reportCategory, uid, selectedDevice, device.appliances);
             }
+            // }
             setReportLoading(false);
         }, 250);
     }, [reportData, selectedDevice, reportCategory]);
@@ -152,6 +169,8 @@ export default function Reports() {
         if (selectedDevice === "All Devices") return;
 
         const updated = reportHistory[reportCategory.toLowerCase()]?.[selectedDevice];
+        console.log(reportHistory);
+
         if (updated) setReports(updated);
     }, [reportHistory, selectedDevice, reportCategory]);
 
@@ -241,6 +260,7 @@ export default function Reports() {
                         <TouchableOpacity
                             key={index}
                             onPress={() => {
+                                if (reportCategory === label) return;
                                 setReports([]);
                                 setReportsTotal([]);
                                 setReportCategory(label);

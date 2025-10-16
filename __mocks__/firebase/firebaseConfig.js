@@ -1,15 +1,20 @@
-// ✅ Jest mock for firebase/firebaseConfig
+// __mocks__/firebase/firebaseConfig.js
+import { serverTimestamp } from "firebase/database";
+
 export const auth = {
-    currentUser: null,
-    signInWithEmailAndPassword: jest.fn(),
-    createUserWithEmailAndPassword: jest.fn(),
-    signOut: jest.fn(),
+    currentUser: { uid: "test-user-id" },
 };
 
+export const mockSet = jest.fn(() => Promise.resolve());
+export const mockGet = jest.fn(() => Promise.resolve({ exists: () => false }));
 export const db = {
-    ref: jest.fn(),
-    set: jest.fn(),
-    get: jest.fn(),
+    // Mock serverTimestamp as a function
+    serverTimestamp: jest.fn(() => "mocked_timestamp"),
+    ref: jest.fn(() => ({})),
+    get: mockGet,
+    set: mockSet,
+    update: jest.fn(() => Promise.resolve()),
+    remove: jest.fn(() => Promise.resolve()),
 };
 
 export const fs = {};
