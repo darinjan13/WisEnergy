@@ -65,7 +65,7 @@ export default function GiveRatingScreen() {
         }
     };
     return (
-        <View className="flex-1 bg-white p-10">
+        <View className="flex-1 bg-white p-10 mt-10">
             <TouchableOpacity
                 onPress={() => router.replace('/(settings)/contactSupport')}
                 className="w-10 -ml-5 mb-10"

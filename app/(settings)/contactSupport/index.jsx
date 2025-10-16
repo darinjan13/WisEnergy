@@ -6,7 +6,7 @@ import { Divider } from 'react-native-paper';
 export default function FeedbackScreen() {
 
     return (
-        <View className="flex-1 bg-gray-100 p-10">
+        <View className="flex-1 bg-gray-100 p-10 mt-10">
             <TouchableOpacity
                 onPress={() => router.back()}
                 className="w-10 -ml-5 mb-10"

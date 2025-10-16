@@ -146,7 +146,6 @@ export default function DeleteAccount() {
                             <Text className="font-semibold text-gray-800">
                                 {deletionDate?.split(" ")[0]}
                             </Text>
-                            . You may contact support to restore it before that date.
                         </Text>
 
                         <TouchableOpacity

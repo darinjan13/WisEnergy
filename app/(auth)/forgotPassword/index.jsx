@@ -23,7 +23,7 @@ export default function ForgotPasswordScreen() {
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       setTimeout(() => {
         setIsLoading(false);
-        setErrorMessage("Please enter a valid email!s")
+        setErrorMessage("Please enter a valid email!")
       }, 1000);
     } else {
       const result = await generate_otp(email, false)
