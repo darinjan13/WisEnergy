@@ -7,7 +7,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowBanner: true,   // 👈 show notification alert in foreground
+    shouldShowBanner: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),

@@ -7,12 +7,28 @@ import { auth, db } from "@/firebase/firebaseConfig";
 import { get, ref } from "firebase/database";
 import { generate_otp } from "@/services/apiService";
 import TabBar from "@/components/ui/TabBar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function TabLayout() {
   const router = useRouter();
   const { user, checkingAuth } = useAuth();
-  const colorScheme = useColorScheme();
+  const cleanExpiredCache = async () => {
+    const keys = await AsyncStorage.getAllKeys();
+    const entries = await AsyncStorage.multiGet(keys);
+    const now = Date.now();
 
+    for (const [key, val] of entries) {
+      try {
+        const cached = JSON.parse(val);
+        if (cached?.expiresAt && now > cached.expiresAt) {
+          await AsyncStorage.removeItem(key);
+          console.log("🧹 Removed expired cache:", key);
+        }
+      } catch {
+        // ignore invalid JSON
+      }
+    }
+  };
   useEffect(() => {
 
     if (!checkingAuth) {
@@ -20,6 +36,7 @@ export default function TabLayout() {
         router.replace("/(auth)/login");
       }
     }
+    cleanExpiredCache();
   }, [checkingAuth, user]);
 
   if (checkingAuth) {

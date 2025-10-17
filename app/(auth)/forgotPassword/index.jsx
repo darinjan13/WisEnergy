@@ -23,7 +23,7 @@ export default function ForgotPasswordScreen() {
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       setTimeout(() => {
         setIsLoading(false);
-        setErrorMessage("Please enter a valid email!s")
+        setErrorMessage("Please enter a valid email!")
       }, 1000);
     } else {
       const result = await generate_otp(email, false)
@@ -43,7 +43,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "android" ? "padding" : "height"}
       className="flex-1"
     >
       <View className="h-full p-6 bg-white">
@@ -69,6 +69,7 @@ export default function ForgotPasswordScreen() {
               value={email}
               onChangeText={setEmail}
               placeholder="Enter Email Address"
+              placeholderTextColor="#9CA3AF"
               keyboardType="email-address"
               autoCapitalize="none"
               className="ml-2 flex-1"

@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView } from "react-native";
-import { auth } from "../../firebase/firebaseConfig";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { auth } from "@/firebase/firebaseConfig";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ChangePassword() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [currentPassword, setCurrentPassword] = useState("");
@@ -53,7 +55,7 @@ export default function ChangePassword() {
     };
 
     return (
-        <KeyboardAvoidingView behavior="padding" className="flex-1 bg-white p-10">
+        <KeyboardAvoidingView behavior={Platform.OS === "android" ? "padding" : "height"} style={{ paddingTop: insets.top + 10 }} className="flex-1 bg-white p-10">
             <TouchableOpacity
                 onPress={() => router.back()}
                 className="w-10 -ml-5 mb-10"
@@ -102,7 +104,7 @@ export default function ChangePassword() {
 
             {/* Confirm Password */}
             <Text className="mb-2 text-gray-700 font-bold">Confirm Password</Text>
-            <View className="relative mb-4">
+            <View className="relative mb-6">
                 <TextInput
                     placeholder="Confirm Password"
                     placeholderTextColor="#9CA3AF"
@@ -119,19 +121,17 @@ export default function ChangePassword() {
                 </TouchableOpacity>
             </View>
 
-            <View className="flex-1 justify-end mb-8">
-                <TouchableOpacity
-                    disabled={isLoading}
-                    onPress={handleUpdatePassword}
-                    className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}
-                >
-                    {!isLoading ? (
-                        <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
-                    ) : (
-                        <ActivityIndicator size="small" color="white" />
-                    )}
-                </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+                disabled={isLoading}
+                onPress={handleUpdatePassword}
+                className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}
+            >
+                {!isLoading ? (
+                    <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
+                ) : (
+                    <ActivityIndicator size="small" color="white" />
+                )}
+            </TouchableOpacity>
         </KeyboardAvoidingView>
     );
 }

@@ -2,15 +2,17 @@ import { create } from 'zustand';
 import * as firebaseDevicesServices from '../services/firebaseDevicesService'
 import * as firebaseUsageServices from '../services/firebaseUsageService'
 import * as firebaseBudgetServices from '../services/firebaseBudgetService'
-import { daily_ai_insights } from '@/services/apiService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as firebaseNotificationServices from '../services/firebaseNotificationService'
+import { persistWithExpiry } from "@/utils/persistWithExpiry";
+import { daily_ai_insights } from '@/services/apiService'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { format } from 'date-fns-tz';
 
 export const useDeviceStore = create((set, get) => ({
     devices: [],
     userDevices: [],
     unpairedDevices: [],
     userAppliances: [],
-    todayTrend: null,
     _unsubUserAppliances: null,
     setDevices: async () => {
         const data = await firebaseDevicesServices.fetchDevices();
@@ -27,14 +29,10 @@ export const useDeviceStore = create((set, get) => ({
         const updatedDevices = await firebaseDevicesServices.setDeviceApplianceName(devices, deviceId, applianceName);
         set({ devices: updatedDevices });
     },
-    // fetchUserAppliances: async () => {
-    //     const userAppliances = await firebaseDevicesServices.fetchUserAppliances();
-    //     set({ userAppliances });
-    // },
     listenToUserAppliances: (userId) => {
         const unsubscribe = firebaseDevicesServices.listenToUserAppliances(userId,
             (userAppliances) => {
-                set({ userAppliances });
+                set({ userAppliances: Array.isArray(userAppliances) ? [...userAppliances] : [] });
             }
         );
 
@@ -44,7 +42,7 @@ export const useDeviceStore = create((set, get) => ({
     unsubscribeFromUserAppliances: () => {
         const unsubUserAppliances = get()._unsubUserAppliances
         if (unsubUserAppliances) {
-            unsubMonthly();
+            unsubUserAppliances();
             set({ _unsubUserAppliances: null })
         }
     },
@@ -99,43 +97,63 @@ export const useDeviceStore = create((set, get) => ({
         }),
 }));
 
+const getNextFourHourCutoff = () => {
+    const now = new Date();
+    const phDateStr = format(now, "yyyy-MM-dd HH:mm:ss", { timeZone: 'PH_TZ' });
+    const phNow = new Date(phDateStr.replace(" ", "T"));
+
+    const hour = phNow.getHours();
+    const nextBlockHour = Math.ceil((hour + 1) / 4) * 4 % 24;
+
+    const cutoff = new Date(phNow);
+    cutoff.setMinutes(0, 0, 0);
+    cutoff.setHours(nextBlockHour);
+
+    if (nextBlockHour <= hour) {
+        cutoff.setDate(cutoff.getDate() + 1);
+    }
+
+    return cutoff.getTime();
+};
+
 export const useAiGeneratedStore = create((set) => ({
     insights: [],
     recommendations: [],
 
     fetchDailyAiGeneratedContent: async (userId, date) => {
         const key = `@ai_insights:${userId}:${date}`;
-
         try {
-            // 1. Check cache
+            // 1) Read cache
             const cachedStr = await AsyncStorage.getItem(key);
             if (cachedStr) {
                 const cached = JSON.parse(cachedStr);
-
-                if (cached.timestamp === date) {
+                if (cached?.timestamp === date && cached?.expiresAt && Date.now() < cached.expiresAt) {
                     set({
                         insights: cached.data.insights || [],
                         recommendations: cached.data.recommendations || [],
                     });
                     return cached.data;
+                } else {
+                    // expired → clean up
+                    await AsyncStorage.removeItem(key);
                 }
             }
 
-            // 2. Fetch fresh
+            // 2) Fetch fresh
             const result = await daily_ai_insights(userId, date);
             if (result) {
                 const { insights = [], recommendations = [] } = result;
 
-                // update store
                 set({ insights, recommendations });
 
-                // 3. Save cache
+                // 3) Save with 4-hour PH cutoff
                 await AsyncStorage.setItem(
                     key,
                     JSON.stringify({
                         timestamp: date,
+                        expiresAt: getNextFourHourCutoff(),
                         data: { insights, recommendations },
-                    })
+                    }),
                 );
 
                 return { insights, recommendations };
@@ -152,168 +170,143 @@ export const useAiGeneratedStore = create((set) => ({
 }));
 
 
-export const useUsageStore = create((set, get) => ({
-    monthlyTotalConsumption: 0,
-    allMonthlyTotalConsumption: [],
-    _unsubMonthly: null,
-    latestKwh: [],
-    reportHistory: {
-        daily: {},
-        weekly: {},
-        monthly: {}
-    },
-    summaryPerDevice: {},
-    totalConsumptionByDate: {},
-    lastFetched: {
-        daily: null,
-        weekly: null,
-        monthly: null
-    },
-    todayTrend: null,
-    topAppliances: [],
-
-    dailyTotals: [],
-    weeklyTotals: [],
-    monthlyTotals: [],
-    fetchTopAppliances: async (userId) => {
-        try {
-            const top = await firebaseUsageServices.fetchTopAppliances(userId);
-            set({ topAppliances: top });
-            return top;
-        } catch (err) {
-            console.error("Error in store.fetchTopAppliances:", err);
-            set({ topAppliances: [] });
-            return [];
-        }
-    },
-    subscribeToMonthlyTotalConsumption: (userId) => {
-        if (get()._unsubMonthly) return;
-
-        const unsubscribe = firebaseUsageServices.fetchMonthlyTotalConsumptionRealtime(userId, (currentConsumption) => {
-            set({ monthlyTotalConsumption: currentConsumption });
-        });
-
-        set({ _unsubMonthly: unsubscribe });
-    },
-
-    unsubscribeFromMonthlyTotalConsumption: () => {
-        const unsubMonthly = get()._unsubMonthly
-        if (unsubMonthly) {
-            unsubMonthly();
-            set({ _unsubMonthly: null })
-        }
-
-    },
-
-    fetchAllLatestKwh: async (userId, deviceId) => {
-        const latestKwh = await firebaseUsageServices.fetchAllLatestKwh(userId, deviceId);
-        set({
-            latestKwh
-        });
-    },
-
-    updateLatestKwh: async () => {
-        const { latestKwh } = get();
-        const updatedLatestKwh = await firebaseUsageServices.updateLatestKwh(latestKwh);
-        set({ latestKwh: updatedLatestKwh });
-    },
-
-    fetchDailyReport: async (userId, deviceId, appliances) => {
-
-        const data = await firebaseUsageServices.getCachedDailyReport(userId, deviceId, appliances);
-        set(state => ({
-            reportHistory: {
-                ...state.reportHistory,
-                daily: {
-                    ...state.reportHistory.daily,
-                    [deviceId]: data
-                }
-            }
-        }))
-    },
-    fetchWeeklyReport: async (userId, deviceId, appliances) => {
-        const data = await firebaseUsageServices.getCachedWeeklyReport(userId, deviceId, appliances);
-
-        set(state => ({
-            reportHistory: {
-                ...state.reportHistory,
-                weekly: {
-                    ...state.reportHistory.weekly,
-                    [deviceId]: data
-                }
-            }
-        }))
-    },
-
-    fetchMonthlyReport: async (userId, deviceId, appliances) => {
-        const data = await firebaseUsageServices.getCachedMonthlyReport(userId, deviceId, appliances);
-
-        set(state => ({
-            reportHistory: {
-                ...state.reportHistory,
-                monthly: {
-                    ...state.reportHistory.monthly,
-                    [deviceId]: data
-                }
-            }
-        }))
-    },
-
-    fetchDailyKwh: async (userId) => {
-        const dailyKwh = await firebaseUsageServices.fetchDailyKwh(userId)
-
-        set({
-            reports: dailyKwh
-        })
-    },
-    fetchAllMonthlyTotalConsumption: async (userId) => {
-        const allMonthlyTotalConsumption = await firebaseUsageServices.fetchAllMonthlyTotalConsumption(userId)
-
-        set({ allMonthlyTotalConsumption })
-    },
-    fetchTodayTrend: async (userId) => {
-        const todayTrend = await firebaseUsageServices.fetchTodayTrend(userId);
-        set({
-            todayTrend
-        })
-    },
-    fetchDailyTotals: async (userId) => {
-        const data = await firebaseUsageServices.getCachedDailyTotalConsumption(userId);
-        set({ dailyTotals: data });
-    },
-
-    fetchWeeklyTotals: async (userId) => {
-        const data =
-            await firebaseUsageServices.getCachedWeeklyTotalConsumption(userId);
-        set({ weeklyTotals: data });
-    },
-
-    fetchMonthlyTotals: async (userId) => {
-        const data =
-            await firebaseUsageServices.getCachedMonthlyTotalConsumption(userId);
-        set({ monthlyTotals: data });
-    },
-    reset: () => {
-        // cleanup listener if still active
-        const unsubMonthly = get()._unsubMonthly;
-        if (unsubMonthly) unsubMonthly();
-
-        set({
+export const useUsageStore = create(
+    persistWithExpiry(
+        (set, get) => ({
+            // ---------- STATE ----------
             monthlyTotalConsumption: 0,
-            _unsubMonthly: null,
-            latestKwh: [],
+            allMonthlyTotalConsumption: [],
+            latestKwh: {},
             reportHistory: { daily: {}, weekly: {}, monthly: {} },
-            summaryPerDevice: {},
-            totalConsumptionByDate: {},
-            lastFetched: { daily: null, weekly: null, monthly: null },
-            todayTrend: null,
-            topAppliances: [],
             dailyTotals: [],
             weeklyTotals: [],
             monthlyTotals: [],
-        });
-    },
-}));
+            topAppliances: [],
+            todayTrend: null,
+
+            // ---------- FETCH FUNCTIONS ----------
+            fetchTopAppliances: async (userId) => {
+                try {
+                    const data = await firebaseUsageServices.fetchTopAppliances(userId);
+                    set({ topAppliances: data });
+                } catch (err) {
+                    console.error("⚠️ fetchTopAppliances:", err);
+                    set({ topAppliances: [] });
+                }
+            },
+
+            fetchTodayTrend: async (userId) => {
+                try {
+                    const trend = await firebaseUsageServices.fetchTodayTrend(userId);
+                    set({ todayTrend: trend });
+                } catch (err) {
+                    console.error("⚠️ fetchTodayTrend:", err);
+                    set({ todayTrend: null });
+                }
+            },
+
+            fetchLatestMonthlyTotalConsumption: async (userId) => {
+                try {
+                    const total = await firebaseUsageServices.fetchLatestMonthlyTotalConsumption(userId);
+                    set({ monthlyTotalConsumption: total });
+                } catch (err) {
+                    console.error("⚠️ fetchLatestMonthlyTotalConsumption:", err);
+                    set({ monthlyTotalConsumption: 0 });
+                }
+            },
+
+            fetchAllMonthlyTotalConsumption: async (userId) => {
+                try {
+                    const all = await firebaseUsageServices.fetchAllMonthlyTotalConsumption(userId);
+                    set({ allMonthlyTotalConsumption: all });
+                } catch (err) {
+                    console.error("⚠️ fetchAllMonthlyTotalConsumption:", err);
+                    set({ allMonthlyTotalConsumption: [] });
+                }
+            },
+
+            fetchAllLatestKwh: async (userId, deviceId) => {
+                try {
+                    const latest = await firebaseUsageServices.fetchAllLatestKwh(userId, deviceId);
+                    set({ latestKwh: latest });
+                } catch (err) {
+                    console.error("⚠️ fetchAllLatestKwh:", err);
+                    set({ latestKwh: {} });
+                }
+            },
+
+            // ---------- REPORT FETCH (per category) ----------
+            fetchReport: async (category, userId, deviceId, appliances) => {
+                try {
+                    const map = {
+                        Daily: firebaseUsageServices.fetchDailyReport,
+                        Weekly: firebaseUsageServices.fetchWeeklyReport,
+                        Monthly: firebaseUsageServices.fetchMonthlyReport,
+                    };
+                    const fn = map[category];
+                    if (!fn) return;
+
+                    const data = await fn(userId, deviceId, appliances);
+                    set((state) => ({
+                        reportHistory: {
+                            ...state.reportHistory,
+                            [category.toLowerCase()]: {
+                                ...state.reportHistory[category.toLowerCase()],
+                                [deviceId]: data,
+                            },
+                        },
+                    }));
+                } catch (err) {
+                    console.error("⚠️ fetchReport:", err);
+                }
+            },
+
+            // ---------- TOTAL FETCH (for All Devices view) ----------
+            fetchTotals: async (category, userId) => {
+                try {
+                    const map = {
+                        Daily: firebaseUsageServices.fetchDailyTotalConsumption,
+                        Weekly: firebaseUsageServices.fetchWeeklyTotalConsumption,
+                        Monthly: firebaseUsageServices.fetchMonthlyTotalConsumption,
+                    };
+                    const fn = map[category];
+                    if (!fn) return;
+
+                    const data = await fn(userId);
+                    set({ [`${category.toLowerCase()}Totals`]: data });
+                } catch (err) {
+                    console.error("⚠️ fetchTotals:", err);
+                }
+            },
+
+            // ---------- RESET ----------
+            reset: () =>
+                set({
+                    monthlyTotalConsumption: 0,
+                    allMonthlyTotalConsumption: [],
+                    latestKwh: {},
+                    reportHistory: { daily: {}, weekly: {}, monthly: {} },
+                    dailyTotals: [],
+                    weeklyTotals: [],
+                    monthlyTotals: [],
+                    topAppliances: [],
+                    todayTrend: null,
+                }),
+        }),
+        {
+            name: "usage-store",
+            ttl: 1000 * 60 * 60, // 1 hour expiry
+            partialize: (state) => ({
+                reportHistory: state.reportHistory,
+                dailyTotals: state.dailyTotals,
+                weeklyTotals: state.weeklyTotals,
+                monthlyTotals: state.monthlyTotals,
+                topAppliances: state.topAppliances,
+                allMonthlyTotalConsumption: state.allMonthlyTotalConsumption,
+            }),
+        }
+    )
+);
 
 export const useBudgetStore = create((set, get) => ({
     locationRate: 0,
@@ -354,11 +347,6 @@ export const useBudgetStore = create((set, get) => ({
 
         set({ locationRate });
     },
-    fetchMonthlyBudget: async (userId) => {
-
-        const monthlyBudget = await firebaseBudgetServices.fetchMonthlyBudget(userId);
-        set({ monthlyBudget });
-    },
     fetchAllBudget: async (userId) => {
         const allBudget = await firebaseBudgetServices.fetchAllBudget(userId);
         set({ allBudget });
@@ -371,13 +359,91 @@ export const useBudgetStore = create((set, get) => ({
             monthlyBudget: null,
             _unsubBudget: null,
             percentUsed: 0,
+            allBudget: []
         })
     }
 }));
+
+export const useNotificationStore = create((set, get) => ({
+    notifications: [],
+    loading: false,
+    hasMore: true,
+    lastTimestamp: null,
+    PAGE_SIZE: 5,
+
+    /** Fetch first page or refresh list */
+    fetchNotifications: async (userId) => {
+        if (!userId) return;
+        set({ loading: true });
+
+        const { notifications, newLastTimestamp, hasMore } =
+            await firebaseNotificationServices.fetchUserNotifications(userId, null, get().PAGE_SIZE);
+
+        set({
+            notifications,
+            lastTimestamp: newLastTimestamp,
+            hasMore,
+            loading: false,
+        });
+    },
+    loadMoreNotifications: async (userId) => {
+        const { lastTimestamp, PAGE_SIZE, notifications } = get();
+        if (!userId || !lastTimestamp) return;
+        set({ loading: true });
+
+        const { notifications: newData, newLastTimestamp, hasMore } =
+            await firebaseNotificationServices.fetchUserNotifications(userId, lastTimestamp, PAGE_SIZE);
+
+        // 🧠 remove duplicates (same Firebase ID)
+        const existingIds = new Set(notifications.map((n) => n.id));
+        const merged = [
+            ...notifications,
+            ...newData.filter((n) => !existingIds.has(n.id)),
+        ];
+
+        set({
+            notifications: merged,
+            lastTimestamp: newLastTimestamp,
+            hasMore,
+            loading: false,
+        });
+    },
+    markAllAsRead: async (userId) => {
+        const { notifications } = get();
+        if (!userId) return;
+
+        await firebaseNotificationServices.markAllNotificationsRead(userId, notifications);
+
+        const now = new Date().toISOString();
+        set({
+            notifications: notifications.map((n) => ({ ...n, read_at: now })),
+        });
+    },
+    deleteNotification: async (userId, notifId) => {
+        if (!userId || !notifId) return;
+        try {
+            await firebaseNotificationServices.deleteNotification(userId, notifId);
+            set({
+                notifications: get().notifications.filter((n) => n.id !== notifId),
+            });
+        } catch (e) {
+            console.error("⚠️ Failed to delete notification:", e);
+        }
+    },
+    reset: () => {
+        set({
+            notifications: [],
+            loading: false,
+            hasMore: true,
+            lastTimestamp: null,
+        });
+    },
+}))
 
 export const clearStates = () => {
     useDeviceStore.getState().reset();
     useUsageStore.getState().reset();
     useBudgetStore.getState().reset();
     useAiGeneratedStore.getState().reset();
+    useNotificationStore.getState().reset();
 };

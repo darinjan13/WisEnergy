@@ -4,10 +4,29 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { auth } from '../../firebase/firebaseConfig';
 
 const Header = () => {
+    // ✅ Extract initials from display name
+    const getInitials = () => {
+        const name = auth.currentUser?.displayName?.trim();
+        if (!name) return "U";
 
+        // Split into words and remove empty strings
+        const parts = name.split(" ").filter(Boolean);
+
+        if (parts.length === 1) {
+            // Single name only (e.g., "Cher")
+            return parts[0][0].toUpperCase();
+        }
+
+        // ✅ First letter of first name + first letter of last name
+        const firstInitial = parts[0][0].toUpperCase();
+        const lastInitial = parts[parts.length - 1][0].toUpperCase();
+
+        return `${firstInitial}${lastInitial}`;
+    };
 
     return (
         <View className="flex-row justify-between items-center h-16 mb-4">
+            {/* Logo */}
             <View className="w-10 h-10 justify-center -ml-2">
                 <Image
                     source={require('@/assets/images/WisEnergy_LOGO2.png')}
@@ -22,7 +41,7 @@ const Header = () => {
                     <View
                         className="w-12 h-12 rounded-2xl bg-white items-center justify-center"
                         style={{
-                            shadowColor: '#136B1E', // green glow
+                            shadowColor: '#136B1E',
                             shadowOffset: { width: 0, height: 3 },
                             shadowOpacity: 0.35,
                             shadowRadius: 5,
@@ -40,13 +59,10 @@ const Header = () => {
                 >
                     <View className="w-12 h-12 rounded-2xl bg-[#136B1E] items-center justify-center">
                         <Text className="text-white text-lg font-bold">
-                            {auth.currentUser?.displayName
-                                ? auth.currentUser.displayName.substring(0, 2).toUpperCase()
-                                : "U"}
+                            {getInitials()}
                         </Text>
                     </View>
                 </TouchableOpacity>
-
             </View>
         </View>
     );

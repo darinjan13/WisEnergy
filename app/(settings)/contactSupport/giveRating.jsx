@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { Divider } from 'react-native-paper';
 import { router } from 'expo-router';
-import { db, auth } from '../../../firebase/firebaseConfig';
+import { db, auth } from '@/firebase/firebaseConfig';
 import { ref, push, serverTimestamp, get, set } from 'firebase/database';
 import { format } from 'date-fns-tz';
 
@@ -65,7 +65,7 @@ export default function GiveRatingScreen() {
         }
     };
     return (
-        <View className="flex-1 bg-white p-10">
+        <View className="flex-1 bg-white p-10 mt-10">
             <TouchableOpacity
                 onPress={() => router.replace('/(settings)/contactSupport')}
                 className="w-10 -ml-5 mb-10"

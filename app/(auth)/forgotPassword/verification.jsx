@@ -5,20 +5,26 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { generate_otp, verify_otp } from '@/services/apiService';
 import { Feather } from '@expo/vector-icons';
 import OTPTextInput from "react-native-otp-textinput";
-import useAuth from '@/hooks/useAuth';
-import { ref } from 'firebase/database';
+import { ref, set } from 'firebase/database';
 import SuccessModal from '@/components/Modals/SuccessModal';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../../../firebase/firebaseConfig';
+import Toast from 'react-native-toast-message';
 
 export default function CodeVerificationScreen() {
 
     const saveUserDetails = async (user_id, location, email, first_name, last_name, role) => {
+        const formatName = (name) => {
+            if (!name) return "";
+            return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+        };
         const userRef = ref(db, "users/" + user_id);
         const now = new Date();
         const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
         set(userRef, {
             email: email,
-            first_name: first_name,
-            last_name: last_name,
+            first_name: formatName(first_name),
+            last_name: formatName(last_name),
             location: location,
             role: role,
             created_at: offsetDate.toISOString(),
@@ -28,8 +34,7 @@ export default function CodeVerificationScreen() {
         });
     }
 
-    const { email, from } = useLocalSearchParams();
-    const { logout } = useAuth();
+    const { email, from, firstName, lastName, password, location } = useLocalSearchParams();
 
     const [isLoading, setIsLoading] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
@@ -44,13 +49,22 @@ export default function CodeVerificationScreen() {
 
     const handleResend = async () => {
         setTimer(300);
-        const result = await generate_otp(email)
+        try {
+            await generate_otp(email, true);
+            Toast.show({
+                type: "success",
+                text1: "OTP Resent",
+                text2: `OTP sent to ${email}`,
+            });
+        } catch (e) {
+            console.error('Resend OTP error:', e);
+            Alert.alert('Error', 'Failed to resend OTP.');
+        }
     };
 
     const verifyCode = async () => {
         setIsLoading(true);
         try {
-            // 🔐 Call backend verify endpoint
             const result = await verify_otp(email, otp);
 
             if (!result.success) {
@@ -59,20 +73,16 @@ export default function CodeVerificationScreen() {
                 return;
             }
 
-            // ✅ OTP verified — now handle flows
             if (from === "forgotPassword") {
                 router.navigate({
                     pathname: "/forgotPassword/resetpassword",
                     params: { email },
                 });
             } else if (from === "register") {
-                const { firstName, lastName, password, location } = useLocalSearchParams();
 
-                // Create Firebase Auth account
                 const res = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(res.user, { displayName: firstName + " " + lastName });
 
-                // Save user details to Realtime Database
                 await saveUserDetails(res.user.uid, location, email, firstName, lastName, "user");
 
                 Toast.show({
@@ -96,18 +106,16 @@ export default function CodeVerificationScreen() {
 
         const [local, domain] = email.split('@');
 
-        // If local part is 3 chars or less, show all + ***
         if (local.length <= 3) {
             return `${local}***@${domain}`;
         }
 
-        // Otherwise, show first 3 chars + *** + @domain
         return `${local.slice(0, 3)}***@${domain}`;
     }
 
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior={Platform.OS === "android" ? "padding" : "height"}
             className="flex-1"
         >
             <View className="h-full px-6 pt-8 bg-white">

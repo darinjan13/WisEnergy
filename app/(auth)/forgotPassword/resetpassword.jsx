@@ -9,6 +9,8 @@ import { Feather, Fontisto } from '@expo/vector-icons';
 export default function ResetPasswordScreen() {
     const { email } = useLocalSearchParams();
     const [errors, setErrors] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false)
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -42,7 +44,7 @@ export default function ResetPasswordScreen() {
     return (
 
         <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior={Platform.OS === "android" ? "padding" : "height"}
             className="flex-1"
         >
             <View className="h-full p-6 bg-white">
@@ -64,13 +66,19 @@ export default function ResetPasswordScreen() {
                     <View className={`flex-row items-center border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md p-3 bg-gray-100`}>
                         <Fontisto name='locked' size={18} color="gray" />
                         <TextInput
-                            className="ml-2 flex-1"
+                            className="ml-2 flex-1 text-black"
                             placeholder="Enter Password"
                             placeholderTextColor="#9CA3AF"
+                            secureTextEntry={!showPassword}
+                            autoCapitalize='none'
                             value={password}
                             onChangeText={setPassword}
                         />
+                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                            <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="gray" />
+                        </TouchableOpacity>
                     </View>
+
                     {errors.password && (
                         <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>
                     )}
@@ -80,18 +88,24 @@ export default function ResetPasswordScreen() {
                     <View className={`flex-row items-center border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md p-3 bg-gray-100`}>
                         <Fontisto name='locked' size={18} color="gray" />
                         <TextInput
-                            className="ml-2 flex-1"
+                            className="ml-2 flex-1 text-black"
                             placeholder="Confirm Password"
-                            secureTextEntry
+                            placeholderTextColor="#9CA3AF"
+                            secureTextEntry={!showConfirmPassword}
                             autoCapitalize="none"
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
                         />
+                        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                            <Feather name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="gray" />
+                        </TouchableOpacity>
                     </View>
+
                     {errors.confirmPassword && (
                         <Text className="text-red-500 text-xs mt-1">{errors.confirmPassword}</Text>
                     )}
                 </View>
+
                 <View className="flex-1 justify-end mb-8">
 
                     <TouchableOpacity

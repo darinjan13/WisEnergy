@@ -6,7 +6,7 @@ import { getMonthName } from '../../utils/dateHelper';
 
 export default function ApplianceUsage({ category, data }) {
     const monthValue = data?.barData[0]?.month || "";
-    // console.log(data);
+    console.log(data);
     const values = [
         ...(data?.barData?.map(b => b.value) || []),
         ...(data?.barData2?.map(b => b.value) || []),

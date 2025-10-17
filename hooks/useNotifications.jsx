@@ -12,9 +12,11 @@ export function useNotifications() {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Register for push
-    registerForPushNotificationsAsync().then(async (token) => {
-      if (token) {
+    let isMounted = true;
+
+    const setupNotifications = async () => {
+      const token = await registerForPushNotificationsAsync();
+      if (token && isMounted) {
         setExpoPushToken(token);
         console.log("Expo Push Token:", token);
 
@@ -38,7 +40,9 @@ export function useNotifications() {
           }
         }
       }
-    });
+    };
+
+    setupNotifications();
 
     // Foreground listener
     const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
@@ -55,10 +59,11 @@ export function useNotifications() {
     });
 
     return () => {
+      isMounted = false;
       foregroundSub.remove();
       tapSub.remove();
     };
-  }, [user]);
+  }, [user?.uid]);
 
   return expoPushToken;
 }

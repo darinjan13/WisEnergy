@@ -1,434 +1,402 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, useColorScheme } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BarChart } from "react-native-gifted-charts";
-
-import Header from "../../components/ui/Header";
-import { auth } from "../../firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
-import { useBudgetStore, useDeviceStore, useUsageStore } from "../../store/firebaseStore";
 import { Picker } from "@react-native-picker/picker";
-import ApplianceUsage from "../../components/reports/ApplianceUsage"
-import { Ionicons } from "@expo/vector-icons";
-import CustomProgressBar from "../../components/reports/CustomProgressBar";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { set } from "date-fns";
-import { getMonthName } from "../../utils/dateHelper";
+import { AutoSkeletonView } from "react-native-auto-skeleton";
 
-export default function reports() {
+import Header from "@/components/ui/Header";
+import CustomProgressBar from "@/components/reports/CustomProgressBar";
+import EnergyPredictionChart from "@/components/reports/EnergyPredictionChart";
+
+import { auth } from "@/firebase/firebaseConfig";
+import { useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
+
+export default function Reports() {
     const scheme = useColorScheme();
-    const isDark = scheme === "dark";
     const insets = useSafeAreaInsets();
-    const { devices, setDevices, fetchUserAppliances, userAppliances, userDevices } = useDeviceStore();
-    const { reportHistory, fetchDailyReport, fetchWeeklyReport, fetchMonthlyReport, monthlyTotalConsumption, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, latestKwh, fetchAllLatestKwh, dailyTotals, weeklyTotals, monthlyTotals, fetchDailyTotals, fetchWeeklyTotals, fetchMonthlyTotals } = useUsageStore();
-    const { monthlyBudget, allBudget, fetchAllBudget } = useBudgetStore();
+    const isDark = scheme === "dark";
+
+    const { devices, userDevices, userAppliances, setDevices } = useDeviceStore();
+    const {
+        reportHistory,
+        fetchReport,
+        fetchTotals,
+        fetchAllMonthlyTotalConsumption,
+        allMonthlyTotalConsumption,
+        dailyTotals,
+        weeklyTotals,
+        monthlyTotals,
+    } = useUsageStore();
+    const { allBudget, fetchAllBudget } = useBudgetStore();
 
     const [reportCategory, setReportCategory] = useState("Daily");
-    const [selectedDevice, setSelectedDevice] = useState();
-
+    const [selectedDevice, setSelectedDevice] = useState("All Devices");
     const [reportData, setReportData] = useState([]);
     const [reports, setReports] = useState([]);
-    const [lineData1, setLineData1] = useState([]);
-    const [lineData2, setLineData2] = useState([]);
-
-    const [totalEnergyConsumption, setTotalEnergyConsumption] = useState(0);
-
-    const [isLoading, setIsLoading] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
+    const [reportsTotal, setReportsTotal] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [reportLoading, setReportLoading] = useState(true);
+    const [modalVisible, setModalVisible] = useState(false);
     const [selectedAppliance, setSelectedAppliance] = useState(null);
 
-    const [maxProgress, setMaxProgress] = useState(10);
-
     const category = ["Monthly", "Weekly", "Daily"];
+    const timeoutsRef = useRef([]);
 
+    const registerTimeout = (fn, delay) => {
+        const id = setTimeout(fn, delay);
+        timeoutsRef.current.push(id);
+        return id;
+    };
+
+    /** ---------- INITIAL LOAD ---------- */
     useFocusEffect(
         useCallback(() => {
-            setIsLoading(true)
-            fetchAllMonthlyTotalConsumption(auth.currentUser?.uid)
-            fetchAllBudget(auth.currentUser?.uid)
+            let active = true;
+            const uid = auth.currentUser?.uid;
+            if (!uid) return;
+
+            const loadInitial = async () => {
+                try {
+                    await Promise.allSettled([
+                        fetchAllMonthlyTotalConsumption(uid),
+                        fetchAllBudget(uid),
+                        fetchTotals("Daily", uid),
+                        fetchTotals("Weekly", uid),
+                        fetchTotals("Monthly", uid),
+                    ]);
+                    if (active) setIsLoading(false);
+                } catch {
+                    if (active) setIsLoading(false);
+                }
+            };
+
+            loadInitial();
             const timeout = setTimeout(() => {
                 if (reportHistory !== null)
                     setIsLoading(false);
-            }, 500);
-            if (userAppliances.length != 0 && userDevices.length != 0) {
-                const result = userDevices.map((device) => {
-                    const matched = userAppliances.find(appliance => appliance.id === device.id);
-                    if (matched) {
-                        return {
-                            device_id: device.id,
-                            device_nickname: device.device_nickname,
-                            appliances: matched.appliances
-                        }
-                    } else {
-                        return null;
-                    }
-                }).filter(Boolean);
-                setReportData(result)
-            }
+            }, 1000);
+            const mapped = userDevices
+                .map((device) => {
+                    const match = userAppliances.find((a) => a.id === device.id);
+                    if (!match) return null;
+                    return {
+                        device_id: device.id,
+                        device_nickname: device.device_nickname,
+                        appliances: match.appliances || [],
+                    };
+                })
+                .filter(Boolean);
+
+            setReportData(mapped);
+            console.log("Appliances", userAppliances);
+
             return () => {
-                setTotalEnergyConsumption(0);
-                setReportCategory("Daily")
                 clearTimeout(timeout)
-                setIsLoading(true)
+                timeoutsRef.current.forEach(clearTimeout);
+                timeoutsRef.current = [];
+                setSelectedDevice("All Devices")
+                setReportData([])
             };
-        }, [devices, userAppliances, userDevices])
+        }, [userDevices, userAppliances])
     );
 
+    /** ---------- DEVICE/APPLIANCE SYNC ---------- */
+    // useEffect(() => {
+    //     const devicesList = Array.isArray(userDevices) ? userDevices : [];
+    //     const appliancesList = Array.isArray(userAppliances) ? userAppliances : [];
+
+    //     if (devicesList.length === 0 || appliancesList.length === 0) return;
+
+    //     const mapped = devicesList
+    //         .map((device) => {
+    //             const match = appliancesList.find((a) => a.id === device.id);
+    //             if (!match) return null;
+    //             return {
+    //                 device_id: device.id,
+    //                 device_nickname: device.device_nickname,
+    //                 appliances: match.appliances || [],
+    //             };
+    //         })
+    //         .filter(Boolean);
+
+    //     setReportData(mapped);
+
+    //     if (mapped.length > 0 && !selectedDevice) {
+    //         setSelectedDevice("All Devices");
+    //     }
+    // }, [userDevices, userAppliances]);
+
+    /** ---------- CATEGORY OR DEVICE CHANGE ---------- */
     useEffect(() => {
-        if (devices.length === 0) setDevices();
-        // if (userAppliances.length === 0) fetchUserAppliances();
-    }, [devices])
-
-
-    const fetchDailyReport1 = async (user_id, selectedDevice, appliances) => {
+        if (!selectedDevice) return;
         setReportLoading(true);
-        await fetchDailyReport(user_id, selectedDevice, appliances);
-    }
-    const fetchWeeklyReport1 = async (user_id, selectedDevice, appliances) => {
-        setReportLoading(true);
-        await fetchWeeklyReport(user_id, selectedDevice, appliances);
-    }
-    const fetchMonthlyReport1 = async (user_id, selectedDevice, appliances) => {
-        setReportLoading(true);
-        await fetchMonthlyReport(user_id, selectedDevice, appliances);
-    }
 
-    const fetchDailyTotals1 = async (user_id) => {
-        setReportLoading(true);
-        await fetchDailyTotals(user_id);
-        setReportLoading(false);
-    }
+        registerTimeout(async () => {
+            const uid = auth.currentUser?.uid;
+            if (!uid) return;
 
-    useEffect(() => {
-        if (selectedDevice != undefined) {
-
-            if (reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] == undefined) {
-                reportData.find((device) => {
-
-                    if (device.device_id == selectedDevice) {
-                        switch (reportCategory) {
-                            case "Weekly":
-                                setMaxProgress(50);
-                                fetchWeeklyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
-                                break;
-                            case "Daily":
-                                setMaxProgress(10);
-                                fetchDailyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
-                                break;
-                            case "Monthly":
-                                setMaxProgress(10);
-                                fetchMonthlyReport1(auth.currentUser?.uid, selectedDevice, device.appliances);
-                                break;
-                            default:
-                                break;
-                        }
-                        fetchAllLatestKwh(auth.currentUser?.uid, selectedDevice)
-                    }
-                })
-            } else {
+            if (selectedDevice === "All Devices") {
+                switch (reportCategory) {
+                    case "Daily": setReportsTotal(dailyTotals); break;
+                    case "Weekly": setReportsTotal(weeklyTotals); break;
+                    case "Monthly": setReportsTotal(monthlyTotals); break;
+                }
                 setReportLoading(false);
-                setReports(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] || []);
+                return;
             }
-        }
 
-        if (selectedDevice === "All Devices") {
-            switch (reportCategory) {
-                case "Daily":
-                    setReportLoading(true);
-                    fetchDailyTotals(auth.currentUser?.uid);
-                    setReportLoading(false);
-                    break;
-                case "Weekly":
-                    setReportLoading(true);
-                    fetchWeeklyTotals(auth.currentUser?.uid);
-                    setReportLoading(false);
-                    break;
-                case "Monthly":
-                    setReportLoading(true);
-                    fetchMonthlyTotals(auth.currentUser?.uid);
-                    setReportLoading(false);
-                    break;
+            // const existing = reportHistory[reportCategory.toLowerCase()]?.[selectedDevice];
+            // console.log("Existing", existing);
+
+            // if (!existing) {
+            const device = reportData?.find((d) => d.device_id === selectedDevice);
+            if (device) {
+                await fetchReport(reportCategory, uid, selectedDevice, device.appliances);
             }
-        }
-    }, [selectedDevice, reportCategory])
+            // }
+            setReportLoading(false);
+        }, 250);
+    }, [reportData, selectedDevice, reportCategory]);
 
+    /** ---------- UPDATE REPORT DATA ---------- */
     useEffect(() => {
-        if (reports.length > 0) {
-            setReportLoading(false)
-        } else {
-            setReportLoading(true)
-        }
-    }, [reports])
+        if (!selectedDevice) return;
+        if (selectedDevice === "All Devices") return;
 
-    useEffect(() => {
-        setLineData1(allMonthlyTotalConsumption)
-        setLineData2(allBudget)
+        const updated = reportHistory[reportCategory.toLowerCase()]?.[selectedDevice];
+        console.log(reportHistory);
 
-    }, [allMonthlyTotalConsumption, allBudget])
+        if (updated) setReports(updated);
+    }, [reportHistory, selectedDevice, reportCategory]);
 
-    useEffect(() => {
-        if (Object.keys(reportHistory[reportCategory.toLowerCase()]).length > 0) {
-            setReports(reportHistory[reportCategory.toLowerCase()]?.[selectedDevice] || []);
-        }
-    }, [reportHistory])
+    /** ---------- LINE GRAPH ---------- */
+    const lineData1 = allMonthlyTotalConsumption || [];
+    const lineData2 = allBudget || [];
 
-    useEffect(() => {
-        if (reportData.length > 0) setSelectedDevice("All Devices");
-    }, [reportData]);
+    const chartMax = useMemo(() => {
+        const max1 = lineData1.length ? Math.max(...lineData1.map((d) => d.value)) : 0;
+        const max2 = lineData2.length ? Math.max(...lineData2.map((d) => d.value)) : 0;
+        return Math.max(max1, max2);
+    }, [lineData1, lineData2]);
 
+    /** ---------- MODAL CLEANUP ---------- */
+    const closeModal = () => {
+        setSelectedAppliance(null);
+        setModalVisible(false);
+    };
+
+    /** ---------- RENDER ---------- */
     if (isLoading) {
         return (
-            <ScrollView className="h-full p-4" showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingTop: insets.top }}>
+            <ScrollView
+                className="h-full p-5"
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingTop: insets.top }}
+            >
                 <Header />
+                <Text className="text-xl font-bold text-green-800 mb-4">Reports</Text>
                 <View className="h-screen -mt-36 items-center justify-center">
                     <ActivityIndicator size="large" color="#166534" />
-                    <Text className="text-gray-500 mt-4 text-lg font-semibold">Loading your reports data....</Text>
+                    <Text className="text-gray-500 mt-4 text-lg font-semibold">
+                        Loading your reports data...
+                    </Text>
                 </View>
             </ScrollView>
-        )
+        );
     }
 
-    const maxValueData1 = lineData1.length ? Math.max(...lineData1.map(d => d.value)) : 0;
-    const maxValueData2 = lineData2.length ? Math.max(...lineData2.map(d => d.value)) : 0;
-
-    const chartMax = Math.max(maxValueData1, maxValueData2);
-
     return (
-        <View className={`flex-1 bg-gray-100`}>
-            <ScrollView className="p-5" contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}>
+        <View className="flex-1 bg-gray-100">
+            <ScrollView
+                className="p-5"
+                contentContainerStyle={{ paddingBottom: insets.bottom + 150, paddingTop: insets.top }}
+            >
                 <Header />
-                {reportData.length === 0 ? (
-                    <View className="h-screen -mt-36 items-center justify-center">
-                        <Ionicons name="bar-chart-outline" size={64} color="#9CA3AF" />
-                        <Text className="text-gray-500 mt-4 text-lg font-semibold">You have no devices added yet. Please add a device to view reports.</Text>
+                <Text className="text-xl font-bold text-green-800 mb-4">Reports</Text>
+
+                {/* Savings Over Time */}
+                <Text className="text-xl font-bold text-green-800 mb-4">Savings Over Time</Text>
+                <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
+                    <LineChart
+                        data={lineData1}
+                        data2={lineData2}
+                        height={150}
+                        maxValue={chartMax + 10}
+                        stepValue={chartMax / 2}
+                        showVerticalLines
+                        spacing={44}
+                        initialSpacing={30}
+                        width={300}
+                        color1="skyblue"
+                        color2="orange"
+                        textColor1="green"
+                        dataPointsHeight={6}
+                        dataPointsWidth={6}
+                        dataPointsColor1="blue"
+                        dataPointsColor2="red"
+                        textFontSize={13}
+                    />
+                    <View className="flex-row mt-5 items-center justify-center">
+                        <View className="flex-row items-center mr-4">
+                            <View className="w-3.5 h-3.5 bg-orange-500 rounded-sm mr-1.5" />
+                            <Text className="text-xs text-gray-600">Budget</Text>
+                        </View>
+                        <View className="flex-row items-center">
+                            <View className="w-3.5 h-3.5 bg-sky-500 rounded-sm mr-1.5" />
+                            <Text className="text-xs text-gray-600">Consumption</Text>
+                        </View>
                     </View>
+                </View>
+
+                {/* Category Filters */}
+                <Text className="text-xl font-bold text-green-800 mb-4">Energy Consumption</Text>
+                <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl justify-between items-center">
+                    {category.map((label, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            onPress={() => {
+                                if (reportCategory === label) return;
+                                setReports([]);
+                                setReportsTotal([]);
+                                setReportCategory(label);
+                                setReportLoading(true);
+                            }}
+                            className={`px-4 py-2 rounded-full border ${label === reportCategory
+                                ? "bg-green-700 border-green-700"
+                                : "bg-white border-gray-300"
+                                }`}
+                        >
+                            <Text
+                                className={`${label === reportCategory ? "text-white" : "text-black"} font-semibold`}
+                            >
+                                {label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Device Picker */}
+                <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
+                    <View className="flex-row items-center justify-between">
+                        <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
+                        <View className="flex-1 border rounded-xl overflow-hidden border-gray-300">
+                            <Picker
+                                mode="dropdown"
+                                selectedValue={selectedDevice}
+                                dropdownIconColor="#000"
+                                style={{ color: "#000", backgroundColor: "#fff" }}
+                                onValueChange={(itemValue) => {
+                                    if (selectedDevice !== itemValue) {
+                                        setReportLoading(true);
+                                        setSelectedDevice(itemValue);
+                                    }
+                                }}
+                            >
+                                <Picker.Item label="All Devices" value="All Devices" />
+                                {reportData.map((d) => (
+                                    <Picker.Item
+                                        key={d.device_id}
+                                        label={d.device_nickname || "Unnamed Device"}
+                                        value={d.device_id}
+                                    />
+                                ))}
+                            </Picker>
+                        </View>
+                    </View>
+                </View>
+
+                {/* All Devices */}
+                {selectedDevice === "All Devices" ? (
+                    <AutoSkeletonView isLoading={reportLoading}>
+                        <Text className="text-xl font-bold text-green-800 mb-4">
+                            Overall Energy Consumption ({reportCategory})
+                        </Text>
+                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
+                            {reportsTotal.length > 0 ? (
+                                <EnergyPredictionChart
+                                    actualData={reportsTotal?.[0]?.barData}
+                                    predictedData={reportsTotal?.[0]?.barData2}
+                                    category={reportCategory}
+                                />
+                            ) : (
+                                <Text className="text-gray-500 text-center text-lg font-semibold">
+                                    No data yet…
+                                </Text>
+                            )}
+                        </View>
+                    </AutoSkeletonView>
                 ) : (
-                    <View className="flex-1">
-                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Usage Report</Text>
-                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Savings Over Time</Text>
-                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-                            <LineChart
-                                data={lineData1}
-                                data2={lineData2}
-                                height={150}
-                                maxValue={chartMax + 10}
-                                stepValue={chartMax / 2}
-                                showVerticalLines
-                                spacing={44}
-                                initialSpacing={30}
-                                width={300}
-                                color1="skyblue"
-                                color2="orange"
-                                textColor1="green"
-                                dataPointsHeight={6}
-                                dataPointsWidth={6}
-                                dataPointsColor1="blue"
-                                dataPointsColor2="red"
-                                textShiftY={-2}
-                                textShiftX={-5}
-                                textFontSize={13}
-                            />
-                            <View className="flex-row mt-5 items-center justify-center">
-                                <View className="flex-row items-center mr-4">
-                                    <View className="w-3.5 h-3.5 bg-orange-500 rounded-sm mr-1.5" />
-                                    <Text className="text-xs text-gray-600">Budget</Text>
+                    // Specific Device (Appliance list)
+                    <AutoSkeletonView isLoading={reportLoading}>
+                        <Text className="text-xl font-bold text-green-800 mb-4">Appliance Usage</Text>
+                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
+                            {reports.length > 0 ? (
+                                reports.map((item, index) => {
+                                    const powerUsed = item.latestKwh ?? 0;
+                                    const totalUsage = reports.reduce((sum, r) => sum + (r.latestKwh ?? 0), 0);
+                                    return (
+                                        <TouchableOpacity
+                                            key={item.applianceName + index}
+                                            onPress={() => {
+                                                setSelectedAppliance(item);
+                                                setModalVisible(true);
+                                            }}
+                                            className="mb-4"
+                                        >
+                                            <View className="flex-row items-center">
+                                                <Text className="w-24">{item.applianceName}</Text>
+                                                <View className="flex-1">
+                                                    <CustomProgressBar progress={powerUsed} maxProgress={totalUsage} color="#4CAF50" />
+                                                </View>
+                                                <Text className="ml-2 text-gray-600 text-sm">{powerUsed.toFixed(2)} kWh</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })
+                            ) : (
+                                <View className="h-40 items-center justify-center">
+                                    <Text className="text-gray-500 text-lg font-semibold">No appliance usage data available.</Text>
                                 </View>
-                                <View className="flex-row items-center">
-                                    <View className="w-3.5 h-3.5 bg-sky-500 rounded-sm mr-1.5" />
-                                    <Text className="text-xs text-gray-600">Consumption</Text>
-                                </View>
-                            </View>
+                            )}
                         </View>
-                        <Text className="text-2xl font-bold text-[#14532d] mb-4">Energy Consumption</Text>
-                        <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl shadow-sm justify-between items-center">
-                            {category?.map((label, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    onPress={() => setReportCategory(label)}
-                                    className={`px-4 py-2 rounded-full border ${label === reportCategory ? "bg-green-700 border-green-700" : "bg-white border-gray-300"}`}
-                                >
-                                    <Text className={`${label === reportCategory ? "text-white" : "text-black"} font-semibold`}>{label}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                        <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl shadow-sm mb-4">
-                            <View className="flex-row items-center bg-white justify-between">
-                                <Text className="text-gray-800 font-semibold mr-4">Select Device</Text>
-                                <View
-                                    className="flex-1 border rounded-xl overflow-hidden"
-                                    style={{
-                                        borderColor: "#d1d5db",
-                                        backgroundColor: "#fff",
-                                    }}
-                                >
-                                    <Picker
-                                        mode="dropdown"
-                                        dropdownIconColor={isDark ? "#000" : "#000"}
-                                        style={{
-                                            color: "#000",
-                                            backgroundColor: "#fff",
-                                        }}
-                                        itemStyle={{
-                                            color: "#000", // dropdown item text color
-                                            backgroundColor: "#fff", // ✅ dropdown background
-                                        }}
-                                        selectedValue={selectedDevice}
-                                        onValueChange={(itemValue) => {
-                                            if (selectedDevice !== itemValue) {
-                                                setReportLoading(true);
-                                                setSelectedDevice(itemValue);
-                                            }
-                                        }}
-                                    >
-                                        <Picker.Item
-                                            label="All Devices"
-                                            value="All Devices"
-                                            style={{ color: "#000", backgroundColor: "#fff" }}
-                                        />
-                                        {reportData.map((userDevice) => (
-                                            <Picker.Item
-                                                key={userDevice.device_id}
-                                                label={userDevice.device_nickname || "Unnamed Device"}
-                                                value={userDevice.device_id}
-                                                style={{ color: "#000", backgroundColor: "#fff" }}
-                                            />
-                                        ))}
-                                    </Picker>
-                                </View>
-                            </View>
-                        </View>
-
-                        {selectedDevice === "All Devices" ? (
-                            <>
-                                <Text className="text-2xl font-bold text-[#14532d] mb-4">
-                                    Overall Energy Consumption ({reportCategory})
-                                </Text>
-                                <View
-                                    style={styles.cardShadow}
-                                    className="bg-white p-4 rounded-2xl shadow-sm mb-4"
-                                >
-                                    {!reportLoading ? (
-                                        <View className="w-full">
-                                            <BarChart
-                                                data={
-                                                    (reportCategory === "Daily"
-                                                        ? dailyTotals
-                                                        : reportCategory === "Weekly"
-                                                            ? weeklyTotals
-                                                            : monthlyTotals
-                                                    )?.[0]?.barData || []
-                                                }
-                                                barWidth={30}
-                                                spacing={28}
-                                                disableScroll
-                                                frontColor="#16a34a"
-                                                yAxisTextStyle={{ color: "#6B7280", fontSize: 11 }}
-                                                xAxisLabelTextStyle={{ color: "#6B7280", fontSize: 11 }}
-                                                noOfSections={4}
-                                                animationDuration={800}
-                                                yAxisThickness={0}
-                                                xAxisThickness={0}
-                                                width={undefined} // full width auto from container
-                                                initialSpacing={20}
-                                                barBorderRadius={6}
-                                                xAxisLabelsVerticalShift={8}
-                                                yAxisLabelWidth={32}
-                                                showValuesAsTopLabel
-                                                topLabelTextStyle={{ fontSize: 10 }}
-                                            />
-                                            {reportCategory === "Weekly" &&
-                                                weeklyTotals?.[0]?.barData?.length > 0 && (
-                                                    <Text className="text-gray-500 text-center mt-3 text-sm">
-                                                        Month of{" "}
-                                                        <Text className="font-semibold text-gray-700">
-                                                            {getMonthName(weeklyTotals[0].barData[0]?.month || "", "long")}
-                                                        </Text>
-                                                    </Text>
-                                                )}
-                                        </View>
-
-                                    ) : (
-                                        <View className="h-full p-4 flex-1 items-center justify-center">
-                                            <ActivityIndicator size="large" color="#166534" />
-                                            <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                                                Loading total consumption data…
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            </>
-                        ) : (
-                            <>
-                                <Text className="text-2xl font-bold text-[#14532d] mb-4">
-                                    Appliance Usage
-                                </Text>
-                                <View
-                                    style={styles.cardShadow}
-                                    className="bg-white p-4 rounded-2xl shadow-sm mb-4"
-                                >
-                                    {!reportLoading ? (
-                                        reports.map((item, index) => {
-                                            const powerUsed = item.latestKwh ?? 0;
-                                            const totalUsage = reports.reduce(
-                                                (sum, r) => sum + (r.latestKwh ?? 0),
-                                                0
-                                            );
-                                            const percent =
-                                                totalUsage > 0 ? (powerUsed / totalUsage) * 100 : 0;
-
-                                            return (
-                                                <TouchableOpacity
-                                                    key={item.applianceName + index}
-                                                    onPress={() => {
-                                                        setModalVisible(true);
-                                                        setSelectedAppliance(item);
-                                                    }}
-                                                    className="mb-4"
-                                                >
-                                                    <View className="w-full flex-row items-center">
-                                                        <Text className="w-24">{item.applianceName}</Text>
-                                                        <View className="flex-1">
-                                                            <CustomProgressBar
-                                                                progress={percent}
-                                                                maxProgress={100}
-                                                                color="#4CAF50"
-                                                            />
-                                                        </View>
-                                                        <Text className="ml-2 text-gray-600 text-sm">
-                                                            {powerUsed.toFixed(2)} kWh
-                                                        </Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                            );
-                                        })
-                                    ) : (
-                                        <View className="h-full p-4 flex-1 items-center justify-center">
-                                            <ActivityIndicator size="large" color="#166534" />
-                                            <Text className="text-gray-500 mt-4 text-lg font-semibold">
-                                                Loading your reports data…
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            </>
-                        )}
-                    </View>
+                    </AutoSkeletonView>
                 )}
             </ScrollView>
-            <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-                <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
-                    <View className="bg-white rounded-xl p-6 w-11/12">
-                        <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                            <Text style={styles.closeButtonText}>X</Text>
+
+            {/* Appliance Modal */}
+            <Modal animationType="fade" transparent visible={modalVisible} onRequestClose={closeModal}>
+                <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center px-4">
+                    <View className="bg-white rounded-2xl p-5 w-full max-w-[420px] shadow-lg" style={{ maxHeight: "85%" }}>
+                        <TouchableOpacity onPress={closeModal} className="absolute top-3 right-3 z-10">
+                            <View className="bg-red-600 w-10 h-10 rounded-full items-center justify-center">
+                                <AntDesign name="close" size={15} color="white" />
+                            </View>
                         </TouchableOpacity>
-                        <ApplianceUsage category={reportCategory} data={selectedAppliance} />
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text className="text-lg font-bold text-center mb-4 text-gray-800">
+                                {selectedAppliance?.applianceName || "Appliance Details"}
+                            </Text>
+                            {selectedAppliance?.barData?.length ? (
+                                <EnergyPredictionChart
+                                    actualData={selectedAppliance.barData}
+                                    predictedData={selectedAppliance.barData2}
+                                    category={reportCategory}
+                                />
+                            ) : (
+                                <Text className="text-gray-500 text-center text-base mt-6">
+                                    No prediction data available for this appliance yet.
+                                </Text>
+                            )}
+                        </ScrollView>
                     </View>
                 </BlurView>
             </Modal>
-        </View >
+        </View>
     );
 }
 
@@ -440,18 +408,4 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
         elevation: 10,
     },
-    closeButton: {
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        backgroundColor: '#FF0000',
-        padding: 10,
-        borderRadius: 50,
-        zIndex: 1,
-    },
-    closeButtonText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-    }
 });

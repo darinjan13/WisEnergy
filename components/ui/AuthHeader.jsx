@@ -1,7 +1,7 @@
 import { View, Text, Image } from 'react-native'
 import React from 'react'
 
-const AuthHeader = ({ textHeader }) => {
+const AuthHeader = () => {
     return (
         <View className="h-52">
             <View className="w-full absolute">
@@ -17,7 +17,6 @@ const AuthHeader = ({ textHeader }) => {
                 className="absolute w-40 h-36 left-0"
                 resizeMode="contain"
             />
-            <Text className="text-lg font-semibold mb-4 text-left md:ml-28 text-[#2E4F4F]">{textHeader}</Text>
         </View>
     )
 }

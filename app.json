@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "WisEnergy",
-    "slug": "WisEnergy",
+    "slug": "wisenergy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -51,9 +51,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "1b2e2304-e953-495b-ac21-c86deaabb1f7"
+        "projectId": "264fa6c9-128f-4d36-a3c0-e2e215d08b9a"
       }
     },
-    "owner": "storeblues123"
+    "owner": "xjane143"
   }
 }
