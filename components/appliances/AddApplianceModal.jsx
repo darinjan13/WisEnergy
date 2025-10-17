@@ -1,10 +1,8 @@
-import { Modal, View, Text, TextInput, TouchableOpacity, useColorScheme } from "react-native";
+import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
 
 export default function AddApplianceModal({ visible, onClose, onAdd }) {
-    const scheme = useColorScheme();
-    const isDark = scheme === "dark";
     const [selectedAppliance, setSelectedAppliance] = useState("Refrigerator");
     const [nickname, setNickname] = useState("");
 
@@ -37,15 +35,6 @@ export default function AddApplianceModal({ visible, onClose, onAdd }) {
                     <Text className="text-gray-700 mb-2">Select Appliance</Text>
                     <View className="border border-gray-300 rounded-xl mb-4 overflow-hidden">
                         <Picker
-                            dropdownIconColor={isDark ? "#000" : "#000"}
-                            style={{
-                                color: "#000",
-                                backgroundColor: "#fff",
-                            }}
-                            itemStyle={{
-                                color: "#000",
-                                backgroundColor: "#fff",
-                            }}
                             selectedValue={selectedAppliance}
                             onValueChange={(itemValue) => setSelectedAppliance(itemValue)}
                         >
@@ -59,7 +48,6 @@ export default function AddApplianceModal({ visible, onClose, onAdd }) {
                     <Text className="text-gray-700 mb-2">Nickname (optional)</Text>
                     <TextInput
                         placeholder="Enter nickname"
-                        placeholderTextColor="#9CA3AF"
                         value={nickname}
                         onChangeText={setNickname}
                         className="border border-gray-300 rounded-xl p-5 mb-4"
@@ -75,7 +63,6 @@ export default function AddApplianceModal({ visible, onClose, onAdd }) {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            testID="confirm-add-btn"
                             className="flex-1 bg-green-600 rounded-xl py-3 ml-2"
                             onPress={handleAdd}
                         >

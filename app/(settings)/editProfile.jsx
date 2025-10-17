@@ -1,17 +1,12 @@
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
-import { auth } from "@/firebase/firebaseConfig";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView } from "react-native";
+import { auth } from "../../firebase/firebaseConfig";
 import { useEffect, useState } from "react";
 import { updateProfile } from "firebase/auth";
 import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
 import { Feather, Fontisto } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ref, update } from "firebase/database";
-import { format } from "date-fns-tz";
-import { db } from '@/firebase/firebaseConfig'
 
 export default function EditProfile() {
-    const insets = useSafeAreaInsets();
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false);
     const [firstName, setFirstName] = useState("");
@@ -40,18 +35,9 @@ export default function EditProfile() {
     const handleUpdate = async () => {
         setIsLoading(true)
         try {
-            const displayName = `${firstName.trim()} ${lastName.trim()}`;
-            await updateProfile(auth.currentUser, { displayName });
-
-            const userRef = ref(db, `users/${auth.currentUser.uid}`);
-            const updatedAt = format(new Date(), "yyyy-MM-dd", { timeZone: 'PH_TZ' });
-
-            await update(userRef, {
-                displayName,
-                first_name: firstName.trim(),
-                last_name: lastName.trim(),
-                updated_at: updatedAt,
-            });
+            await updateProfile(auth.currentUser, {
+                displayName: `${firstName} ${lastName}`
+            })
             Toast.show({
                 type: "success",
                 text1: "Update Successful",
@@ -70,7 +56,7 @@ export default function EditProfile() {
     }
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === "android" ? "padding" : "height"} style={{ flex: 1, paddingTop: insets.top + 10 }} className="flex-1 bg-white p-10">
+        <KeyboardAvoidingView behavior="padding" className="flex-1 bg-white p-10">
             <TouchableOpacity
                 onPress={() => router.back()}
                 className="w-10 -ml-5 mb-10"
@@ -83,8 +69,6 @@ export default function EditProfile() {
                 <TextInput
                     placeholder="First Name"
                     value={firstName}
-                    placeholderTextColor="#9CA3AF"
-                    autoCapitalize
                     onChangeText={setFirstName}
                     className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
                 />
@@ -92,13 +76,11 @@ export default function EditProfile() {
                 <TextInput
                     placeholder="Last Name"
                     value={lastName}
-                    placeholderTextColor="#9CA3AF"
-                    autoCapitalize
                     onChangeText={setLastName}
                     className="border border-gray-300 rounded-md p-6 mb-4 text-black bg-[#F9F9F9]"
                 />
                 <Text className="mb-2 text-gray-700 font-bold">Email Address</Text>
-                <View className="flex-row items-center border border-gray-300 rounded-md p-4 bg-[#F9F9F9] mb-6">
+                <View className="flex-row items-center border border-gray-300 rounded-md p-4 bg-[#F9F9F9]">
                     <TextInput
                         className="flex-1 text-gray-500"
                         editable={false}
@@ -108,15 +90,15 @@ export default function EditProfile() {
                         <Fontisto name="locked" className="mr-2" size={16} color="gray" />
                     </TouchableOpacity>
                 </View>
-                <TouchableOpacity disabled={isLoading} onPress={handleUpdate} className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}>
-                    {!isLoading ? (
-                        <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
-                    ) : (
-                        <ActivityIndicator size="small" color="white" />
-                    )}
-                </TouchableOpacity>
-                <View className="flex-1 justify-end mb-8">
 
+                <View className="flex-1 justify-end mb-8">
+                    <TouchableOpacity disabled={isLoading} onPress={handleUpdate} className={`py-5 rounded-xl mb-2 ${isLoading ? "bg-gray-400" : "bg-green-700"}`}>
+                        {!isLoading ? (
+                            <Text className="text-white text-center font-semibold text-lg">Save Changes</Text>
+                        ) : (
+                            <ActivityIndicator size="small" color="white" />
+                        )}
+                    </TouchableOpacity>
                 </View>
             </View>
         </KeyboardAvoidingView>

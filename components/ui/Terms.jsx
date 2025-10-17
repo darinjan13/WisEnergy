@@ -1,20 +1,18 @@
 import { Feather } from "@expo/vector-icons";
-import { router, usePathname } from "expo-router";
+import { router } from "expo-router";
 import { Text, ScrollView, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TermsOfService({ source, close }) {
     const insets = useSafeAreaInsets();
-    const pathname = usePathname();
+
     return (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: pathname !== "/register" && insets.top }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: insets.top }}>
             <View className="flex-row items-center mb-6">
-                {pathname !== "/register" && (
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <Feather name="arrow-left" size={24} color="#23403A" />
-                    </TouchableOpacity>
-                )}
-                <Text className={`${pathname !== "/register" ? "ml-3" : ""} text-2xl font-bold text-[#23403A]`}>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Feather name="arrow-left" size={24} color="#23403A" />
+                </TouchableOpacity>
+                <Text className="ml-3 text-2xl font-bold text-[#23403A]">
                     Terms of Service
                 </Text>
             </View>

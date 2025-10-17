@@ -7,20 +7,18 @@ import {
     ActivityIndicator,
     Image,
     KeyboardAvoidingView,
-    Platform,
-    Modal
+    Platform
 } from "react-native";
 import { Feather, Fontisto, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import AuthHeader from "@/components/ui/AuthHeader";
-import useAuth from "@/hooks/useAuth";
+import AuthHeader from "../../components/ui/AuthHeader";
+import useAuth from "../../hooks/useAuth";
 import { Checkbox } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BlurView } from "expo-blur";
 
 export default function LoginForm() {
     const router = useRouter();
-    const { login, pendingDeletionUser, setPendingDeletionUser, cancelDeletionAndProceed } = useAuth();
+    const { login } = useAuth();
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -172,43 +170,6 @@ export default function LoginForm() {
                 </View>
 
             </KeyboardAvoidingView>
-            {pendingDeletionUser && (
-                <Modal
-                    visible={!!pendingDeletionUser}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setPendingDeletionUser(null)}
-                >
-                    <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center px-6">
-                        <View className="bg-white rounded-2xl w-full max-w-md p-6 shadow-lg items-center">
-                            <Text className="text-2xl font-bold text-yellow-600 mb-2">Warning</Text>
-                            <Text className="text-gray-700 text-center mb-6 text-base">
-                                This account (<Text className="font-semibold">{pendingDeletionUser.email}</Text>) is marked for deletion.
-                                If you continue logging in, this action will <Text className="font-semibold">cancel the deletion</Text>.
-                            </Text>
-
-                            <View className="flex-row justify-center w-full gap-x-4">
-                                <TouchableOpacity
-                                    onPress={() => setPendingDeletionUser(null)}
-                                    className="bg-gray-300 py-3 px-6 rounded-lg flex-1"
-                                >
-                                    <Text className="text-gray-800 text-center font-semibold">Cancel</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        cancelDeletionAndProceed(pendingDeletionUser.uid);
-                                        setPendingDeletionUser(null);
-                                    }}
-                                    className="bg-green-700 py-3 px-6 rounded-lg flex-1"
-                                >
-                                    <Text className="text-white text-center font-semibold">Proceed</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </BlurView>
-                </Modal>
-            )}
         </View>
     );
 }

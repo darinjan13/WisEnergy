@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     View,
     Text,
@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -74,7 +74,7 @@ export default function Onboarding() {
     };
 
     return (
-        <SafeAreaProvider>
+        <SafeAreaView>
             <View className="h-full bg-white">
                 {/* Skip button */}
                 <TouchableOpacity
@@ -135,6 +135,6 @@ export default function Onboarding() {
                     </Text>
                 </TouchableOpacity>
             </View>
-        </SafeAreaProvider>
+        </SafeAreaView>
     );
 }

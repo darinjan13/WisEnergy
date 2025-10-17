@@ -2,7 +2,7 @@ import axios from "axios"
 
 const api = axios.create({
     baseURL: 'https://wisenergy-backend.onrender.com',
-    // baseURL: 'http://192.168.1.7:10000',
+    // baseURL: 'http://192.168.1.8:10000',
     // baseURL: 'http://192.168.0.113:10000',
     timeout: 20000,
     headers: {
@@ -34,21 +34,28 @@ export const predict_usage = async (userId, deviceId, applianceName) => {
         const response = await api.get(`/predict/${userId}/${deviceId}/${applianceName}`);
         const { daily, weekly } = response.data || {};
 
+        // Transform daily (object -> array with label/value)
         const dailyPredictions = daily
             ? Object.entries(daily).map(([date, obj]) => ({
-                date,
-                label: date.slice(5),
+                date,                          // full date
+                label: date.slice(5),          // e.g. "08-26"
                 value: Number(obj.predicted_kWh.toFixed(2)),
+                horizon: obj.horizon,
+                model: obj.model,
+                timestamp: obj.timestamp,
             }))
             : [];
 
+        // Transform weekly (array -> array with label/value)
         const weeklyPredictions = weekly
             ? weekly.map((w) => {
                 const { year, month, week, data } = w;
                 return {
-                    weekKey: `W${week} (${month}/${year})`,
-                    label: `W${week}-${month}`,
+                    weekKey: `W${week} (${month}/${year})`, // readable key
+                    label: `W${week}`,                      // shorter chart label
                     value: Number(data.predicted_kWh.toFixed(2)),
+                    horizon: data.horizon,
+                    model: data.model,
                     timestamp: data.timestamp,
                 };
             })
@@ -60,41 +67,6 @@ export const predict_usage = async (userId, deviceId, applianceName) => {
         };
     } catch (error) {
         return null
-    }
-};
-
-export const predict_totals = async (userId) => {
-    try {
-        const response = await api.get(`/predict/totals/${userId}`);
-        const { daily, weekly } = response.data || {};
-
-        const dailyPredictions = daily
-            ? Object.entries(daily).map(([date, obj]) => ({
-                date,
-                label: date.slice(5),
-                value: Number(obj.predicted_kWh?.toFixed(2) || 0),
-            }))
-            : [];
-
-        const weeklyPredictions = weekly
-            ? weekly.map((w) => {
-                const { year, month, week, data } = w;
-                return {
-                    weekKey: `W${week} (${month}/${year})`,
-                    label: `W${week}-${month}`,
-                    value: Number(data.predicted_kWh?.toFixed(2) || 0),
-                    timestamp: data.timestamp || null,
-                };
-            })
-            : [];
-
-        return {
-            daily: dailyPredictions,
-            weekly: weeklyPredictions,
-        };
-    } catch (error) {
-        console.error("Error fetching total predictions:", error);
-        return null;
     }
 };
 

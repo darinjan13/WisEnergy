@@ -1,35 +1,27 @@
 import React from "react";
 import { View } from "react-native";
 
-export default function CustomProgressBar({
-  progress = 0,
-  maxProgress = 100,
-  color = "#4CAF50",
-  backgroundColor = "#E5E7EB",
-  height = 20,
-}) {
-  // Compute percentage safely
-  const percent =
-    maxProgress > 0 ? Math.min(100, (progress / maxProgress) * 100) : 0;
+export default function CustomProgressBar({ progress = 0, color = "#4CAF50", height = 20 }) {
+    // Clamp value between 0–100
+    const safeProgress = Math.min(100, Math.max(0, progress));
 
-  return (
-    <View
-      style={{
-        height,
-        width: "100%",
-        backgroundColor,
-        borderRadius: height / 2,
-        overflow: "hidden",
-      }}
-    >
-      <View
-        style={{
-          height: "100%",
-          width: `${percent}%`,
-          backgroundColor: color,
-          borderRadius: height / 2,
-        }}
-      />
-    </View>
-  );
+    return (
+        <View
+            style={{
+                height,
+                width: "100%",
+                backgroundColor: "#E5E7EB", // light gray bg
+                borderRadius: height / 2,
+                overflow: "hidden",
+            }}
+        >
+            <View
+                style={{
+                    height: "100%",
+                    width: `${safeProgress}%`, // percent width
+                    backgroundColor: color,
+                }}
+            />
+        </View>
+    );
 }

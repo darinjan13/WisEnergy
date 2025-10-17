@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router'
 import '../../global.css';
-import { StatusBar } from 'react-native';
+import { StatusBar, useColorScheme } from 'react-native';
 export default function AuthLayout() {
+    const colorScheme = useColorScheme();
     return (
         <>
             <StatusBar barStyle='dark-content' />

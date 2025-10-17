@@ -1,12 +1,13 @@
-import { AntDesign, Entypo, Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { AntDesign, Entypo, Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Divider } from 'react-native-paper';
 
 export default function FeedbackScreen() {
 
     return (
-        <View className="flex-1 bg-gray-100 p-10 mt-10">
+        <View className="flex-1 bg-gray-100 p-10">
             <TouchableOpacity
                 onPress={() => router.back()}
                 className="w-10 -ml-5 mb-10"

@@ -1,30 +1,30 @@
-  {
-    "project_info": {
-      "project_number": "487471591216",
-      "firebase_url": "https://wisenergy-11737-default-rtdb.asia-southeast1.firebasedatabase.app",
-      "project_id": "wisenergy-11737",
-      "storage_bucket": "wisenergy-11737.firebasestorage.app"
-    },
-    "client": [
-      {
-        "client_info": {
-          "mobilesdk_app_id": "1:487471591216:android:85baa6801963e49896a2f5",
-          "android_client_info": {
-            "package_name": "com.storeblues123.WisEnergy"
-          }
-        },
-        "oauth_client": [],
-        "api_key": [
-          {
-            "current_key": "AIzaSyBDNdpAv5hEQv8k00QBqrCuwn7d1TugZxs"
-          }
-        ],
-        "services": {
-          "appinvite_service": {
-            "other_platform_oauth_client": []
-          }
+{
+  "project_info": {
+    "project_number": "487471591216",
+    "firebase_url": "https://wisenergy-11737-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "wisenergy-11737",
+    "storage_bucket": "wisenergy-11737.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:487471591216:android:85baa6801963e49896a2f5",
+        "android_client_info": {
+          "package_name": "com.storeblues123.WisEnergy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDNdpAv5hEQv8k00QBqrCuwn7d1TugZxs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
         }
       }
-    ],
-    "configuration_version": "1"
-  }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -55,7 +55,7 @@ export default function FeedbackForm({ type, title, description, placeholder }) 
     };
 
     return (
-        <View className="flex-1 bg-white p-10 mt-10">
+        <View className="flex-1 bg-white p-10">
             <TouchableOpacity
                 onPress={() => router.replace('/(settings)/contactSupport')}
                 className="w-10 -ml-5 mb-10"

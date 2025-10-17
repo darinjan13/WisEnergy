@@ -6,38 +6,19 @@ export default function DeviceCard({ disabled, onPress, deviceData, editDevice, 
     return (
         <Card style={[styles.cardShadow, { marginBottom: 16 }]} onPress={() => onPress(deviceData)} disabled={disabled}>
             <Card.Title
-                testID="card"
                 title={`Device Name: ${deviceData.device_nickname}`}
                 titleStyle={styles.title}
                 subtitleStyle={styles.subtitle}
                 right={() => (
                     <View className="flex-row justify-between items-center gap-8 pr-5">
-                        <Feather
-                            testID="edit-button"
-                            disabled={deviceData.status === "unpaired"}
-                            name="edit"
-                            color="#2E4F4F"
-                            size={24}
-                            onPress={() => {
-                                editDevice();
-                            }}
-                        />
-                        <MaterialCommunityIcons
-                            testID="delete-button"
-                            disabled={deviceData.status === "unpaired"}
-                            name="trash-can"
-                            color="red"
-                            size={24}
-                            onPress={() => {
-                                deleteDevice();
-                            }}
-                        />
+                        <Feather disabled={deviceData.status === "unpaired"} name="edit" color="#2E4F4F" size={24} onPress={editDevice} />
+                        <MaterialCommunityIcons disabled={deviceData.status === "unpaired"} name="trash-can" color="red" size={24} onPress={deleteDevice} />
                     </View>
                 )}
             />
             <Card.Content style={styles.cardContent}>
-                <Text style={styles.contentText} variant="bodyMedium">Device ID: {deviceData.id}</Text>
-                <Text style={styles.contentText}>Paired on: {deviceData.paired_at}</Text>
+                <Text style={styles.contentText} variant="bodyMedium" >Device ID: {deviceData.id}</Text>
+                <Text style={styles.contentText} >Paired on: {deviceData.paired_at}</Text>
             </Card.Content>
         </Card>
     );
@@ -58,9 +39,9 @@ const styles = StyleSheet.create({
         fontSize: 13,
     },
     cardContent: {
-        marginTop: -20,
+        marginTop: -20
     },
     contentText: {
         color: "#5f5f5f",
-    },
+    }
 });

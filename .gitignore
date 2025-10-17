@@ -3,7 +3,6 @@
 # dependencies
 node_modules/
 
-/app/(tabs)/TemporaryReports.jsx
 # Expo
 .expo/
 dist/
