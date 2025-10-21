@@ -19,7 +19,7 @@ export default function Dashboard() {
     const insets = useSafeAreaInsets();
     const { devices, userDevices, setDevices, listenToUserAppliances } = useDeviceStore();
     const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
-    const { monthlyTotalConsumption, fetchLatestMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, weeklyTotals, fetchTotals, dailyTotals } = useUsageStore();
+    const { monthlyTotalConsumption, fetchLatestMonthlyTotalConsumption, fetchTodayTrend, todayTrend, topAppliances, fetchTopAppliances, fetchAllMonthlyTotalConsumption, allMonthlyTotalConsumption, dailyData, weeklyData, fetchDailyTotals, fetchWeeklyTotals } = useUsageStore();
     const { locationRate, fetchLocationRate, monthlyBudget, percentUsed, fetchPercentUsed, subscribeToBudget } = useBudgetStore();
     const [efficiency, setEfficiency] = useState(0);
     const [efficiencyColor, setEfficiencyColor] = useState('#16a34a');
@@ -35,6 +35,7 @@ export default function Dashboard() {
     useFocusEffect(
         useCallback(() => {
             const userId = auth?.currentUser?.uid;
+            let active = true
             if (!userId) return;
 
             const setupData = async () => {
@@ -45,6 +46,10 @@ export default function Dashboard() {
 
                 listenToUserAppliances(userId);
 
+                await Promise.allSettled([
+                    fetchDailyTotals(userId),
+                    fetchWeeklyTotals(userId),
+                ]);
                 if (locationRate === 0 || monthlyBudget === null || monthlyTotalConsumption === 0) {
                     await fetchLocationRate(userId);
                     subscribeToBudget(userId);
@@ -59,7 +64,7 @@ export default function Dashboard() {
                     await fetchAllMonthlyTotalConsumption(userId);
                 }
             };
-
+            if (!active) return
             setupData();
             const timeout = setTimeout(() => {
                 if (locationRate > 0) {
@@ -67,6 +72,7 @@ export default function Dashboard() {
                 }
             }, 1000);
             return () => {
+                active = false
                 setIsLoading(true)
                 clearTimeout(timeout)
                 setToolTip(false)
@@ -77,17 +83,14 @@ export default function Dashboard() {
     const calculateWeeklySavings = async (userId) => {
         try {
             if (!userId) return;
+            console.log(dailyData);
 
-            // ✅ Load data if not cached yet
-            if (!weeklyTotals?.length) await fetchTotals("Weekly", userId);
-            if (!dailyTotals?.length) await fetchTotals("Daily", userId);
-
-            const weeklyData = weeklyTotals[0]?.barData || [];
-            const dailyData = dailyTotals[0]?.barData || [];
-            if (!weeklyData.length || !dailyData.length) return;
+            const weeklyDatas = weeklyData?.weeklyTotals[0]?.barData || [];
+            const dailyDatas = dailyData?.dailyTotals[0]?.barData || [];
+            if (!weeklyDatas.length || !dailyDatas.length) return;
 
             // 🔹 Sort week labels chronologically
-            const sortedWeeks = [...weeklyData].sort((a, b) => {
+            const sortedWeeks = [...weeklyDatas].sort((a, b) => {
                 const endA = a.date?.split(" - ")[1]?.trim().replace("–", "-");
                 const endB = b.date?.split(" - ")[1]?.trim().replace("–", "-");
                 if (!endA || !endB) return 0;
@@ -112,7 +115,7 @@ export default function Dashboard() {
             mondayThisWeek.setHours(0, 0, 0, 0);
 
             // 🔹 Filter daily data (Mon → today)
-            const currentWeekDays = dailyData.filter((d) => {
+            const currentWeekDays = dailyDatas.filter((d) => {
                 if (!d.date) return false;
                 const dDate = new Date(`${d.date}T00:00:00+08:00`);
                 return dDate >= mondayThisWeek && dDate <= todayPH;
@@ -122,8 +125,8 @@ export default function Dashboard() {
 
             // 🔹 Compute peso savings
             const diff = (lastWeekTotal - currentWeekTotal) * (locationRate || 0);
-            console.log("Last week", currentWeekTotal);
-
+            console.log("Last week", sortedWeeks);
+            console.log("Current week", currentWeekDays);
 
             setWeeklySavings(Number(diff.toFixed(2)));
         } catch (err) {
@@ -137,8 +140,10 @@ export default function Dashboard() {
                 (sum, item) => sum + (item.value || 0),
                 0
             );
+
             setTotalEnergyConsumption(total)
         }
+        console.log(totalEnergyConsumption);
         if (allMonthlyTotalConsumption.length > 1) {
             // Sort chronologically by month index (Jan–Dec)
             const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -376,7 +381,7 @@ export default function Dashboard() {
                             {todayTrend?.buckets && Object.keys(todayTrend.buckets).length > 0 ? (
                                 Object.entries(todayTrend.buckets).map(([label, value], i) => (
                                     <TouchableOpacity key={i} className="items-center mx-3" onPress={() => handleBarPress(label)}>
-                                        <View className="w-6 bg-green-600 rounded-md" style={{ height: value * 100 }} />
+                                        <View className="w-6 bg-green-600 rounded-md" style={{ height: value * 10 }} />
                                         <Text className="text-md mt-1 text-gray-500">{value.toFixed(2)}</Text>
                                         <Text className="text-sm mt-1 text-gray-500">{label.split("-")[0]}</Text>
                                     </TouchableOpacity>
@@ -495,7 +500,7 @@ export default function Dashboard() {
                                     animationDuration={800}
                                     yAxisThickness={0}
                                     xAxisThickness={0}
-                                    width={screenWidth * 0.65} // responsive width (85% of screen)
+                                    width={screenWidth * 0.70} // responsive width (85% of screen)
                                     maxValue={Math.max(...hourlyData.map((d) => d.value)) * 1.2 || 1}
                                     initialSpacing={20}
                                     barBorderRadius={6}

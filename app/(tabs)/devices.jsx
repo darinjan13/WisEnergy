@@ -37,6 +37,7 @@ export default function Devices() {
     useFocusEffect(
         useCallback(() => {
             if (devices.length === 0) setDevices();
+
             const timeout = setTimeout(() => {
                 setIsLoading(false);
             }, 1000);
@@ -55,10 +56,11 @@ export default function Devices() {
 
     const handleAddDevice = async () => {
         setIsLoading(true);
+
         try {
             setModalVisible(false);
             const existingDevice = devices.find(device =>
-                device.pairing_code === deviceCode.trim() &&
+                device.id === selectedUnpairedDevice &&
                 device.status === "paired"
             );
 

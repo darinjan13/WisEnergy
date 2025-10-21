@@ -21,16 +21,18 @@ export default function Reports() {
     const insets = useSafeAreaInsets();
     const isDark = scheme === "dark";
 
-    const { devices, userDevices, userAppliances, setDevices } = useDeviceStore();
+    const { devices, userDevices, userAppliances } = useDeviceStore();
     const {
-        reportHistory,
-        fetchReport,
-        fetchTotals,
-        fetchAllMonthlyTotalConsumption,
+        fetchDailyReport,
+        fetchWeeklyReport,
+        fetchMonthlyReport,
+        fetchDailyTotals,
+        fetchWeeklyTotals,
+        fetchMonthlyTotals,
         allMonthlyTotalConsumption,
-        dailyTotals,
-        weeklyTotals,
-        monthlyTotals,
+        dailyData,
+        weeklyData,
+        monthlyData,
     } = useUsageStore();
     const { allBudget, fetchAllBudget } = useBudgetStore();
 
@@ -53,7 +55,6 @@ export default function Reports() {
         return id;
     };
 
-    /** ---------- INITIAL LOAD ---------- */
     useFocusEffect(
         useCallback(() => {
             let active = true;
@@ -62,13 +63,15 @@ export default function Reports() {
 
             const loadInitial = async () => {
                 try {
-                    await Promise.allSettled([
-                        fetchAllMonthlyTotalConsumption(uid),
-                        fetchAllBudget(uid),
-                        fetchTotals("Daily", uid),
-                        fetchTotals("Weekly", uid),
-                        fetchTotals("Monthly", uid),
-                    ]);
+                    if (dailyData.dailyTotals === undefined || weeklyData.weeklyTotals === undefined) {
+                        await Promise.allSettled([
+                            fetchDailyTotals(uid),
+                            fetchWeeklyTotals(uid),
+                        ]);
+                    }
+
+                    fetchMonthlyTotals(uid)
+                    fetchAllBudget(uid)
                     if (active) setIsLoading(false);
                 } catch {
                     if (active) setIsLoading(false);
@@ -77,9 +80,9 @@ export default function Reports() {
 
             loadInitial();
             const timeout = setTimeout(() => {
-                if (reportHistory !== null)
-                    setIsLoading(false);
+                setIsLoading(false);
             }, 1000);
+
             const mapped = userDevices
                 .map((device) => {
                     const match = userAppliances.find((a) => a.id === device.id);
@@ -93,45 +96,18 @@ export default function Reports() {
                 .filter(Boolean);
 
             setReportData(mapped);
-            console.log("Appliances", userAppliances);
 
             return () => {
-                clearTimeout(timeout)
+                active = false;
+                clearTimeout(timeout);
                 timeoutsRef.current.forEach(clearTimeout);
                 timeoutsRef.current = [];
-                setSelectedDevice("All Devices")
-                setReportData([])
+                setSelectedDevice("All Devices");
+                setReportData([]);
             };
         }, [userDevices, userAppliances])
     );
 
-    /** ---------- DEVICE/APPLIANCE SYNC ---------- */
-    // useEffect(() => {
-    //     const devicesList = Array.isArray(userDevices) ? userDevices : [];
-    //     const appliancesList = Array.isArray(userAppliances) ? userAppliances : [];
-
-    //     if (devicesList.length === 0 || appliancesList.length === 0) return;
-
-    //     const mapped = devicesList
-    //         .map((device) => {
-    //             const match = appliancesList.find((a) => a.id === device.id);
-    //             if (!match) return null;
-    //             return {
-    //                 device_id: device.id,
-    //                 device_nickname: device.device_nickname,
-    //                 appliances: match.appliances || [],
-    //             };
-    //         })
-    //         .filter(Boolean);
-
-    //     setReportData(mapped);
-
-    //     if (mapped.length > 0 && !selectedDevice) {
-    //         setSelectedDevice("All Devices");
-    //     }
-    // }, [userDevices, userAppliances]);
-
-    /** ---------- CATEGORY OR DEVICE CHANGE ---------- */
     useEffect(() => {
         if (!selectedDevice) return;
         setReportLoading(true);
@@ -142,39 +118,57 @@ export default function Reports() {
 
             if (selectedDevice === "All Devices") {
                 switch (reportCategory) {
-                    case "Daily": setReportsTotal(dailyTotals); break;
-                    case "Weekly": setReportsTotal(weeklyTotals); break;
-                    case "Monthly": setReportsTotal(monthlyTotals); break;
+                    case "Daily": setReportsTotal(dailyData.dailyTotals); break;
+                    case "Weekly": setReportsTotal(weeklyData.weeklyTotals); break;
+                    case "Monthly": setReportsTotal(monthlyData.monthlyTotals); break;
                 }
                 setReportLoading(false);
                 return;
             }
 
-            // const existing = reportHistory[reportCategory.toLowerCase()]?.[selectedDevice];
-            // console.log("Existing", existing);
-
-            // if (!existing) {
             const device = reportData?.find((d) => d.device_id === selectedDevice);
             if (device) {
-                await fetchReport(reportCategory, uid, selectedDevice, device.appliances);
+                switch (reportCategory) {
+                    case "Daily":
+                        await fetchDailyReport(uid, selectedDevice, device.appliances);
+                        break;
+                    case "Weekly":
+                        await fetchWeeklyReport(uid, selectedDevice, device.appliances);
+                        break;
+                    case "Monthly":
+                        await fetchMonthlyReport(uid, selectedDevice, device.appliances);
+                        break;
+                    default:
+                        break;
+                }
             }
-            // }
             setReportLoading(false);
         }, 250);
     }, [reportData, selectedDevice, reportCategory]);
 
-    /** ---------- UPDATE REPORT DATA ---------- */
     useEffect(() => {
         if (!selectedDevice) return;
         if (selectedDevice === "All Devices") return;
 
-        const updated = reportHistory[reportCategory.toLowerCase()]?.[selectedDevice];
-        console.log(reportHistory);
+        let updatedReports = [];
 
-        if (updated) setReports(updated);
-    }, [reportHistory, selectedDevice, reportCategory]);
+        switch (reportCategory) {
+            case "Daily":
+                updatedReports = dailyData.dailyReport[selectedDevice] || [];
+                break;
+            case "Weekly":
+                updatedReports = weeklyData.weeklyReport[selectedDevice] || [];
+                break;
+            case "Monthly":
+                updatedReports = monthlyData.monthlyReport[selectedDevice] || [];
+                break;
+            default:
+                updatedReports = [];
+        }
 
-    /** ---------- LINE GRAPH ---------- */
+        setReports(updatedReports);
+    }, [reportCategory, selectedDevice, dailyData, weeklyData, monthlyData]);
+
     const lineData1 = allMonthlyTotalConsumption || [];
     const lineData2 = allBudget || [];
 
@@ -184,13 +178,11 @@ export default function Reports() {
         return Math.max(max1, max2);
     }, [lineData1, lineData2]);
 
-    /** ---------- MODAL CLEANUP ---------- */
     const closeModal = () => {
         setSelectedAppliance(null);
         setModalVisible(false);
     };
 
-    /** ---------- RENDER ---------- */
     if (isLoading) {
         return (
             <ScrollView

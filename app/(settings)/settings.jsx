@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useAuth from "@/hooks/useAuth";
 import { auth, db } from "@/firebase/firebaseConfig";
 import { onValue, ref, update } from "firebase/database";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function settings() {
     const { width } = useWindowDimensions();
@@ -18,6 +19,10 @@ export default function settings() {
     const [systemUpdates, setSystemUpdates] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingUI, setIsLoadingUI] = useState(true);
+
+    const [isPremium, setIsPremium] = useState(false);
+    const [planEndDate, setPlanEndDate] = useState(null);
+
 
     const getInitials = () => {
         const name = auth.currentUser?.displayName?.trim();
@@ -48,6 +53,14 @@ export default function settings() {
                     setSmartRecommendation(!!data.notify_smart_recommendation);
                     setHighUsageAlert(!!data.notify_high_usage_alerts);
                     setSystemUpdates(!!data.notify_system_updates);
+
+                    const sub = data.subscription || {};
+                    const isActive =
+                        (sub.status === "active" &&
+                            (!sub.end_date || new Date(sub.end_date) > new Date()));
+
+                    setIsPremium(isActive);
+                    setPlanEndDate(sub.end_date || null);
                 }
                 setIsLoadingUI(false)
             });
@@ -89,10 +102,10 @@ export default function settings() {
 
     return (
         <View>
-            <ScrollView className="bg-gray-100 p-10" contentContainerStyle={{ paddingBottom: insets.bottom + 60, paddingTop: insets.top - 10 }}>
-                <View className="mb-6 flex-row items-center">
+            <ScrollView className="bg-gray-100 p-10" contentContainerStyle={{ paddingBottom: insets.bottom + 60, paddingTop: insets.top - 20 }}>
+                <View className="mb-6 flex-row items-center gap-x-4">
                     <TouchableOpacity
-                        className="w-10 -ml-4"
+                        className="-ml-1"
                         onPress={() => {
                             if (router.canGoBack()) {
                                 router.back();
@@ -107,7 +120,7 @@ export default function settings() {
                 </View>
                 <View className="mb-6 flex-row items-center">
                     {/* Avatar */}
-                    <View className="h-14 w-14 rounded-md bg-[#136B1E] items-center justify-center mr-4">
+                    <View className="h-14 w-14 rounded-xl bg-green-800 items-center justify-center mr-4">
                         <Text className="text-white text-lg font-bold">
                             {getInitials()}
                         </Text>
@@ -123,6 +136,70 @@ export default function settings() {
                         </Text>
                     </View>
                 </View>
+
+                {/* Upgrade to Premium Card */}
+                {/* Premium Card */}
+                <TouchableOpacity
+                    activeOpacity={isPremium ? 1 : 0.9}
+                    disabled={isPremium}
+                    className={`rounded-xl mb-6 shadow-md overflow-hidden`}
+                    onPress={() => {
+                        if (!isPremium) router.push("/(settings)/subscription");
+                    }}
+                >
+                    <LinearGradient
+                        colors={
+                            ["#166534", "#16a34a"]
+                        }
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        className="py-4 px-5 justify-between"
+                    >
+                        <View className="flex-row justify-between items-start">
+                            <View>
+                                <Text className="text-white text-2xl font-extrabold">
+                                    {isPremium ? "Premium User" : "Upgrade to Premium"}
+                                </Text>
+                                {isPremium ? (
+                                    <Text className="text-white text-xs mt-1 opacity-90">
+                                        Your subscription renews on{" "}
+                                        <Text className="italic font-semibold">
+                                            {new Date(planEndDate).toLocaleDateString("en-US", {
+                                                month: "short",
+                                                day: "numeric",
+                                                year: "numeric",
+                                            })}
+                                        </Text>
+                                    </Text>
+                                ) : (
+                                    <Text className="text-white text-xs mt-1 opacity-90">
+                                        Experience WisEnergy at its smartest.
+                                    </Text>
+                                )}
+                            </View>
+                            <FontAwesome5
+                                name="gem"
+                                size={22}
+                                color={isPremium ? "#FBBF24" : "#FDE047"}
+                            />
+                        </View>
+
+                        {!isPremium && (
+                            <View className="flex-row justify-end items-center mt-3">
+                                <Text className="text-white text-sm opacity-90 mr-1">Learn More</Text>
+                                <Feather name="chevron-right" size={16} color="#fff" />
+                            </View>
+                        )}
+
+                        {isPremium && (
+                            <View className="flex-row justify-end items-center mt-3">
+                                <Feather name="check-circle" size={16} color="#BBF7D0" />
+                                <Text className="text-white text-sm opacity-90 ml-1">Active</Text>
+                            </View>
+                        )}
+                    </LinearGradient>
+                </TouchableOpacity>
+
 
 
                 <View className="bg-white rounded-xl shadow-md p-4 mb-6">

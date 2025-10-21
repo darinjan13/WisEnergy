@@ -173,18 +173,28 @@ export const useAiGeneratedStore = create((set) => ({
 export const useUsageStore = create(
     persistWithExpiry(
         (set, get) => ({
-            // ---------- STATE ----------
+            // ---------- STATE ---------- 
             monthlyTotalConsumption: 0,
             allMonthlyTotalConsumption: [],
             latestKwh: {},
-            reportHistory: { daily: {}, weekly: {}, monthly: {} },
-            dailyTotals: [],
-            weeklyTotals: [],
-            monthlyTotals: [],
             topAppliances: [],
             todayTrend: null,
 
-            // ---------- FETCH FUNCTIONS ----------
+            // ---------- REPORT DATA CHUNKS ---------- 
+            dailyData: {
+                dailyTotals: [],
+                dailyReport: [],
+            },
+            weeklyData: {
+                weeklyTotals: [],
+                weeklyReport: [],
+            },
+            monthlyData: {
+                monthlyTotals: [],
+                monthlyReport: [],
+            },
+
+            // ---------- FETCH FUNCTIONS ---------- 
             fetchTopAppliances: async (userId) => {
                 try {
                     const data = await firebaseUsageServices.fetchTopAppliances(userId);
@@ -236,77 +246,129 @@ export const useUsageStore = create(
             },
 
             // ---------- REPORT FETCH (per category) ----------
-            fetchReport: async (category, userId, deviceId, appliances) => {
+            fetchDailyReport: async (userId, deviceId, appliances) => {
                 try {
-                    const map = {
-                        Daily: firebaseUsageServices.fetchDailyReport,
-                        Weekly: firebaseUsageServices.fetchWeeklyReport,
-                        Monthly: firebaseUsageServices.fetchMonthlyReport,
-                    };
-                    const fn = map[category];
-                    if (!fn) return;
-
-                    const data = await fn(userId, deviceId, appliances);
+                    const data = await firebaseUsageServices.fetchDailyReport(userId, deviceId, appliances);
                     set((state) => ({
-                        reportHistory: {
-                            ...state.reportHistory,
-                            [category.toLowerCase()]: {
-                                ...state.reportHistory[category.toLowerCase()],
+                        dailyData: {
+                            ...state.dailyData,
+                            dailyReport: {
+                                ...state.dailyData.dailyReport,
                                 [deviceId]: data,
                             },
                         },
                     }));
                 } catch (err) {
-                    console.error("⚠️ fetchReport:", err);
+                    console.error("⚠️ fetchDailyReport:", err);
                 }
             },
 
-            // ---------- TOTAL FETCH (for All Devices view) ----------
-            fetchTotals: async (category, userId) => {
+            fetchWeeklyReport: async (userId, deviceId, appliances) => {
                 try {
-                    const map = {
-                        Daily: firebaseUsageServices.fetchDailyTotalConsumption,
-                        Weekly: firebaseUsageServices.fetchWeeklyTotalConsumption,
-                        Monthly: firebaseUsageServices.fetchMonthlyTotalConsumption,
-                    };
-                    const fn = map[category];
-                    if (!fn) return;
-
-                    const data = await fn(userId);
-                    set({ [`${category.toLowerCase()}Totals`]: data });
+                    const data = await firebaseUsageServices.fetchWeeklyReport(userId, deviceId, appliances);
+                    set((state) => ({
+                        weeklyData: {
+                            ...state.weeklyData,
+                            weeklyReport: {
+                                ...state.weeklyData.weeklyReport,
+                                [deviceId]: data,
+                            },
+                        },
+                    }));
                 } catch (err) {
-                    console.error("⚠️ fetchTotals:", err);
+                    console.error("⚠️ fetchWeeklyReport:", err);
                 }
             },
 
-            // ---------- RESET ----------
+            fetchMonthlyReport: async (userId, deviceId, appliances) => {
+                try {
+                    const data = await firebaseUsageServices.fetchMonthlyReport(userId, deviceId, appliances);
+                    set((state) => ({
+                        monthlyData: {
+                            ...state.monthlyData,
+                            monthlyReport: {
+                                ...state.monthlyData.monthlyReport,
+                                [deviceId]: data,
+                            },
+                        },
+                    }));
+                } catch (err) {
+                    console.error("⚠️ fetchMonthlyReport:", err);
+                }
+            },
+
+            // ---------- TOTAL FETCH (per category) ----------
+            fetchDailyTotals: async (userId) => {
+
+                try {
+                    const data = await firebaseUsageServices.fetchDailyTotalConsumption(userId);
+
+                    // set({ dailyData: { ...get().dailyData, dailyTotals: data } });
+                    set((state) => ({
+                        dailyData: {
+                            ...state.dailyData,
+                            dailyTotals: data
+                        }
+                    }))
+                } catch (err) {
+                    console.error("⚠️ fetchDailyTotals:", err);
+                }
+            },
+
+            fetchWeeklyTotals: async (userId) => {
+                try {
+                    const data = await firebaseUsageServices.fetchWeeklyTotalConsumption(userId);
+                    set((state) => ({
+                        weeklyData: {
+                            ...state.weeklyData,
+                            weeklyTotals: data
+                        }
+                    }))
+                } catch (err) {
+                    console.error("⚠️ fetchWeeklyTotals:", err);
+                }
+            },
+
+            fetchMonthlyTotals: async (userId) => {
+                try {
+                    const data = await firebaseUsageServices.fetchMonthlyTotalConsumption(userId);
+                    set((state) => ({
+                        monthlyData: {
+                            ...state.monthlyData,
+                            monthlyTotals: data
+                        }
+                    }))
+                } catch (err) {
+                    console.error("⚠️ fetchMonthlyTotals:", err);
+                }
+            },
+
             reset: () =>
                 set({
                     monthlyTotalConsumption: 0,
                     allMonthlyTotalConsumption: [],
                     latestKwh: {},
-                    reportHistory: { daily: {}, weekly: {}, monthly: {} },
-                    dailyTotals: [],
-                    weeklyTotals: [],
-                    monthlyTotals: [],
                     topAppliances: [],
                     todayTrend: null,
+                    dailyData: { dailyTotals: [], dailyReport: [] },
+                    weeklyData: { weeklyTotals: [], weeklyReport: [] },
+                    monthlyData: { monthlyTotals: [], monthlyReport: [] },
                 }),
         }),
         {
             name: "usage-store",
             ttl: 1000 * 60 * 60, // 1 hour expiry
             partialize: (state) => ({
-                reportHistory: state.reportHistory,
-                dailyTotals: state.dailyTotals,
-                weeklyTotals: state.weeklyTotals,
-                monthlyTotals: state.monthlyTotals,
                 topAppliances: state.topAppliances,
                 allMonthlyTotalConsumption: state.allMonthlyTotalConsumption,
+                dailyData: state.dailyData,
+                weeklyData: state.weeklyData,
+                monthlyData: state.monthlyData,
             }),
         }
     )
 );
+
 
 export const useBudgetStore = create((set, get) => ({
     locationRate: 0,

@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "wisenergy",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "androidStatusBar": {
@@ -13,6 +13,10 @@
       "backgroundColor": "#ffffff",
       "translucent": false
     },
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.storeblues123.WisEnergy"
@@ -23,6 +27,21 @@
         "foregroundImage": "./assets/images/WisEnergy_LOGO1.png",
         "backgroundColor": "#ffffff"
       },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "wisenergy",
+              "host": "*"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
       "package": "com.storeblues123.WisEnergy"
     },
     "web": {

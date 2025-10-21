@@ -87,7 +87,41 @@ export const fetchTodayTrend = async (userId) => {
             });
         });
 
-        return { buckets, hourlyData };
+        // Caching with 4-hour fixed expiry (4am, 8am, etc.)
+        const cacheKey = `@todayTrend:${userId}:${today}`;
+        const cached = await AsyncStorage.getItem(cacheKey);
+
+        if (cached) {
+            const { data, expiresAt } = JSON.parse(cached);
+            if (Date.now() < expiresAt) {
+                return data; // Return cached data if it's still valid
+            }
+        }
+
+        const result = { buckets, hourlyData };
+
+        // Calculate the next 4-hour cutoff (4am, 8am, etc.)
+        const now = new Date();
+        const currentHour = now.getHours();
+        let nextCutoffHour = Math.ceil((currentHour + 1) / 4) * 4 % 24;
+        const cutoff = new Date(now);
+        cutoff.setHours(nextCutoffHour, 0, 0, 0);
+
+        if (nextCutoffHour <= currentHour) {
+            cutoff.setDate(cutoff.getDate() + 1); // Set to the next day if it's past the current 4-hour block
+        }
+
+        // Save the result in AsyncStorage with expiration at the next 4-hour block
+        await AsyncStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+                data: result,
+                expiresAt: cutoff.getTime(),
+            })
+        );
+
+        return result;
+
     } catch (error) {
         console.error("❌ Error fetching today trend:", error);
         return null;
@@ -473,24 +507,30 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
 
 /** 🔹 Monthly total consumption */
 export const fetchMonthlyTotalConsumption = async (userId) => {
-    const ref1 = ref(db, `monthly_total_consumption/${userId}`);
-    const snap = await get(ref1);
+    const refPath = ref(db, `monthly_total_consumption/${userId}`);
+    const snap = await get(refPath);
     if (!snap.exists()) return [];
 
-    const data = snap.val();
+    const years = Object.keys(snap.val());
     const history = [];
-    Object.keys(data).forEach((year) => {
-        Object.keys(data[year]).forEach((m) => {
-            const val = Number((data[year][m]?.total_energy_consumption ?? 0).toFixed(2));
-            history.push({
-                label: getMonthName(m, "short"),
-                value: val,
-                dataPointText: val,
-            });
-        });
-    });
+    const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    for (const year of years) {
+        const yearData = snap.val()[year];
+        const months = Object.keys(yearData).sort();
+        for (const month of months) {
+            const m = yearData[month];
+            const total = Number((m.total_energy_consumption ?? 0).toFixed(2));
 
-    // 🔸 Keep last 5 months
+            history.push({
+                label: getMonthName(month, 'short'),
+                value: total,
+                dataPointText: total,
+                date: `${m.start_date ?? ""} - ${m.end_date ?? ""}`,
+            });
+        }
+    }
+
+    // 🔸 Keep last 5 months (latest 5 months in chronological order)
     const recent = history.slice(-5);
 
     // 🔸 Fetch AI prediction
@@ -500,8 +540,12 @@ export const fetchMonthlyTotalConsumption = async (userId) => {
             label: p.label,
             value: p.value,
             dataPointText: p.value,
+            monthIndex: monthOrder.indexOf(p.label), // Store the month index for AI data
         }))
         : [];
+
+    // Sort AI predictions to match the chronological month order
+    barData2.sort((a, b) => a.monthIndex - b.monthIndex);
 
     return [
         {

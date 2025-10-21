@@ -49,8 +49,8 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
         return merged;
     }, [actualData, predictedData, allLabels]);
 
-    const maxValue = Math.max(...barData.map((b) => b.value), 0) + 1;
-    const noOfSections = category === "Daily" ? Math.ceil(maxValue) * 2 : 2;
+    const maxValue = category === "Daily" ? Math.max(...barData.map((b) => b.value), 0) + 1 : Math.max(...barData.map((b) => b.value), 0) + 10;
+    const noOfSections = category === "Daily" ? Math.ceil(maxValue) / 2 : Math.ceil(maxValue) / Math.ceil(maxValue) + 2;
 
     return (
         <View className="bg-white p-5 rounded-2xl">
@@ -60,8 +60,9 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
 
             <BarChart
                 data={barData}
-                barWidth={30}
+                barWidth={category === "Monhtly" ? 30 : 40}
                 spacing={24}
+                maxV
                 showValuesAsTopLabel
                 topLabelTextStyle={{ color: "black", fontSize: 11 }}
                 xAxisThickness={0}
