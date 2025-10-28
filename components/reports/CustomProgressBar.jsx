@@ -8,10 +8,21 @@ export default function CustomProgressBar({
   backgroundColor = "#E5E7EB",
   height = 20,
 }) {
-  // Compute percentage safely
-  const percent =
-    maxProgress > 0 ? Math.min(100, (progress / maxProgress) * 100) : 0;
+  const rawPercent = maxProgress > 0 ? (progress / maxProgress) * 100 : 0;
+  const percent = Math.min(100, Math.max(0, rawPercent));
 
+  let barColor = color;
+  if (rawPercent <= 50) {
+    barColor = "#22C55E";
+  } else if (rawPercent <= 80) {
+    barColor = "#84CC16";
+  } else if (rawPercent <= 100) {
+    barColor = "#FACC15";
+  } else if (rawPercent <= 120) {
+    barColor = "#FB923C";
+  } else {
+    barColor = "#EF4444";
+  }
   return (
     <View
       style={{
@@ -26,7 +37,7 @@ export default function CustomProgressBar({
         style={{
           height: "100%",
           width: `${percent}%`,
-          backgroundColor: color,
+          backgroundColor: barColor,
           borderRadius: height / 2,
         }}
       />

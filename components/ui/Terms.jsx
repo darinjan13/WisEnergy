@@ -37,7 +37,7 @@ export default function TermsOfService({ source, close }) {
             <Text className="font-bold text-lg mb-2">2. Eligibility</Text>
             {[
                 "You must be at least 18 years old or have parental consent to use WisEnergy.",
-                "You are responsible for keeping your account credentialssecure.",
+                "You are responsible for keeping your account credentials secure.",
             ].map((item, i) => (
                 <Text key={i} className="text-gray-700 mb-1 ml-2">• {item}</Text>
             ))}
@@ -67,7 +67,7 @@ export default function TermsOfService({ source, close }) {
 
             {/* Section 5 */}
             <Text className="font-bold text-lg mt-4 mb-2">
-                5. Payments and Subscriptions (if applicable)
+                5. Payments and Subscriptions
             </Text>
             <Text className="text-gray-700 mb-4">
                 Some features may require payment or subscription. Fees, billing

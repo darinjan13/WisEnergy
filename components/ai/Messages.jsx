@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, useWindowDimensions } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 
-const AIInsightsCarousel = ({ insights, from }) => {
+const AIInsightsCarousel = ({ insights }) => {
     const { width } = useWindowDimensions();
     const [heights, setHeights] = useState({});
     const [activeIndex, setActiveIndex] = useState(0);
@@ -11,7 +11,7 @@ const AIInsightsCarousel = ({ insights, from }) => {
         <View className="">
             <Carousel
                 loop={false}
-                width={width - 80}
+                width={width - 60}
                 height={
                     Object.keys(heights).length > 0
                         ? Math.max(...Object.values(heights)) + 10
@@ -31,10 +31,6 @@ const AIInsightsCarousel = ({ insights, from }) => {
                     <View
                         key={index}
                         className="bg-white rounded-2xl justify-center"
-                        onLayout={(e) => {
-                            const { height } = e.nativeEvent.layout;
-                            setHeights((prev) => ({ ...prev, [index]: height }));
-                        }}
                     >
                         <Text className="text-gray-600 text-sm">{item}</Text>
                     </View>
@@ -44,14 +40,12 @@ const AIInsightsCarousel = ({ insights, from }) => {
             {/* Pagination dots */}
             <View className="items-center">
                 <View
-                    className={`flex-row mt-2 ${from === "budget" ? "-ml-10" : "ml-0"
-                        }`}
+                    className={`flex-row mt-2`}
                 >
                     {insights.map((_, i) => (
                         <View
                             key={i}
-                            className={`w-2 h-2 rounded-full mx-1 ${i === activeIndex ? "bg-green-500" : "bg-gray-300"
-                                }`}
+                            className={`w-2 h-2 rounded-full mx-1 ${i === activeIndex ? "bg-green-500" : "bg-gray-300"}`}
                         />
                     ))}
                 </View>

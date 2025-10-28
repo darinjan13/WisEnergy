@@ -108,6 +108,28 @@ export default function Reports() {
         }, [userDevices, userAppliances])
     );
 
+    const getAllAppliances = (reportObj) => {
+        if (!reportObj) return [];
+
+        // “All Devices” is the key you see in the console
+        const bucket = reportObj["All Devices"];
+        return Array.isArray(bucket) ? bucket : [];
+    };
+
+    const getAllAppliancesFromReportData = (reportData) => {
+        if (!Array.isArray(reportData)) return [];
+
+        return reportData
+            .flatMap((device) => device.appliances || [])   // keep only the array of appliances
+            .filter((appliance) => appliance && appliance.name); // safety
+    };
+    const getAllDevicesFromReportData = (reportData) => {
+        if (!Array.isArray(reportData)) return [];
+
+        return reportData
+            .flatMap((device) => device.device_id || [])
+    };
+
     useEffect(() => {
         if (!selectedDevice) return;
         setReportLoading(true);
@@ -116,17 +138,29 @@ export default function Reports() {
             const uid = auth.currentUser?.uid;
             if (!uid) return;
 
+            const device = reportData?.find((d) => d.device_id === selectedDevice);
+
             if (selectedDevice === "All Devices") {
                 switch (reportCategory) {
-                    case "Daily": setReportsTotal(dailyData.dailyTotals); break;
-                    case "Weekly": setReportsTotal(weeklyData.weeklyTotals); break;
-                    case "Monthly": setReportsTotal(monthlyData.monthlyTotals); break;
+                    case "Daily":
+                        setReportsTotal(dailyData)
+                        await fetchDailyReport(uid, selectedDevice, getAllAppliancesFromReportData(reportData));
+                        break;
+                    case "Weekly":
+                        setReportsTotal(weeklyData);
+                        await fetchWeeklyReport(uid, selectedDevice, getAllAppliancesFromReportData(reportData));
+                        break;
+                    case "Monthly":
+                        setReportsTotal(monthlyData);
+                        await fetchMonthlyReport(uid, selectedDevice, getAllAppliancesFromReportData(reportData));
+                        break;
                 }
+                console.log(getAllDevicesFromReportData(reportData));
+
                 setReportLoading(false);
                 return;
             }
 
-            const device = reportData?.find((d) => d.device_id === selectedDevice);
             if (device) {
                 switch (reportCategory) {
                     case "Daily":
@@ -246,7 +280,6 @@ export default function Reports() {
                 </View>
 
                 {/* Category Filters */}
-                <Text className="text-xl font-bold text-green-800 mb-4">Energy Consumption</Text>
                 <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl justify-between items-center">
                     {category.map((label, index) => (
                         <TouchableOpacity
@@ -302,17 +335,20 @@ export default function Reports() {
                     </View>
                 </View>
 
+                <Text className="text-xl font-bold text-green-800 mb-4">Energy Consumption</Text>
                 {/* All Devices */}
                 {selectedDevice === "All Devices" ? (
                     <AutoSkeletonView isLoading={reportLoading}>
                         <Text className="text-xl font-bold text-green-800 mb-4">
                             Overall Energy Consumption ({reportCategory})
                         </Text>
+
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
-                            {reportsTotal.length > 0 ? (
+                            {/* Overall Chart */}
+                            {reportsTotal?.[reportCategory.toLowerCase() + "Totals"]?.[0] ? (
                                 <EnergyPredictionChart
-                                    actualData={reportsTotal?.[0]?.barData}
-                                    predictedData={reportsTotal?.[0]?.barData2}
+                                    actualData={reportsTotal[reportCategory.toLowerCase() + "Totals"][0].barData}
+                                    predictedData={reportsTotal[reportCategory.toLowerCase() + "Totals"][0].barData2}
                                     category={reportCategory}
                                 />
                             ) : (
@@ -320,36 +356,89 @@ export default function Reports() {
                                     No data yet…
                                 </Text>
                             )}
+
+                            {/* Appliance List */}
+                            {(() => {
+                                const reportMap = {
+                                    Daily: dailyData.dailyReport,
+                                    Weekly: weeklyData.weeklyReport,
+                                    Monthly: monthlyData.monthlyReport,
+                                };
+
+                                const appliances = getAllAppliances(reportMap[reportCategory]);
+                                if (appliances.length === 0) {
+                                    return (
+                                        <View className="mt-6 items-center">
+                                            <Text className="text-gray-500 text-lg font-semibold">
+                                                No appliance usage data available.
+                                            </Text>
+                                        </View>
+                                    );
+                                }
+
+                                const totalUsage = appliances.reduce((sum, r) => sum + (r.latestKwh ?? 0), 0);
+
+                                return (
+                                    <View className="mt-6">
+                                        <Text className="text-gray-700 font-semibold mb-2">
+                                            {reportCategory} Consumption per Appliance
+                                        </Text>
+                                        {appliances.map((item, index) => {
+                                            const powerUsed = item.latestKwh ?? 0;
+                                            return (
+                                                <TouchableOpacity
+                                                    key={`${item.applianceName}-${index}`}
+                                                    onPress={() => {
+                                                        setSelectedAppliance(item);
+                                                        setModalVisible(true);
+                                                    }}
+                                                    className="mb-4"
+                                                >
+                                                    <View className="flex-row items-center">
+                                                        <Text className="w-24">{item.applianceName}</Text>
+                                                        <View className="flex-1">
+                                                            <CustomProgressBar progress={powerUsed} maxProgress={totalUsage} color="#4CAF50" />
+                                                        </View>
+                                                        <Text className="ml-2 text-gray-600 text-sm">{powerUsed.toFixed(2)} kWh</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+                                );
+                            })()}
                         </View>
                     </AutoSkeletonView>
                 ) : (
-                    // Specific Device (Appliance list)
+                    /* Specific Device */
                     <AutoSkeletonView isLoading={reportLoading}>
                         <Text className="text-xl font-bold text-green-800 mb-4">Appliance Usage</Text>
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
                             {reports.length > 0 ? (
-                                reports.map((item, index) => {
-                                    const powerUsed = item.latestKwh ?? 0;
+                                (() => {
                                     const totalUsage = reports.reduce((sum, r) => sum + (r.latestKwh ?? 0), 0);
-                                    return (
-                                        <TouchableOpacity
-                                            key={item.applianceName + index}
-                                            onPress={() => {
-                                                setSelectedAppliance(item);
-                                                setModalVisible(true);
-                                            }}
-                                            className="mb-4"
-                                        >
-                                            <View className="flex-row items-center">
-                                                <Text className="w-24">{item.applianceName}</Text>
-                                                <View className="flex-1">
-                                                    <CustomProgressBar progress={powerUsed} maxProgress={totalUsage} color="#4CAF50" />
+                                    return reports.map((item, index) => {
+                                        const powerUsed = item.latestKwh ?? 0;
+                                        return (
+                                            <TouchableOpacity
+                                                key={`${item.applianceName}-${index}`}
+                                                onPress={() => {
+                                                    setSelectedAppliance(item);
+                                                    setModalVisible(true);
+                                                }}
+                                                className="mb-4"
+                                            >
+                                                <View className="flex-row items-center">
+                                                    <Text className="w-24">{item.applianceName}</Text>
+                                                    <View className="flex-1">
+                                                        <CustomProgressBar progress={powerUsed} maxProgress={totalUsage} color="#4CAF50" />
+                                                    </View>
+                                                    <Text className="ml-2 text-gray-600 text-sm">{powerUsed.toFixed(2)} kWh</Text>
                                                 </View>
-                                                <Text className="ml-2 text-gray-600 text-sm">{powerUsed.toFixed(2)} kWh</Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    );
-                                })
+                                            </TouchableOpacity>
+                                        );
+                                    });
+                                })()
                             ) : (
                                 <View className="h-40 items-center justify-center">
                                     <Text className="text-gray-500 text-lg font-semibold">No appliance usage data available.</Text>

@@ -56,7 +56,7 @@ const TabBar = ({ state, descriptors, navigation }) => {
                                     ? options.title
                                     : route.name;
 
-                        const isFocused = state.index === index;
+                        const isFocused = state.index === index || (route.name === "devices" && state.routes[state.index]?.name === "appliances/[deviceId]/index");
 
                         const onPress = () => {
                             const event = navigation.emit({

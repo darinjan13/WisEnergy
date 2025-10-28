@@ -134,7 +134,7 @@ export default function LoginForm() {
                             color="#15803d"
                             status={rememberMe ? "checked" : "unchecked"}
                         />
-                        <Text className="text-sm text-gray-700 ml-2">Remember Password</Text>
+                        <Text className="text-sm text-gray-700 ml-2">Remember Me</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push("/(auth)/forgotPassword")}>
                         <Text className="text-green-700 text-sm font-medium">

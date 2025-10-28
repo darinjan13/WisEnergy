@@ -232,8 +232,9 @@ export default function DeviceDetails() {
                 </TouchableOpacity>
                 <Text className="text-2xl font-bold text-[#2E4F4F]">Back to Devices</Text>
             </View>
-            <Text className="text-2xl font-bold text-[#2E4F4F]">Device Name: {deviceId}</Text>
-            <Text className="text-gray-700 mt-2">Status: {device.status}</Text>
+            <Text className="text-2xl font-bold text-[#2E4F4F]">Device Name: {device.device_nickname}</Text>
+            <Text className="text-gray-700 mt-2">Status: {deviceId}</Text>
+            <Text className="text-gray-700">Status: {device.status}</Text>
             <Text className="text-gray-700">Paired at: {device.paired_at}</Text>
 
             <View className="flex-row items-center justify-between my-5">

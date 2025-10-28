@@ -105,7 +105,7 @@ export default function Dashboard() {
             const nowPH = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
             // ✅ Get last full week (Mon–Sun)
-            const lastWeekTotal = sortedWeeks.at(-1)?.value || 0;
+            const lastWeekTotal = sortedWeeks.at(-2)?.value || 0;
 
             // 🔹 Get Monday of current week
             const todayPH = new Date(nowPH);
@@ -125,7 +125,7 @@ export default function Dashboard() {
 
             // 🔹 Compute peso savings
             const diff = (lastWeekTotal - currentWeekTotal) * (locationRate || 0);
-            console.log("Last week", sortedWeeks);
+            console.log("Last week", lastWeekTotal);
             console.log("Current week", currentWeekDays);
 
             setWeeklySavings(Number(diff.toFixed(2)));
@@ -143,7 +143,6 @@ export default function Dashboard() {
 
             setTotalEnergyConsumption(total)
         }
-        console.log(totalEnergyConsumption);
         if (allMonthlyTotalConsumption.length > 1) {
             // Sort chronologically by month index (Jan–Dec)
             const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -195,9 +194,8 @@ export default function Dashboard() {
 
             setEfficiency(finalEfficiency);
             setEfficiencyColor(
-                finalEfficiency === 0 ? '#dc2626' :
-                    finalEfficiency < 10 ? '#f59e0b' :
-                        '#16a34a'
+                finalEfficiency < 10 ? '#dc2626' :
+                    '#16a34a'
             );
         }
 
@@ -209,9 +207,12 @@ export default function Dashboard() {
 
             setEfficiency(finalEff);
             setEfficiencyColor(
-                finalEff === 0 ? '#dc2626' :
-                    finalEff < 10 ? '#f59e0b' :
-                        '#16a34a'
+                finalEff > 90 ? "#22c55e" :
+                    finalEff > 75 && finalEff <= 89 ? "#86efac" :
+                        finalEff > 60 && finalEff <= 74 ? "#facc15" :
+                            finalEff > 45 && finalEff <= 59 ? "#fb923c" :
+                                finalEff < 45 ? '#ef4444' :
+                                    '#16a34a'
             );
         } else {
             setEfficiencyColor('#16a34a');
@@ -325,25 +326,25 @@ export default function Dashboard() {
                     />
                     <View className="flex-row justify-between items-center mb-6" >
                         <View className="bg-white rounded-2xl p-4 w-[54%] h-full" style={styles.cardShadow}>
-                            <Text className="text-xl font-extrabold mb-6">
+                            <Text className="text-md font-extrabold mb-6">
                                 Welcome Back, {userName}!
                             </Text>
                             {weeklySavings > 0 ? (
                                 <View className="flex-row items-center">
                                     <Feather name="trending-down" size={15} color="#16a34a" />
-                                    <Text className="text-green-700 ml-2 text-base font-sm">
+                                    <Text className="text-green-700 ml-2 text-sm font-sm">
                                         You've saved ₱{weeklySavings} this week compared to last!
                                     </Text>
                                 </View>
                             ) : weeklySavings < 0 ? (
                                 <View className="flex-row items-center">
                                     <Feather name="trending-up" size={18} color="#dc2626" />
-                                    <Text className="text-red-600 ml-2 text-base font-medium">
+                                    <Text className="text-red-600 ml-2 text-sm font-medium">
                                         Energy usage increased this week.
                                     </Text>
                                 </View>
                             ) : (
-                                <Text className="text-gray-500 text-base">
+                                <Text className="text-gray-500 text-sm">
                                     Keep tracking your usage to see weekly changes!
                                 </Text>
                             )}
@@ -364,7 +365,7 @@ export default function Dashboard() {
                                     <Text className="text-xl font-bold text-green-600">{totalEnergyConsumption.toFixed(2)}</Text>
                                 </View>
                                 <Text className="text-gray-500 text-[9px] italic">
-                                    Total Energy Consumption(kWh)
+                                    Energy Consumption(kWh)
                                 </Text>
                             </View>
                         </View>
@@ -430,19 +431,6 @@ export default function Dashboard() {
                                             {appliance.name}
                                         </Text>
                                     </View>
-
-                                    {/* Center arrow (absolutely centered) */}
-                                    <FontAwesome6
-                                        name="arrow-right-long"
-                                        size={14}
-                                        color="gray"
-                                        style={{
-                                            position: "absolute",
-                                            left: "50%",
-                                            transform: [{ translateX: -7 }], // half icon width
-                                        }}
-                                    />
-
                                     {/* Right side */}
                                     <Text className="font-semibold text-gray-800">{appliance.kwh} kWh</Text>
                                 </View>
@@ -490,8 +478,8 @@ export default function Dashboard() {
                             <View style={{ width: "100%", alignItems: "center" }} className="max-w-[420px]">
                                 <BarChart
                                     data={hourlyData}
-                                    barWidth={36}
-                                    spacing={40}
+                                    barWidth={35}
+                                    spacing={24}
                                     disableScroll
                                     frontColor="#16a34a"
                                     yAxisTextStyle={{ color: "#6B7280", fontSize: 11 }}
@@ -500,7 +488,7 @@ export default function Dashboard() {
                                     animationDuration={800}
                                     yAxisThickness={0}
                                     xAxisThickness={0}
-                                    width={screenWidth * 0.70} // responsive width (85% of screen)
+                                    width={screenWidth * .65} // responsive width (85% of screen)
                                     maxValue={Math.max(...hourlyData.map((d) => d.value)) * 1.2 || 1}
                                     initialSpacing={20}
                                     barBorderRadius={6}

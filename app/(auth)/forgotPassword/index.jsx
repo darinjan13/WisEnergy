@@ -54,11 +54,10 @@ export default function ForgotPasswordScreen() {
           <Feather name='arrow-left' size={30} color="#095333" />
         </TouchableOpacity>
         <Text className="text-2xl font-bold text-gray-800 mb-2">
-          Forgot Your Password?
+          Forgot Password
         </Text>
         <Text className="text-gray-500 mb-6">
-          Please enter your registered email address & we sent an OTP
-          Verification code to reset your password.
+          Please enter your registered email to get your OTP code and reset your password.
         </Text>
 
         <Text className="mb-2 text-gray-700 font-bold text-lg">Email</Text>

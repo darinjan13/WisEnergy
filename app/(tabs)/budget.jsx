@@ -144,7 +144,7 @@ export default function Budget() {
             </View>
           </View>
 
-          <View className="bg-white p-4 rounded-xl" style={styles.cardShadow}>
+          <View className="bg-white rounded-2xl p-4" style={styles.cardShadow}>
             <View className=" flex-row">
               <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color="#16a34a" />
               <Text className="text-xl font-extrabold mb-4">Smart Recommendations</Text>
