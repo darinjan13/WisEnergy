@@ -5,7 +5,7 @@ export default function Tooltip({ toolTip, setToolTip, content, from }) {
     if (!toolTip) return null;
 
     const offsetTop =
-        from === "Devices" ? 160 :
+        from === "Devices" ? 190 :
             from === "Budget" ? 160 :
                 150;
 

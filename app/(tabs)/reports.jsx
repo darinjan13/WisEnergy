@@ -364,7 +364,7 @@ export default function Reports() {
                                                     <View className="flex-row items-center">
                                                         <Text className="w-24">{item.applianceName}</Text>
                                                         <View className="flex-1">
-                                                            <CustomProgressBar progress={powerUsed} maxProgress={totalUsage} color="#4CAF50" />
+                                                            <CustomProgressBar progress={powerUsed} maxProgress={totalUsage} color="#4CAF50" reports={true} />
                                                         </View>
                                                         <Text className="ml-2 text-gray-600 text-sm">{powerUsed.toFixed(2)} kWh</Text>
                                                     </View>

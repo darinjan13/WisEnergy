@@ -62,7 +62,7 @@ export default function PremiumPlans() {
                         alert(`✅ Payment Successful! Ref: ${payment_id}`);
 
                         // Mark user as premium in Firebase
-                        await update(ref(db, `users/${auth.currentUser.uid}`), {
+                        await update(ref(db, `subscriptions/${auth.currentUser.uid}`), {
                             is_premium: true,
                             premium_payment_id: payment_id,
                             premium_amount: amount,
@@ -108,13 +108,6 @@ export default function PremiumPlans() {
             } else {
                 alert("QRPH payment data not found.");
             }
-
-            // if (redirectUrl) {
-            //     const result = await WebBrowser.openBrowserAsync(redirectUrl);
-            //     if (result.type === "cancel") console.log("Checkout closed manually.");
-            // } else {
-            //     alert("Unable to start payment.");
-            // }
         } catch (err) {
             console.error("Payment Error:", err.message);
             alert("Something went wrong. Please try again later.");
