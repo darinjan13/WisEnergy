@@ -46,6 +46,8 @@ export default function CodeVerificationScreen() {
         const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
         return () => clearInterval(interval);
     }, [timer]);
+    const timers = 0
+    console.log(timer > 0);
 
     const handleResend = async () => {
         setTimer(300);
@@ -159,8 +161,8 @@ export default function CodeVerificationScreen() {
 
                 <View className="flex-row justify-center mt-3 mb-8">
                     <Text className="text-gray-600">Didn’t receive code? </Text>
-                    <TouchableOpacity disabled={timer <= 0} onPress={handleResend}>
-                        <Text className="text-green-700 font-semibold">
+                    <TouchableOpacity disabled={timer > 0} onPress={handleResend}>
+                        <Text className={`${timer > 0 ? 'text-gray-700 ' : 'text-green-700 '} font-semibold`}>
                             Resend Now
                         </Text>
                     </TouchableOpacity>
