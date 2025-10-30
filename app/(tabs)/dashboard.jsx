@@ -157,27 +157,6 @@ export default function Dashboard() {
     }, [allMonthlyTotalConsumption]);
 
     useEffect(() => {
-        if (locationRate > 0 && lastMonthKwh > 0 && monthlyTotalConsumption > 0) {
-            fetchPercentUsed(monthlyTotalConsumption)
-
-            const pctVsLast = (monthlyTotalConsumption / lastMonthKwh) * 100;
-            const rawEff = 100 - pctVsLast;
-            const finalEff = Math.max(0, Math.min(100, Math.round(rawEff)));
-
-            setEfficiency(finalEff);
-            setEfficiencyColor(
-                finalEff === 0 ? '#dc2626' :      // red if equal/exceeded last month
-                    finalEff < 20 ? '#f59e0b' :       // yellow if near last month's total
-                        '#16a34a'                         // green if below last month
-            );
-        } else {
-            setEfficiency(0);
-            setEfficiencyColor('#16a34a'); // default green when no data
-        }
-    }, [monthlyTotalConsumption, lastMonthKwh, locationRate]);
-
-
-    useEffect(() => {
         const user = auth?.currentUser;
         if (user) {
             setUserName(user.displayName);
@@ -185,22 +164,9 @@ export default function Dashboard() {
     }, []);
 
     useEffect(() => {
-        if (locationRate > 0 && monthlyBudget?.budget_php > 0) {
-
-            const budgetedKwh = monthlyBudget.budget_php / locationRate;
-            const ratio = monthlyTotalConsumption / budgetedKwh;
-            const efficiency = 100 - (ratio * 100);
-            const finalEfficiency = Math.max(0, Math.round(efficiency));
-
-            setEfficiency(finalEfficiency);
-            setEfficiencyColor(
-                finalEfficiency < 10 ? '#dc2626' :
-                    '#16a34a'
-            );
-        }
-
         if (lastMonthKwh > 0 && monthlyTotalConsumption > 0) {
-            fetchPercentUsed(monthlyTotalConsumption)
+            fetchPercentUsed(monthlyTotalConsumption);
+
             const pctVsLast = (monthlyTotalConsumption / lastMonthKwh) * 100;
             const rawEff = 100 - pctVsLast;
             const finalEff = Math.max(0, Math.min(100, Math.round(rawEff)));
@@ -208,16 +174,18 @@ export default function Dashboard() {
             setEfficiency(finalEff);
             setEfficiencyColor(
                 finalEff > 90 ? "#22c55e" :
-                    finalEff > 75 && finalEff <= 89 ? "#86efac" :
-                        finalEff > 60 && finalEff <= 74 ? "#facc15" :
-                            finalEff > 45 && finalEff <= 59 ? "#fb923c" :
-                                finalEff < 45 ? '#ef4444' :
-                                    '#16a34a'
+                    finalEff > 70 ? "#86efac" :
+                        finalEff > 50 ? "#facc15" :
+                            finalEff > 25 ? "#fb923c" :
+                                "#ef4444"
             );
         } else {
-            setEfficiencyColor('#16a34a');
+            // no previous data or first-time user
+            setEfficiency(null);
+            setEfficiencyColor('#d1d5db'); // neutral gray
         }
-    }, [locationRate, monthlyTotalConsumption, monthlyBudget, lastMonthKwh]);
+    }, [locationRate, monthlyTotalConsumption, lastMonthKwh]);
+
 
     const handleBarPress = (label) => {
         const ranges = {
@@ -300,24 +268,39 @@ export default function Dashboard() {
                             )}
                             textColor="black"
                         />
-                        <AutoSkeletonIgnoreView>
-                            {monthlyBudget === null && !isLoading ? (
-                                <Text className="text-red-600 text-sm mt-2">
-                                    No budget is set, set budget first on budget page.
-                                </Text>
-
-                            ) : efficiency === 0 && monthlyBudget?.budget_kwh === monthlyTotalConsumption && (
-                                <Text className="text-red-600 text-sm mt-2">
-                                    You've exceeded your budget! Try reducing energy usage.
+                        <View className={`${isLoading ? "hidden" : "visible"}`}>
+                            {efficiency === null && (
+                                <Text className="text-gray-500 text-xs mt-2 text-center">
+                                    Not enough data yet — energy efficiency will be shown after your first full month of usage.
                                 </Text>
                             )}
-                            {efficiency > 0 && efficiency < 10 && (
-                                <Text className="text-yellow-600 text-sm mt-2">
-                                    You're close to exceeding your budget! Monitor your usage.
+                            {efficiency > 90 && (
+                                <Text className="text-green-600 text-xs mt-2 text-center">
+                                    Outstanding! You’ve used much less energy than last month.
                                 </Text>
                             )}
-                        </AutoSkeletonIgnoreView>
-                    </View >
+                            {efficiency > 70 && efficiency <= 90 && (
+                                <Text className="text-lime-600 text-xs mt-2 text-center">
+                                    Great work! Your energy usage is improving compared to last month.
+                                </Text>
+                            )}
+                            {efficiency > 40 && efficiency <= 70 && (
+                                <Text className="text-yellow-600 text-xs mt-2 text-center">
+                                    You’re using slightly more energy than before. Try saving a bit more.
+                                </Text>
+                            )}
+                            {efficiency > 0 && efficiency <= 40 && (
+                                <Text className="text-orange-600 text-xs mt-2 text-center">
+                                    Your consumption increased this month. Review your high-usage appliances.
+                                </Text>
+                            )}
+                            {efficiency === 0 && (
+                                <Text className="text-red-600 text-xs mt-2 text-center">
+                                    You’ve used more energy than last month. Consider cutting back to save.
+                                </Text>
+                            )}
+                        </View>
+                    </View>
                     <Tooltip
                         toolTip={toolTip}
                         setToolTip={setToolTip}

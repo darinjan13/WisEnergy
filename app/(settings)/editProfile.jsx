@@ -45,7 +45,7 @@ export default function EditProfile() {
         const trimmed = value.trim();
         if (!trimmed) return "First name is required";
         if (trimmed.length < 2) return "First name must be at least 2 characters";
-        if (!/^[a-zA-Z\s-]+$/.test(trimmed)) return "Only letters, spaces, and hyphens allowed";
+        if (!/^[a-zA-Z\s]+$/.test(trimmed)) return "Only letters, spaces allowed";
         return "";
     };
 
@@ -54,7 +54,7 @@ export default function EditProfile() {
         const trimmed = value.trim();
         if (!trimmed) return "Last name is required";
         if (trimmed.length < 2) return "Last name must be at least 2 characters";
-        if (!/^[a-zA-Z\s-]+$/.test(trimmed)) return "Only letters, spaces, and hyphens allowed";
+        if (!/^[a-zA-Z\s]+$/.test(trimmed)) return "Only letters, spaces allowed";
         return "";
     };
 

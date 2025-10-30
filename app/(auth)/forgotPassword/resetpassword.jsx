@@ -20,8 +20,8 @@ export default function ResetPasswordScreen() {
         setIsLoading(true);
         if (!password) newErrors.password = "Password is required";
         if (!confirmPassword) newErrors.confirmPassword = "Confirm Password is required";
-        if (password.length < 6) newErrors.password = "Min. 8 characters";
-        if (confirmPassword.length < 6) newErrors.confirmPassword = "Min. 8 characters";
+        if (password.length < 8) newErrors.password = "Password must be at least 8 characters long";
+        if (confirmPassword.length < 8) newErrors.confirmPassword = "Password must be at least 8 characters long";
         if (password !== confirmPassword)
             newErrors.confirmPassword = "Passwords do not match";
 

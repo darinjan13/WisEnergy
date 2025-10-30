@@ -203,7 +203,7 @@ export default function PremiumPlans() {
                             />
                             <TouchableOpacity
                                 onPress={() => setQrModal({ visible: false })}
-                                className="mt-5 bg-green-700 py-2 rounded-md"
+                                className="mt-5 bg-red-700 py-2 rounded-md"
                             >
                                 <Text className="text-white text-center font-semibold">Close</Text>
                             </TouchableOpacity>

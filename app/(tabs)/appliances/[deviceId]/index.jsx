@@ -223,23 +223,23 @@ export default function DeviceDetails() {
     return (
         <View className="p-5" style={{ paddingTop: insets.top + 18 }}>
             <Header />
-            <View className="mb-4 flex-row items-center">
+            <View className="mb-4">
                 <TouchableOpacity
                     onPress={() => router.replace("/devices")}
-                    className="w-10 -ml-2"
+                    className="-ml-2 flex-row items-center"
                 >
-                    <Feather name='arrow-left' size={30} color="#095333" />
+                    <Feather name='arrow-left' size={25} color="#9ca3af" />
+                    <Text className="text-md font-bold text-gray-400 ml-2">Back to Devices</Text>
                 </TouchableOpacity>
-                <Text className="text-2xl font-bold text-[#2E4F4F]">Back to Devices</Text>
             </View>
-            <Text className="text-2xl font-bold text-[#2E4F4F]">Device Name: {device.device_nickname}</Text>
-            <Text className="text-gray-700 mt-2">Status: {deviceId}</Text>
+            <Text className="text-2xl font-bold text-green-700">Device Name: {device.device_nickname}</Text>
+            <Text className="text-gray-700 mt-2">Device ID: {deviceId}</Text>
             <Text className="text-gray-700">Status: {device.status}</Text>
             <Text className="text-gray-700">Paired at: {device.paired_at}</Text>
 
             <View className="flex-row items-center justify-between my-5">
                 <View className="flex-row items-center gap-x-2">
-                    <Text className="text-2xl font-bold text-[#2E4F4F]">Appliances</Text>
+                    <Text className="text-2xl font-bold text-green-700">Appliances</Text>
                     <TouchableOpacity
                         onPress={() => setToolTip(!toolTip)}
                         className="p-1"
@@ -287,7 +287,7 @@ export default function DeviceDetails() {
             >
                 <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
                     <View className="bg-white rounded-xl p-6 w-11/12">
-                        <Text className="text-xl font-bold mb-4 text-[#2E4F4F]">
+                        <Text className="text-xl font-bold mb-4 text-green-700">
                             {action === "edit" ? "Edit Appliance" : "Add Appliance"}
                         </Text>
                         <TextInput

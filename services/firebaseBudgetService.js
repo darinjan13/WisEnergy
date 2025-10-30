@@ -1,4 +1,5 @@
 import { db } from "@/firebase/firebaseConfig";
+import { getMonthName } from "@/utils/dateHelper";
 import { get, off, onValue, ref } from "firebase/database";
 
 export const fetchLocationRate = async (userId) => {
@@ -85,6 +86,7 @@ export const fetchAllBudget = async (userId) => {
     const budgetSnapshot = await get(budgetRef);
 
     const monthlyBudgets = [];
+    const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     if (budgetSnapshot.exists()) {
         const budgetData = budgetSnapshot.val();
@@ -94,7 +96,7 @@ export const fetchAllBudget = async (userId) => {
                 // Check if budget_kwh and rate are valid numbers
                 if (!isNaN(budgetKwh)) {
                     monthlyBudgets.push({
-                        label: month,
+                        label: getMonthName(month, 'short'),
                         value: Number(budgetKwh),
                         dataPointText: Number(budgetKwh),
                     });
@@ -102,6 +104,7 @@ export const fetchAllBudget = async (userId) => {
             }
         }
     }
-    monthlyBudgets.sort((a, b) => parseInt(a.label) - parseInt(b.label));
+    monthlyBudgets.sort((a, b) => monthOrder.indexOf(a.label) - monthOrder.indexOf(b.label));
+
     return monthlyBudgets;
 };

@@ -32,8 +32,15 @@ export default function BudgetModal({ visible, onClose, rate }) {
     try {
       const budget_php = numericValue;
       const now = new Date();
+      now.setDate(1);
+      now.setHours(0, 0, 0, 0);
+
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = "01"; // always first day
+
+      // Optional: create a YYYY-MM-DD key if needed later
+      const firstDayKey = `${year}-${month}-${day}`;
       const budget_kwh = Number((budget_php / rate).toFixed(2));
 
       const budgetRef = ref(db, `user_monthly_budget/${auth.currentUser.uid}/${year}/${month}`);
@@ -46,7 +53,7 @@ export default function BudgetModal({ visible, onClose, rate }) {
           budget_php,
           budget_kwh,
           rate,
-          set_at: serverTimestamp(),
+          set_at: new Date(year, month - 1, 1).toISOString(),
           set_attempted: set_attempted + 1,
         });
 

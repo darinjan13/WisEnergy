@@ -21,9 +21,9 @@ export default function ApplianceCard({ power, appliance, applianceKWH, onEdit, 
                     )}
                 />
                 <Card.Content>
-                    <View className="-mt-9">
-                        <Text className="ml-20" style={cardStyles.contentText} variant="bodyMedium">Power: {power?.toFixed(2)} W</Text>
-                        <Text className="ml-20" style={cardStyles.contentText} variant="bodyMedium">Usage: {applianceKWH?.toFixed(2)} kWh</Text>
+                    <View className="-mt-6">
+                        <Text style={cardStyles.contentText} variant="bodyMedium">Power: {power?.toFixed(2)} W</Text>
+                        <Text style={cardStyles.contentText} variant="bodyMedium">Usage: {applianceKWH?.toFixed(2)} kWh</Text>
                         <View className="flex-row justify-between items-center pr-1 mt-5">
                             <Text style={cardStyles.contentText} variant="bodyMedium">Added at: {appliance.added_at || 'N/A'}</Text>
                             <View className="flex-row justify-between items-center gap-6">

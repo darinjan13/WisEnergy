@@ -68,7 +68,7 @@ export default function RegisterForm() {
             newErrors.email = "Email is invalid";
         if (!form.location.trim()) newErrors.location = "Location is required";
         if (!form.password) newErrors.password = "Password is required";
-        else if (form.password.length < 6) newErrors.password = "Min. 8 characters";
+        else if (form.password.length < 8) newErrors.password = "Password must be at least 8 characters long";
         if (!form.confirmPassword)
             newErrors.confirmPassword = "Confirm Password is required";
         else if (form.password !== form.confirmPassword)

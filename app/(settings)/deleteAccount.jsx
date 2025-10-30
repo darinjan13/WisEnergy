@@ -9,7 +9,7 @@ import {
     ActivityIndicator,
     Platform,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Entypo, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { auth, db } from "@/firebase/firebaseConfig";
 import { ref, update } from "firebase/database";
@@ -84,7 +84,7 @@ export default function DeleteAccount() {
             {/* Description */}
             <Text className="text-gray-700 mb-4">
                 We’re sad to see you go. Deleting your account will schedule it for
-                permanent removal after 30 days. You can contact support within that
+                permanent removal after 30 days. You can login again within that
                 time if you change your mind.
             </Text>
             <Text className="text-gray-700 mb-6">
@@ -137,7 +137,7 @@ export default function DeleteAccount() {
                     className="flex-1 items-center justify-center bg-black/40"
                 >
                     <View className="bg-white rounded-2xl w-80 p-6 items-center shadow-lg">
-                        <Feather name="check-circle" size={40} color="#16a34a" />
+                        <Entypo name="emoji-sad" size={40} color="#16a34a" />
                         <Text className="text-lg font-bold text-gray-800 mt-3">
                             Account Scheduled for Deletion
                         </Text>
@@ -153,7 +153,7 @@ export default function DeleteAccount() {
                             className="bg-[#166534] w-full py-3 rounded-lg mt-2"
                         >
                             <Text className="text-white font-semibold text-center">
-                                Got it
+                                Log Out
                             </Text>
                         </TouchableOpacity>
                     </View>

@@ -102,7 +102,7 @@ export default function settings() {
 
     return (
         <View>
-            <ScrollView className="bg-gray-100 p-10" contentContainerStyle={{ paddingBottom: insets.bottom + 60, paddingTop: insets.top - 20 }}>
+            <ScrollView className="bg-gray-100 p-6" contentContainerStyle={{ paddingBottom: insets.bottom + 60, paddingTop: insets.top - 20 }}>
                 <View className="mb-6 flex-row items-center gap-x-4">
                     <TouchableOpacity
                         className="-ml-1"
@@ -116,7 +116,7 @@ export default function settings() {
                     >
                         <Feather name='arrow-left' size={30} color="#095333" />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-[#23403A]">Profile</Text>
+                    <Text className="text-2xl font-bold text-green-800">Profile</Text>
                 </View>
                 <View className="mb-6 flex-row items-center">
                     {/* Avatar */}
@@ -205,7 +205,7 @@ export default function settings() {
                 <View className="bg-white rounded-xl shadow-md p-4 mb-6">
                     <View className="flex-row items-center mb-2">
                         <FontAwesome5 name="user-circle" size={30} color="#23403A" />
-                        <Text className="ml-4 text-base font-semibold text-[#23403A]">Account Settings</Text>
+                        <Text className="ml-3 text-base font-semibold text-green-800">Account Settings</Text>
                     </View>
 
                     {[
@@ -215,7 +215,7 @@ export default function settings() {
                     ].map((item) => (
                         <TouchableOpacity
                             key={item.label}
-                            className="flex-row justify-between items-center py-3 ml-12"
+                            className="flex-row justify-between items-center py-3 ml-10"
                             onPress={() => router.push(item.route)}
                         >
                             <Text className={width < 720 ? "text-sm text-gray-800" : "text-gray-800"}>
@@ -229,7 +229,7 @@ export default function settings() {
                 <View className="bg-white rounded-xl shadow-md p-4 mb-6">
                     <View className="flex-row items-center mb-2">
                         <Feather name="bell" size={30} color="#23403A" />
-                        <Text className="ml-4 text-base font-semibold text-[#23403A]">Notification</Text>
+                        <Text className="ml-3 text-base font-semibold text-green-800">Notification</Text>
                     </View>
 
                     {[
@@ -249,7 +249,7 @@ export default function settings() {
                             toggle: toggleSwitch("notify_system_updates", setSystemUpdates)
                         },
                     ].map(({ label, value, toggle }) => (
-                        <View key={label} className="flex-row justify-between items-center py-3 ml-12">
+                        <View key={label} className="flex-row justify-between items-center py-3 ml-10">
                             <Text className={width < 720 ? "text-sm text-gray-800" : "text-gray-800"}>{label}</Text>
                             <Switch
                                 value={value}
@@ -265,7 +265,7 @@ export default function settings() {
                 <View className="bg-white rounded-xl shadow-md p-4 mb-6">
                     <View className="flex-row items-center mb-2">
                         <Feather name="info" size={30} color="#23403A" />
-                        <Text className="ml-4 text-base font-semibold text-[#23403A]">About</Text>
+                        <Text className="ml-3 text-base font-semibold text-green-800">About</Text>
                     </View>
 
                     {[
@@ -274,7 +274,7 @@ export default function settings() {
                         { label: "Terms of Service", route: "/(settings)/terms" },
                         { label: "Privacy Policy", route: "/(settings)/privacy" },
                     ].map((item) => (
-                        <Link asChild key={item.route} href={item.route} className="ml-12">
+                        <Link asChild key={item.route} href={item.route} className="ml-10">
                             <TouchableOpacity className="flex-row justify-between items-center py-3">
                                 <Text className={width < 720 ? "text-sm text-gray-800" : "text-gray-800"}>{item.label}</Text>
                                 <Feather name="chevron-right" size={20} color="#6B7280" />

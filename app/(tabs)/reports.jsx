@@ -15,6 +15,8 @@ import EnergyPredictionChart from "@/components/reports/EnergyPredictionChart";
 
 import { auth } from "@/firebase/firebaseConfig";
 import { useBudgetStore, useDeviceStore, useUsageStore } from "@/store/firebaseStore";
+import SavingsChart from "../../components/reports/SavingsChart";
+import ApplianceModal from "../../components/reports/ApplianceModal";
 
 export default function Reports() {
     const scheme = useColorScheme();
@@ -34,7 +36,7 @@ export default function Reports() {
         weeklyData,
         monthlyData,
     } = useUsageStore();
-    const { allBudget, fetchAllBudget } = useBudgetStore();
+    const { allBudget, fetchAllBudget, locationRate } = useBudgetStore();
 
     const [reportCategory, setReportCategory] = useState("Daily");
     const [selectedDevice, setSelectedDevice] = useState("All Devices");
@@ -116,20 +118,6 @@ export default function Reports() {
         return Array.isArray(bucket) ? bucket : [];
     };
 
-    const getAllAppliancesFromReportData = (reportData) => {
-        if (!Array.isArray(reportData)) return [];
-
-        return reportData
-            .flatMap((device) => device.appliances || [])   // keep only the array of appliances
-            .filter((appliance) => appliance && appliance.name); // safety
-    };
-    const getAllDevicesFromReportData = (reportData) => {
-        if (!Array.isArray(reportData)) return [];
-
-        return reportData
-            .flatMap((device) => device.device_id || [])
-    };
-
     useEffect(() => {
         if (!selectedDevice) return;
         setReportLoading(true);
@@ -141,40 +129,44 @@ export default function Reports() {
             const device = reportData?.find((d) => d.device_id === selectedDevice);
 
             if (selectedDevice === "All Devices") {
+                // Collect all devices and their appliances
+                const allDeviceMap = reportData.reduce((acc, device) => {
+                    if (device.device_id && Array.isArray(device.appliances)) {
+                        acc[device.device_id] = device.appliances;
+                    }
+                    return acc;
+                }, {});
+
                 switch (reportCategory) {
                     case "Daily":
-                        setReportsTotal(dailyData)
-                        await fetchDailyReport(uid, selectedDevice, getAllAppliancesFromReportData(reportData));
+                        // Loop through each device and fetch its report
+                        await Promise.all(
+                            Object.entries(allDeviceMap).map(([deviceId, appliances]) =>
+                                fetchDailyReport(uid, deviceId, appliances)
+                            )
+                        );
+                        setReportsTotal(dailyData);
                         break;
                     case "Weekly":
+                        await Promise.all(
+                            Object.entries(allDeviceMap).map(([deviceId, appliances]) =>
+                                fetchWeeklyReport(uid, deviceId, appliances)
+                            )
+                        );
                         setReportsTotal(weeklyData);
-                        await fetchWeeklyReport(uid, selectedDevice, getAllAppliancesFromReportData(reportData));
                         break;
                     case "Monthly":
+                        await Promise.all(
+                            Object.entries(allDeviceMap).map(([deviceId, appliances]) =>
+                                fetchMonthlyReport(uid, deviceId, appliances)
+                            )
+                        );
                         setReportsTotal(monthlyData);
-                        await fetchMonthlyReport(uid, selectedDevice, getAllAppliancesFromReportData(reportData));
                         break;
                 }
-                console.log(getAllDevicesFromReportData(reportData));
 
                 setReportLoading(false);
                 return;
-            }
-
-            if (device) {
-                switch (reportCategory) {
-                    case "Daily":
-                        await fetchDailyReport(uid, selectedDevice, device.appliances);
-                        break;
-                    case "Weekly":
-                        await fetchWeeklyReport(uid, selectedDevice, device.appliances);
-                        break;
-                    case "Monthly":
-                        await fetchMonthlyReport(uid, selectedDevice, device.appliances);
-                        break;
-                    default:
-                        break;
-                }
             }
             setReportLoading(false);
         }, 250);
@@ -203,8 +195,14 @@ export default function Reports() {
         setReports(updatedReports);
     }, [reportCategory, selectedDevice, dailyData, weeklyData, monthlyData]);
 
-    const lineData1 = allMonthlyTotalConsumption || [];
-    const lineData2 = allBudget || [];
+    const lineData1 = allMonthlyTotalConsumption.map(d => ({
+        ...d,
+        type: "consumption",
+    }));
+    const lineData2 = allBudget.map(d => ({
+        ...d,
+        type: "budget",
+    }));
 
     const chartMax = useMemo(() => {
         const max1 = lineData1.length ? Math.max(...lineData1.map((d) => d.value)) : 0;
@@ -247,37 +245,8 @@ export default function Reports() {
 
                 {/* Savings Over Time */}
                 <Text className="text-xl font-bold text-green-800 mb-4">Savings Over Time</Text>
-                <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
-                    <LineChart
-                        data={lineData1}
-                        data2={lineData2}
-                        height={150}
-                        maxValue={chartMax + 10}
-                        stepValue={chartMax / 2}
-                        showVerticalLines
-                        spacing={44}
-                        initialSpacing={30}
-                        width={300}
-                        color1="skyblue"
-                        color2="orange"
-                        textColor1="green"
-                        dataPointsHeight={6}
-                        dataPointsWidth={6}
-                        dataPointsColor1="blue"
-                        dataPointsColor2="red"
-                        textFontSize={13}
-                    />
-                    <View className="flex-row mt-5 items-center justify-center">
-                        <View className="flex-row items-center mr-4">
-                            <View className="w-3.5 h-3.5 bg-orange-500 rounded-sm mr-1.5" />
-                            <Text className="text-xs text-gray-600">Budget</Text>
-                        </View>
-                        <View className="flex-row items-center">
-                            <View className="w-3.5 h-3.5 bg-sky-500 rounded-sm mr-1.5" />
-                            <Text className="text-xs text-gray-600">Consumption</Text>
-                        </View>
-                    </View>
-                </View>
+                <SavingsChart lineData1={lineData1} lineData2={lineData2} chartMax={chartMax} styles={styles} />
+
 
                 {/* Category Filters */}
                 <View style={styles.cardShadow} className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl justify-between items-center">
@@ -339,10 +308,6 @@ export default function Reports() {
                 {/* All Devices */}
                 {selectedDevice === "All Devices" ? (
                     <AutoSkeletonView isLoading={reportLoading}>
-                        <Text className="text-xl font-bold text-green-800 mb-4">
-                            Overall Energy Consumption ({reportCategory})
-                        </Text>
-
                         <View style={styles.cardShadow} className="bg-white p-4 rounded-2xl mb-4">
                             {/* Overall Chart */}
                             {reportsTotal?.[reportCategory.toLowerCase() + "Totals"]?.[0] ? (
@@ -365,7 +330,9 @@ export default function Reports() {
                                     Monthly: monthlyData.monthlyReport,
                                 };
 
-                                const appliances = getAllAppliances(reportMap[reportCategory]);
+                                const allKeys = Object.keys(reportMap[reportCategory] || {});
+                                const appliances = allKeys.flatMap((key) => reportMap[reportCategory][key] || []);
+
                                 if (appliances.length === 0) {
                                     return (
                                         <View className="mt-6 items-center">
@@ -380,7 +347,7 @@ export default function Reports() {
 
                                 return (
                                     <View className="mt-6">
-                                        <Text className="text-gray-700 font-semibold mb-2">
+                                        <Text className="text-green-800 font-semibold mb-5 text-center text-lg">
                                             {reportCategory} Consumption per Appliance
                                         </Text>
                                         {appliances.map((item, index) => {
@@ -450,33 +417,12 @@ export default function Reports() {
             </ScrollView>
 
             {/* Appliance Modal */}
-            <Modal animationType="fade" transparent visible={modalVisible} onRequestClose={closeModal}>
-                <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center px-4">
-                    <View className="bg-white rounded-2xl p-5 w-full max-w-[420px] shadow-lg" style={{ maxHeight: "85%" }}>
-                        <TouchableOpacity onPress={closeModal} className="absolute top-3 right-3 z-10">
-                            <View className="bg-red-600 w-10 h-10 rounded-full items-center justify-center">
-                                <AntDesign name="close" size={15} color="white" />
-                            </View>
-                        </TouchableOpacity>
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            <Text className="text-lg font-bold text-center mb-4 text-gray-800">
-                                {selectedAppliance?.applianceName || "Appliance Details"}
-                            </Text>
-                            {selectedAppliance?.barData?.length ? (
-                                <EnergyPredictionChart
-                                    actualData={selectedAppliance.barData}
-                                    predictedData={selectedAppliance.barData2}
-                                    category={reportCategory}
-                                />
-                            ) : (
-                                <Text className="text-gray-500 text-center text-base mt-6">
-                                    No prediction data available for this appliance yet.
-                                </Text>
-                            )}
-                        </ScrollView>
-                    </View>
-                </BlurView>
-            </Modal>
+            <ApplianceModal
+                visible={modalVisible}
+                onClose={closeModal}
+                applianceData={selectedAppliance}
+                reportCategory={reportCategory}
+            />
         </View>
     );
 }
