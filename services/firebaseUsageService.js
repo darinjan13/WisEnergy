@@ -353,12 +353,13 @@ export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
                 dataPointText: val
             };
         });
+        console.log(history);
 
         // 🔸 Fetch AI prediction
         const predictions = await predictionServices.predict_usage(userId, deviceId, appliance.name);
         const barData2 = Array.isArray(predictions?.monthly)
             ? predictions.monthly.map(p => ({
-                label: p.label,
+                label: getMonthName(p.label, 'short'),
                 value: p.value,
                 dataPointText: p.value
             }))
@@ -398,7 +399,7 @@ export const fetchDailyTotalConsumption = async (userId) => {
                 date,
             });
         }
-        const predictions = await predictionServices.predict_totals(userId, "daily");
+        const predictions = await predictionServices.predict_totals(userId);
         const barData2 = Array.isArray(predictions?.daily)
             ? predictions.daily.map((p) => ({
                 label: p.label,
@@ -480,7 +481,7 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
         });
 
         // 🔹 AI prediction
-        const predictions = await predictionServices.predict_totals(userId, "weekly");
+        const predictions = await predictionServices.predict_totals(userId);
         const barData2 = Array.isArray(predictions?.weekly)
             ? predictions.weekly.map((p) => ({
                 label: p.label,
@@ -507,50 +508,51 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
 
 /** 🔹 Monthly total consumption */
 export const fetchMonthlyTotalConsumption = async (userId) => {
-    const refPath = ref(db, `monthly_total_consumption/${userId}`);
+    const currentYear = new Date().getFullYear();
+    const refPath = ref(db, `monthly_total_consumption/${userId}/${currentYear}`);
     const snap = await get(refPath);
+
     if (!snap.exists()) return [];
 
-    const years = Object.keys(snap.val());
-    const history = [];
+    const yearData = snap.val();
+    const months = Object.keys(yearData).sort();
     const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    for (const year of years) {
-        const yearData = snap.val()[year];
-        const months = Object.keys(yearData).sort();
-        for (const month of months) {
-            const m = yearData[month];
-            const total = Number((m.total_energy_consumption ?? 0).toFixed(2));
 
-            history.push({
-                label: getMonthName(month, 'short'),
-                value: total,
-                dataPointText: total,
-                date: `${m.start_date ?? ""} - ${m.end_date ?? ""}`,
-            });
-        }
+    const history = [];
+
+    for (const month of months) {
+        const m = yearData[month];
+        const total = Number((m.total_energy_consumption ?? 0).toFixed(2));
+
+        history.push({
+            label: getMonthName(month, 'short'),
+            value: total,
+            dataPointText: total,
+            date: `${m.start_date ?? ""} - ${m.end_date ?? ""}`,
+        });
     }
 
-    // 🔸 Keep last 5 months (latest 5 months in chronological order)
-    const recent = history.slice(-5);
+    // ALL months of current year
+    const allMonths = history;
 
-    // 🔸 Fetch AI prediction
-    const predictions = await predictionServices.predict_totals(userId, "monthly");
+    // AI predictions
+    const predictions = await predictionServices.predict_totals(userId);
     const barData2 = Array.isArray(predictions?.monthly)
         ? predictions.monthly.map((p) => ({
-            label: p.label,
+            label: getMonthName(p.label, 'short'),
             value: p.value,
             dataPointText: p.value,
-            monthIndex: monthOrder.indexOf(p.label), // Store the month index for AI data
+            monthIndex: monthOrder.indexOf(p.label),
         }))
         : [];
 
-    // Sort AI predictions to match the chronological month order
+    // chronological order
     barData2.sort((a, b) => a.monthIndex - b.monthIndex);
 
     return [
         {
             title: "Monthly Total Consumption",
-            barData: recent,
+            barData: allMonths,
             barData2,
         },
     ];
@@ -570,22 +572,34 @@ export const fetchDailyKwh = async (userId) => {
 };
 
 export const fetchAllMonthlyTotalConsumption = async (userId) => {
-    const monthlyTotalConsumptionRef = ref(db, `monthly_total_consumption/${userId}`);
-    const monthlyTotalConsumptionSnapshot = await get(monthlyTotalConsumptionRef);
-    const monthlyTotalConsumption = monthlyTotalConsumptionSnapshot.val() || {};
+    const currentYear = new Date().getFullYear().toString();
+    const refPath = ref(db, `monthly_total_consumption/${userId}/${currentYear}`);
+    const snap = await get(refPath);
+    const data = snap.exists() ? snap.val() : {};
 
     const monthlyTotals = [];
     const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    for (const year in monthlyTotalConsumption) {
-        for (const month in monthlyTotalConsumption[year]) {
-            monthlyTotals.push({
-                label: getMonthName(month, 'short'),
-                value: monthlyTotalConsumption[year][month].total_energy_consumption || 0,
-                dataPointText: monthlyTotalConsumption[year][month].total_energy_consumption || 0
-            });
-        }
+    // Sort month keys numerically (01–12)
+    const months = Object.keys(data)
+        .map(m => parseInt(m, 10))
+        .sort((a, b) => a - b)
+        .map(m => m.toString().padStart(2, "0"));
+
+    for (const month of months) {
+        const m = data[month];
+        const total = Number((m?.total_energy_consumption ?? 0).toFixed(2));
+
+        monthlyTotals.push({
+            label: getMonthName(Number(month), 'short'),
+            value: total,
+            dataPointText: total
+        });
     }
+
+    // Keep sorted Jan → Dec
     monthlyTotals.sort((a, b) => monthOrder.indexOf(a.label) - monthOrder.indexOf(b.label));
+
     return monthlyTotals;
-}
+};
+

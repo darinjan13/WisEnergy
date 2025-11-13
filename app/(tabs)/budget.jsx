@@ -16,7 +16,7 @@ import { AutoSkeletonIgnoreView, AutoSkeletonView } from "react-native-auto-skel
 export default function Budget() {
   const insets = useSafeAreaInsets();
   const { recommendations } = useAiGeneratedStore();
-  const { locationRate, fetchLocationRate, monthlyBudget, percentUsed } = useBudgetStore();
+  const { locationRate, fetchLocationRate, monthlyBudget, fetchPercentUsed, percentUsed } = useBudgetStore();
   const { monthlyTotalConsumption } = useUsageStore();
 
   const [budget, setBudget] = useState(0);
@@ -25,11 +25,10 @@ export default function Budget() {
   const [loading, setLoading] = useState(true);
   const [toolTip, setToolTip] = useState(false);
 
-
-  const estimatedCost = usedKWh * locationRate;
-  const remaining = budget - estimatedCost;
-  const budgetKWh = budget / locationRate;
-  const remainingKWh = budgetKWh - usedKWh;
+  const [estimatedCost, setEstimatedCost] = useState(0)
+  const [remaining, setRemaining] = useState(0)
+  const [budgetKWh, setBudgetKWh] = useState(0)
+  const [remainingKWh, setRemainingKWh] = useState(0)
 
   useFocusEffect(
     useCallback(() => {
@@ -49,6 +48,14 @@ export default function Budget() {
       };
     }, [locationRate])
   )
+
+  useEffect(() => {
+    setEstimatedCost(usedKWh * locationRate);
+    setRemaining(budget - estimatedCost);
+    setBudgetKWh(budget / locationRate);
+    setRemainingKWh(budgetKWh - usedKWh);
+    fetchPercentUsed(monthlyTotalConsumption)
+  }, [monthlyBudget])
 
   useEffect(() => {
     if (monthlyBudget?.budget_php > 0) {
@@ -96,7 +103,13 @@ export default function Budget() {
             <Text className="absolute text-4xl font-bold">{usedKWh > 0 ? `${Math.round(percentUsed)}%` : "0%"}</Text>
           </View>
 
-          <Text className="text-center font-bold text-green-800 text-xl mb-5">UNDER BUDGET</Text>
+          <Text
+            className={`text-center font-bold text-xl mb-5 ${estimatedCost <= budget ? "text-green-800" : "text-red-700"
+              }`}
+          >
+            {estimatedCost <= budget ? "UNDER BUDGET" : "OVER BUDGET"}
+          </Text>
+
           {
             budgetKWh > 0 && (
               <View className="flex-row justify-between mb-4">

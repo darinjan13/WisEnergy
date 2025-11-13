@@ -12,6 +12,7 @@ import { useAiGeneratedStore, useBudgetStore, useDeviceStore, useUsageStore } fr
 import CustomProgressBar from '@/components/reports/CustomProgressBar';
 import AIInsightsCarousel from '@/components/ai/Messages';
 import Tooltip from '@/components/ui/Tooltip';
+import BudgetModal from "@/components/budget/SetBudget";
 import { AutoSkeletonIgnoreView, AutoSkeletonView } from 'react-native-auto-skeleton';
 
 export default function Dashboard() {
@@ -31,6 +32,8 @@ export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true)
     const [weeklySavings, setWeeklySavings] = useState(0);
     const [lastMonthKwh, setLastMonthKwh] = useState(0);
+    const [modalVisible, setModalVisible] = useState(false);
+
 
     useFocusEffect(
         useCallback(() => {
@@ -64,10 +67,13 @@ export default function Dashboard() {
                     await fetchAllMonthlyTotalConsumption(userId);
                 }
             };
+            if (monthlyBudget?.budget_php < 0) {
+                setModalVisible(true)
+            }
             if (!active) return
             setupData();
             const timeout = setTimeout(() => {
-                if (locationRate > 0) {
+                if (locationRate > 0 && monthlyBudget) {
                     setIsLoading(false);
                 }
             }, 1000);
@@ -77,7 +83,7 @@ export default function Dashboard() {
                 clearTimeout(timeout)
                 setToolTip(false)
             }
-        }, [locationRate])
+        }, [locationRate, monthlyBudget])
     )
 
     const calculateWeeklySavings = async (userId) => {
@@ -432,6 +438,11 @@ export default function Dashboard() {
                     </View>
                 </AutoSkeletonView >
             </ScrollView >
+            <BudgetModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                rate={locationRate}
+            />
             <Modal
                 visible={!!selectedBar}
                 transparent
@@ -484,8 +495,8 @@ export default function Dashboard() {
                         )}
                     </View>
                 </View>
-            </Modal >
-        </View >
+            </Modal>
+        </View>
     );
 }
 

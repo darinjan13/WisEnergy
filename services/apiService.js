@@ -2,7 +2,7 @@ import axios from "axios"
 
 export const api = axios.create({
     baseURL: 'https://wisenergy-backend.onrender.com',
-    // baseURL: 'http://192.168.1.7:10000',
+    // baseURL: 'http://10.69.191.216:10000',
     // baseURL: 'http://192.168.0.113:10000',
     timeout: 20000,
     headers: {
@@ -32,7 +32,7 @@ export const daily_ai_insights = async (userId, date) => {
 export const predict_usage = async (userId, deviceId, applianceName) => {
     try {
         const response = await api.get(`/predict/${userId}/${deviceId}/${applianceName}`);
-        const { daily, weekly } = response.data || {};
+        const { daily, weekly, monthly } = response.data || {};
 
         const dailyPredictions = daily
             ? Object.entries(daily).map(([date, obj]) => ({
@@ -53,10 +53,19 @@ export const predict_usage = async (userId, deviceId, applianceName) => {
                 };
             })
             : [];
-
+        const monthlyPredictions = monthly
+            ? monthly.map((m) => ({
+                year: m.year,
+                month: m.month,
+                label: m.month,
+                value: Number(m.predicted_kWh?.toFixed(2) || 0),
+                timestamp: m.timestamp || null,
+            }))
+            : [];
         return {
             daily: dailyPredictions,
             weekly: weeklyPredictions,
+            monthly: monthlyPredictions,
         };
     } catch (error) {
         return null
@@ -66,7 +75,7 @@ export const predict_usage = async (userId, deviceId, applianceName) => {
 export const predict_totals = async (userId) => {
     try {
         const response = await api.get(`/predict/totals/${userId}`);
-        const { daily, weekly } = response.data || {};
+        const { daily, weekly, monthly } = response.data || {};
 
         const dailyPredictions = daily
             ? Object.entries(daily).map(([date, obj]) => ({
@@ -87,10 +96,19 @@ export const predict_totals = async (userId) => {
                 };
             })
             : [];
-
+        const monthlyPredictions = monthly
+            ? monthly.map((m) => ({
+                year: m.year,
+                month: m.month,
+                label: m.month,
+                value: Number(m.predicted_kWh?.toFixed(2) || 0),
+                timestamp: m.timestamp || null,
+            }))
+            : [];
         return {
             daily: dailyPredictions,
             weekly: weeklyPredictions,
+            monthly: monthlyPredictions,
         };
     } catch (error) {
         console.error("Error fetching total predictions:", error);
