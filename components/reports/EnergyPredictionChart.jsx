@@ -1,9 +1,10 @@
 import React, { useMemo } from "react";
-import { View, Text } from "react-native";
+import { View, Text, Dimensions } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { getMonthName } from '../../utils/dateHelper';
 
 export default function EnergyPredictionChart({ actualData = [], predictedData = [], category }) {
+    const screenWidth = Dimensions.get('window').width;
 
     const allLabels = useMemo(() => {
         const labels = new Set([
@@ -63,6 +64,7 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
                 barWidth={category === "Monhtly" ? 30 : 40}
                 spacing={24}
                 maxV
+                width={screenWidth * .65}
                 showValuesAsTopLabel
                 topLabelTextStyle={{ color: "black", fontSize: 11 }}
                 xAxisThickness={0}

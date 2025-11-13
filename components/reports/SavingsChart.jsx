@@ -1,9 +1,10 @@
-import { View, Text, Modal, TouchableOpacity } from 'react-native'
+import { View, Text, Modal, TouchableOpacity, Dimensions } from 'react-native'
 import React, { useState } from 'react'
 import { LineChart } from 'react-native-gifted-charts';
 import { AntDesign } from '@expo/vector-icons';
 
 const SavingsChart = ({ lineData1, lineData2, chartMax, styles }) => {
+    const screenWidth = Dimensions.get('window').width;
     const [savingsModal, setSavingsModal] = useState(false);
     const [selectedAppliance, setSelectedAppliance] = useState(null);
 
@@ -17,8 +18,8 @@ const SavingsChart = ({ lineData1, lineData2, chartMax, styles }) => {
                         height={220}
                         maxValue={chartMax + 10}
                         spacing={48}
+                        width={screenWidth * .65}
                         initialSpacing={32}
-                        width={320}
                         curved
                         thickness={3}
                         color1="#16a34a"
