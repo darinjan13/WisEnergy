@@ -50,12 +50,18 @@ export default function Budget() {
   )
 
   useEffect(() => {
-    setEstimatedCost(usedKWh * locationRate);
-    setRemaining(budget - estimatedCost);
-    setBudgetKWh(budget / locationRate);
-    setRemainingKWh(budgetKWh - usedKWh);
-    fetchPercentUsed(monthlyTotalConsumption)
-  }, [monthlyBudget])
+    const est = usedKWh * locationRate;
+    const budKwh = budget / locationRate;
+    const remCost = budget - est;
+    const remKwh = budKwh - usedKWh;
+
+    setEstimatedCost(est);
+    setRemaining(remCost);
+    setBudgetKWh(budKwh);
+    setRemainingKWh(remKwh);
+
+    fetchPercentUsed(monthlyTotalConsumption);
+  }, [budget, usedKWh, locationRate, monthlyTotalConsumption]);
 
   useEffect(() => {
     if (monthlyBudget?.budget_php > 0) {
