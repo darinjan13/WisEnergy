@@ -13,11 +13,14 @@ export default function EnergyPredictionChart({ actualData = [], predictedData =
         ]);
 
         return Array.from(labels).sort((a, b) => {
-            // Sort by month then week, e.g., W5-09 < W1-10
             const [wa, ma] = a.replace("W", "").split("-");
             const [wb, mb] = b.replace("W", "").split("-");
 
-            return ma === mb ? Number(wa) - Number(wb) : Number(ma) - Number(mb);
+            // Descending by month
+            if (Number(ma) !== Number(mb)) return Number(mb) - Number(ma);
+
+            // Descending by week
+            return Number(wb) - Number(wa);
         });
     }, [actualData, predictedData]);
 

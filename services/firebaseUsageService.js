@@ -218,7 +218,7 @@ export const fetchLatestMonthlyTotalConsumption = async (userId) => {
 };
 
 export const fetchDailyReport = async (userId, deviceId, appliances) => {
-    const dates = getLastNDays(5);
+    const dates = getLastNDays(7);
     const results = [];
 
     for (const appliance of appliances) {
@@ -343,7 +343,7 @@ export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
         const ref1 = ref(db, `monthly_summary/${userId}/${deviceId}/${appliance.name}/${year}`);
         const snap = await get(ref1);
         const data = snap.exists() ? snap.val() : {};
-        const months = Object.keys(data).sort();
+        const months = Object.keys(data).sort((a, b) => Number(b) - Number(a));
 
         const history = months.map(m => {
             const val = Number((data[m]?.total_kWh ?? 0).toFixed(2));
@@ -353,7 +353,6 @@ export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
                 dataPointText: val
             };
         });
-        console.log(history);
 
         // 🔸 Fetch AI prediction
         const predictions = await predictionServices.predict_usage(userId, deviceId, appliance.name);
@@ -399,6 +398,7 @@ export const fetchDailyTotalConsumption = async (userId) => {
                 date,
             });
         }
+
         const predictions = await predictionServices.predict_totals(userId);
         const barData2 = Array.isArray(predictions?.daily)
             ? predictions.daily.map((p) => ({
@@ -515,7 +515,8 @@ export const fetchMonthlyTotalConsumption = async (userId) => {
     if (!snap.exists()) return [];
 
     const yearData = snap.val();
-    const months = Object.keys(yearData).sort();
+    const months = Object.keys(yearData)
+        .sort((a, b) => Number(b) - Number(a));
     const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     const history = [];
