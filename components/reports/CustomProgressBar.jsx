@@ -7,7 +7,7 @@ export default function CustomProgressBar({
   color = "#4CAF50",
   backgroundColor = "#E5E7EB",
   height = 20,
-  reports
+  reports,
 }) {
   const rawPercent = maxProgress > 0 ? (progress / maxProgress) * 100 : 0;
   const percent = Math.min(100, Math.max(0, rawPercent));
@@ -30,7 +30,7 @@ export default function CustomProgressBar({
         height,
         width: "100%",
         backgroundColor,
-        borderRadius: height / 2,
+        borderRadius: !reports ? height / 2 : 0,
         overflow: "hidden",
       }}
     >
@@ -39,7 +39,7 @@ export default function CustomProgressBar({
           height: "100%",
           width: `${percent}%`,
           backgroundColor: !reports ? barColor : color,
-          borderRadius: height / 2,
+          borderRadius: !reports ? height / 2 : 0,
         }}
       />
     </View>

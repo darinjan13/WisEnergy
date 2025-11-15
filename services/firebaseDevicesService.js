@@ -6,7 +6,7 @@ export const fetchDevices = async () => {
     const devicesRef = ref(db, "devices");
     const snapshot = await get(devicesRef);
     const devices = []
-    snapshot.forEach((child) => {
+    snapshot.forEach((child) => { 
         const deviceData = child.val()
         devices.push({
             ...deviceData,
