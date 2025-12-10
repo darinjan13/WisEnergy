@@ -18,6 +18,9 @@ import {
   useBudgetStore,
   useUsageStore,
 } from "@/store/firebaseStore";
+import { db } from "@/firebase/firebaseConfig";
+import { get, off, onValue, ref, update } from "firebase/database";
+
 import BudgetModal from "@/components/budget/SetBudget";
 import AIInsightsCarousel from "@/components/ai/Messages";
 import Tooltip from "@/components/ui/Tooltip";
@@ -26,6 +29,7 @@ import {
   AutoSkeletonIgnoreView,
   AutoSkeletonView,
 } from "react-native-auto-skeleton";
+import { getMonthName } from "../../utils/dateHelper";
 
 export default function Budget() {
   const insets = useSafeAreaInsets();
@@ -50,6 +54,62 @@ export default function Budget() {
   const [remaining, setRemaining] = useState(0);
   const [budgetKWh, setBudgetKWh] = useState(0);
   const [remainingKWh, setRemainingKWh] = useState(0);
+  const [lastThreeRates, setLastThreeRates] = useState([]);
+
+  const fetchLastThreeRates = async (cityName) => {
+    const formattedCity = cityName.replace(/ /g, "_");
+    const yearRef = ref(db, `city/${formattedCity}`);
+    const yearSnap = await get(yearRef);
+
+    if (!yearSnap.exists()) return [];
+
+    const years = Object.keys(yearSnap.val()).sort();
+    const latestYear = years[years.length - 1];
+
+    const monthsRef = ref(db, `city/${formattedCity}/${latestYear}`);
+    const monthsSnap = await get(monthsRef);
+
+    if (!monthsSnap.exists()) return [];
+
+    const monthsData = monthsSnap.val();
+    const monthKeys = Object.keys(monthsData).sort(); // "06", "07", "08" ...
+
+    const lastThreeMonths = monthKeys.slice(-3);
+
+    return lastThreeMonths.map((mon) => ({
+      year: latestYear,
+      month: mon,
+      rate: monthsData[mon].rate,
+      set_at: monthsData[mon].set_at,
+    }));
+  };
+
+  const fetchUserLocation = async (userId) => {
+    const userRef = ref(db, `users/${userId}/location`);
+    const snap = await get(userRef);
+
+    if (!snap.exists()) return null;
+
+    const rawLocation = snap.val(); // "Mandaue City"
+    const formatted = rawLocation.replace(/ /g, "_"); // "Mandaue_City"
+
+    return {
+      raw: rawLocation,
+      formatted: formatted,
+    };
+  };
+
+  useEffect(() => {
+    const loadLocationAndRates = async () => {
+      const loc = await fetchUserLocation(auth.currentUser.uid);
+      if (!loc) return;
+
+      const lastRates = await fetchLastThreeRates(loc.formatted);
+      setLastThreeRates(lastRates); // ⭐ store in state
+    };
+
+    loadLocationAndRates();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -233,12 +293,26 @@ export default function Budget() {
             className="bg-white px-4 py-3 rounded-xl mb-6"
             style={styles.cardShadow}
           >
-            <Text className="text-sm text-gray-500 mb-1">Electricity Rate</Text>
-            <View className="flex-row items-center">
-              <Text className="text-lg font-semibold text-green-700">
-                ₱{locationRate?.toFixed(2)}/kWh
+            <Text className="text-sm text-gray-500 mb-2">
+              Last 3 Monthly Rates
+            </Text>
+
+            {lastThreeRates.length === 0 ? (
+              <Text className="text-gray-400 text-sm">
+                No rate history found
               </Text>
-            </View>
+            ) : (
+              lastThreeRates.map((item, index) => (
+                <View key={index} className="flex-row justify-between py-1">
+                  <Text className="text-gray-600">
+                    {item.year}-{getMonthName(item.month)}
+                  </Text>
+                  <Text className="text-green-700 font-semibold">
+                    ₱{item.rate.toFixed(4)}
+                  </Text>
+                </View>
+              ))
+            )}
           </View>
 
           <View className="bg-white rounded-2xl p-4" style={styles.cardShadow}>
