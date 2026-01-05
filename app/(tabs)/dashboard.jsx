@@ -72,7 +72,7 @@ export default function Dashboard() {
   const [toolTip, setToolTip] = useState(false);
   const [userName, setUserName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [weeklySavings, setWeeklySavings] = useState(0);
+  const [weeklySavings, setWeeklySavings] = useState(null);
   const [lastMonthKwh, setLastMonthKwh] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -112,7 +112,7 @@ export default function Dashboard() {
           await fetchAllMonthlyTotalConsumption(userId);
         }
       };
-      if (monthlyBudget?.budget_php < 0) {
+      if (!monthlyBudget || Number(monthlyBudget?.budget_php) <= 0) {
         setModalVisible(true);
       }
       if (!active) return;
@@ -134,7 +134,6 @@ export default function Dashboard() {
   const calculateWeeklySavings = async (userId) => {
     try {
       if (!userId) return;
-      console.log(dailyData);
 
       const weeklyDatas = weeklyData?.weeklyTotals[0]?.barData || [];
       const dailyDatas = dailyData?.dailyTotals[0]?.barData || [];
@@ -146,8 +145,9 @@ export default function Dashboard() {
         const endB = b.date?.split(" - ")[1]?.trim().replace("–", "-");
         if (!endA || !endB) return 0;
 
-        const dateA = new Date(`2025-${endA}T23:59:59+08:00`);
-        const dateB = new Date(`2025-${endB}T23:59:59+08:00`);
+        const year = new Date().getFullYear();
+        const dateA = new Date(`${year}-${endA}T23:59:59+08:00`);
+        const dateB = new Date(`${year}-${endB}T23:59:59+08:00`);
         return dateA - dateB;
       });
 
@@ -180,11 +180,21 @@ export default function Dashboard() {
       );
 
       // 🔹 Compute peso savings
-      const diff = (lastWeekTotal - currentWeekTotal) * (locationRate || 0);
-      console.log("Last week", lastWeekTotal);
-      console.log("Current week", currentWeekDays);
+      const pesoRate = Number(locationRate);
+      if (!Number.isFinite(pesoRate) || pesoRate <= 0) {
+        setWeeklySavings(null);
+        return;
+      }
 
-      setWeeklySavings(Number(diff.toFixed(2)));
+      const diffKwh = lastWeekTotal - currentWeekTotal;
+      const diffPeso = diffKwh * pesoRate;
+
+      if (!Number.isFinite(diffPeso)) {
+        setWeeklySavings(null);
+        return;
+      }
+
+      setWeeklySavings(Number(diffPeso.toFixed(2)));
     } catch (err) {
       console.error("Error computing weekly savings:", err);
     }
@@ -245,12 +255,12 @@ export default function Dashboard() {
         finalEff > 90
           ? "#22c55e"
           : finalEff > 70
-          ? "#86efac"
-          : finalEff > 50
-          ? "#facc15"
-          : finalEff > 25
-          ? "#fb923c"
-          : "#ef4444"
+            ? "#86efac"
+            : finalEff > 50
+              ? "#facc15"
+              : finalEff > 25
+                ? "#fb923c"
+                : "#ef4444"
       );
     } else {
       // no previous data or first-time user
@@ -337,7 +347,7 @@ export default function Dashboard() {
               ]}
               centerLabelComponent={() => (
                 <View className="items-center">
-                  <Text className="text-4xl font-bold">{efficiency}</Text>
+                  <Text className="text-4xl font-bold">{efficiency || "--"}</Text>
                   <Text className="text-md text-center">
                     Energy Efficiency Index
                   </Text>
@@ -403,7 +413,11 @@ export default function Dashboard() {
               <Text className="text-md font-extrabold mb-6">
                 Welcome Back, {userName}!
               </Text>
-              {weeklySavings > 0 ? (
+              {weeklySavings === null ? (
+                <Text className="text-gray-500 text-sm">
+                  Keep tracking your usage to see weekly changes!
+                </Text>
+              ) : weeklySavings > 0 ? (
                 <View className="flex-row items-center">
                   <Feather name="trending-down" size={15} color="#16a34a" />
                   <Text className="text-green-700 ml-2 text-sm font-sm">
@@ -412,14 +426,14 @@ export default function Dashboard() {
                 </View>
               ) : weeklySavings < 0 ? (
                 <View className="flex-row items-center">
-                  <Feather name="trending-up" size={18} color="#dc2626" />
-                  <Text className="text-red-600 ml-2 text-sm font-medium">
-                    Energy usage increased this week.
+                  <Feather name="trending-up" size={15} color="#dc2626" />
+                  <Text className="text-red-600 ml-2 text-sm font-sm">
+                    You spent ₱{Math.abs(weeklySavings).toFixed(2)} more this week.
                   </Text>
                 </View>
               ) : (
                 <Text className="text-gray-500 text-sm">
-                  Keep tracking your usage to see weekly changes!
+                  No change so far this week.
                 </Text>
               )}
             </View>
@@ -471,15 +485,14 @@ export default function Dashboard() {
               Tap a bar to see exact time range & kWh
             </Text>
             <View
-              className={`flex-row justify-between items-end ${
-                todayTrend?.buckets &&
+              className={`flex-row justify-between items-end ${todayTrend?.buckets &&
                 Object.keys(todayTrend.buckets).length > 0
-                  ? "h-32"
-                  : ""
-              }`}
+                ? "h-32"
+                : ""
+                }`}
             >
               {todayTrend?.buckets &&
-              Object.keys(todayTrend.buckets).length > 0 ? (
+                Object.keys(todayTrend.buckets).length > 0 ? (
                 Object.entries(todayTrend.buckets).map(([label, value], i) => (
                   <TouchableOpacity
                     key={i}
@@ -592,6 +605,9 @@ export default function Dashboard() {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         rate={locationRate}
+        showPrompt
+        required
+        currentBudgetPhp={Number(monthlyBudget?.budget_php) || 0}
       />
       <Modal
         visible={!!selectedBar}

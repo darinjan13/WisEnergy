@@ -81,10 +81,10 @@ export const fetchMonthlyBudget = (userId, callback) => {
     const setAt = data?.set_at ? new Date(data.set_at) : null;
     const resetAt = setAt
       ? (() => {
-          const d = new Date(setAt);
-          d.setMonth(d.getMonth() + 1);
-          return d;
-        })()
+        const d = new Date(setAt);
+        d.setMonth(d.getMonth() + 1);
+        return d;
+      })()
       : null;
 
     callback({
@@ -126,7 +126,10 @@ export const fetchAllBudget = async (userId) => {
       "Dec",
     ];
 
+    const currentYear = String(new Date().getFullYear());
+
     for (const year in yearBlock) {
+      if (year !== currentYear) continue;
       await microtask();
 
       for (const month in yearBlock[year]) {

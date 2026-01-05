@@ -253,10 +253,10 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
 
     const barData2 = Array.isArray(pred?.daily)
       ? pred.daily.map((p) => ({
-          label: p.label,
-          value: p.value,
-          dataPointText: p.value,
-        }))
+        label: p.label,
+        value: p.value,
+        dataPointText: p.value,
+      }))
       : [];
 
     output.push({
@@ -351,10 +351,10 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
     );
     const barData2 = Array.isArray(pred?.weekly)
       ? pred.weekly.map((p) => ({
-          label: p.label,
-          value: p.value,
-          dataPointText: p.value,
-        }))
+        label: p.label,
+        value: p.value,
+        dataPointText: p.value,
+      }))
       : [];
 
     output.push({
@@ -403,10 +403,10 @@ export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
     );
     const barData2 = Array.isArray(pred?.monthly)
       ? pred.monthly.map((p) => ({
-          label: getMonthName(p.label, "short"),
-          value: p.value,
-          dataPointText: p.value,
-        }))
+        label: getMonthName(p.label, "short"),
+        value: p.value,
+        dataPointText: p.value,
+      }))
       : [];
 
     output.push({
@@ -449,10 +449,10 @@ export const fetchDailyTotalConsumption = async (userId) => {
     const pred = await predictionServices.predict_totals(userId);
     const barData2 = Array.isArray(pred?.daily)
       ? pred.daily.map((p) => ({
-          label: p.label,
-          value: p.value,
-          dataPointText: p.value,
-        }))
+        label: p.label,
+        value: p.value,
+        dataPointText: p.value,
+      }))
       : [];
 
     return [
@@ -525,10 +525,10 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
     const pred = await predictionServices.predict_totals(userId);
     const barData2 = Array.isArray(pred?.weekly)
       ? pred.weekly.map((p) => ({
-          label: p.label,
-          value: p.value,
-          dataPointText: p.value,
-        }))
+        label: p.label,
+        value: p.value,
+        dataPointText: p.value,
+      }))
       : [];
 
     return [
@@ -591,11 +591,11 @@ export const fetchMonthlyTotalConsumption = async (userId) => {
 
   const barData2 = Array.isArray(pred?.monthly)
     ? pred.monthly.map((p) => ({
-        label: getMonthName(p.label, "short"),
-        value: p.value,
-        dataPointText: p.value,
-        monthIndex: monthOrder.indexOf(getMonthName(p.label, "short")),
-      }))
+      label: getMonthName(p.label, "short"),
+      value: p.value,
+      dataPointText: p.value,
+      monthIndex: monthOrder.indexOf(getMonthName(p.label, "short")),
+    }))
     : [];
 
   barData2.sort((a, b) => a.monthIndex - b.monthIndex);

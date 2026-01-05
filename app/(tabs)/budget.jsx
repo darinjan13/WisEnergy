@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PieChart } from "react-native-gifted-charts";
@@ -49,6 +50,7 @@ export default function Budget() {
   const [loading, setLoading] = useState(true);
   const [toolTip, setToolTip] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [rateModalVisible, setRateModalVisible] = useState(false);
 
   const [estimatedCost, setEstimatedCost] = useState(0);
   const [remaining, setRemaining] = useState(0);
@@ -83,7 +85,7 @@ export default function Budget() {
       set_at: monthsData[mon].set_at,
     }));
   };
-
+  const currentRate = lastThreeRates?.[lastThreeRates.length - 1] || null;
   const fetchUserLocation = async (userId) => {
     const userRef = ref(db, `users/${userId}/location`);
     const snap = await get(userRef);
@@ -212,9 +214,8 @@ export default function Budget() {
           </View>
 
           <Text
-            className={`text-center font-bold text-xl mb-5 ${
-              estimatedCost <= budget ? "text-green-800" : "text-red-700"
-            }`}
+            className={`text-center font-bold text-xl mb-5 ${estimatedCost <= budget ? "text-green-800" : "text-red-700"
+              }`}
           >
             {estimatedCost <= budget ? "UNDER BUDGET" : "OVER BUDGET"}
           </Text>
@@ -289,31 +290,35 @@ export default function Budget() {
             </View>
           </View>
 
-          <View
-            className="bg-white px-4 py-3 rounded-xl mb-6"
+          <TouchableOpacity
+            disabled={loading || lastThreeRates.length === 0}
+            onPress={() => setRateModalVisible(true)}
+            className="bg-white px-4 py-4 rounded-xl mb-6"
             style={styles.cardShadow}
           >
-            <Text className="text-sm text-gray-500 mb-2">
-              Last 3 Monthly Rates
-            </Text>
+            <View className="flex-row justify-between items-center">
+              <View>
+                <Text className="text-sm text-gray-500">Current Month Rate</Text>
+                {currentRate ? (
+                  <Text className="text-gray-600 mt-1">
+                    {currentRate.year}-{getMonthName(currentRate.month)}
+                  </Text>
+                ) : (
+                  <Text className="text-gray-400 mt-1">No rate available</Text>
+                )}
+              </View>
 
-            {lastThreeRates.length === 0 ? (
-              <Text className="text-gray-400 text-sm">
-                No rate history found
-              </Text>
-            ) : (
-              lastThreeRates.map((item, index) => (
-                <View key={index} className="flex-row justify-between py-1">
-                  <Text className="text-gray-600">
-                    {item.year}-{getMonthName(item.month)}
-                  </Text>
-                  <Text className="text-green-700 font-semibold">
-                    ₱{item.rate.toFixed(4)}
-                  </Text>
+              <View className="items-end">
+                <Text className="text-green-700 font-bold text-lg">
+                  {currentRate ? `₱${currentRate.rate.toFixed(4)}` : "--"}
+                </Text>
+                <View className="flex-row items-center mt-1">
+                  <Text className="text-xs text-gray-400 mr-1">View last 3</Text>
+                  <Feather name="chevron-right" size={16} color="#9ca3af" />
                 </View>
-              ))
-            )}
-          </View>
+              </View>
+            </View>
+          </TouchableOpacity>
 
           <View className="bg-white rounded-2xl p-4" style={styles.cardShadow}>
             <View className=" flex-row">
@@ -346,7 +351,50 @@ export default function Budget() {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         rate={locationRate}
+        currentBudgetPhp={Number(monthlyBudget?.budget_php) || 0}
       />
+      <Modal
+        visible={rateModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRateModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/40 px-5">
+          <View className="bg-white w-full max-w-md rounded-2xl p-5">
+            <Text className="text-lg font-extrabold text-green-800 mb-3">
+              Monthly Rate History
+            </Text>
+
+            {lastThreeRates.length === 0 ? (
+              <Text className="text-gray-400">No rate history found</Text>
+            ) : (
+              lastThreeRates
+                .slice(-3)
+                .reverse()
+                .map((item, index) => (
+                  <View
+                    key={index}
+                    className="flex-row justify-between items-center py-2 border-b border-gray-100"
+                  >
+                    <Text className="text-gray-700">
+                      {item.year}-{getMonthName(item.month)}
+                    </Text>
+                    <Text className="text-green-700 font-semibold">
+                      ₱{Number(item.rate || 0).toFixed(4)}
+                    </Text>
+                  </View>
+                ))
+            )}
+
+            <TouchableOpacity
+              onPress={() => setRateModalVisible(false)}
+              className="mt-4 bg-green-700 py-3 rounded-xl items-center"
+            >
+              <Text className="text-white font-semibold">Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </GestureHandlerRootView>
   );
 }

@@ -150,8 +150,8 @@ export default function Reports() {
             reportCategory === "Daily"
               ? dailyData
               : reportCategory === "Weekly"
-              ? weeklyData
-              : monthlyData;
+                ? weeklyData
+                : monthlyData;
 
           setReportsTotal(source);
           setReportLoading(false);
@@ -185,6 +185,10 @@ export default function Reports() {
     setReports(map[reportCategory] || []);
   }, [reportCategory, selectedDevice, dailyData, weeklyData, monthlyData]);
 
+  // useEffect(() => {
+  //   console.log("Reports: ", reports[0]);
+
+  // }, [reports])
   // -----------------------------
   // D. MEMOIZED APPLIANCES (PERFORMANCE)
   // -----------------------------
@@ -292,16 +296,14 @@ export default function Reports() {
                   setReportLoading(true);
                 }
               }}
-              className={`px-4 py-2 rounded-full border ${
-                label === reportCategory
-                  ? "bg-green-700 border-green-700"
-                  : "bg-white border-gray-300"
-              }`}
+              className={`px-4 py-2 rounded-full border ${label === reportCategory
+                ? "bg-green-700 border-green-700"
+                : "bg-white border-gray-300"
+                }`}
             >
               <Text
-                className={`${
-                  label === reportCategory ? "text-white" : "text-black"
-                } font-semibold`}
+                className={`${label === reportCategory ? "text-white" : "text-black"
+                  } font-semibold`}
               >
                 {label}
               </Text>
@@ -480,6 +482,7 @@ export default function Reports() {
         onClose={() => {
           setModalVisible(false);
           setSelectedAppliance(null);
+
         }}
         applianceData={selectedAppliance}
         reportCategory={reportCategory}

@@ -16,17 +16,24 @@ export default function EnergyPredictionChart({
       ...(predictedData || []).map((p) => p.label),
     ]);
 
-    return Array.from(labels).sort((a, b) => {
+    const arr = Array.from(labels);
+
+    if (category === "Daily") {
+      const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+      return arr
+        .filter((lbl) => lbl.split("-")[0] === currentMonth) // keeps only this month
+        .sort((a, b) => b.localeCompare(a)); // 01-01..01-31
+    }
+
+    return arr.sort((a, b) => {
       const [wa, ma] = a.replace("W", "").split("-");
       const [wb, mb] = b.replace("W", "").split("-");
 
-      // Descending by month
       if (Number(ma) !== Number(mb)) return Number(mb) - Number(ma);
-
-      // Descending by week
       return Number(wb) - Number(wa);
     });
-  }, [actualData, predictedData]);
+  }, [actualData, predictedData, category]);
+
 
   const barData = useMemo(() => {
     const merged = [];
@@ -38,6 +45,7 @@ export default function EnergyPredictionChart({
       const [week, monthNum] = label.replace("W0", "").split("-");
       const monthName = getMonthName(Number(monthNum), "short");
       const formattedLabel = `W${week}-${monthName}`;
+      const predictedValue = predicted?.value ?? 0
       merged.push(
         {
           value: actual?.value || 0,
@@ -49,7 +57,7 @@ export default function EnergyPredictionChart({
           frontColor: "#16a34a",
         },
         {
-          value: predicted?.value || 0,
+          value: predictedValue < 0 ? 0 : predictedValue,
           frontColor: "#f87171",
         }
       );
@@ -75,7 +83,7 @@ export default function EnergyPredictionChart({
 
       <BarChart
         data={barData}
-        barWidth={category === "Monhtly" ? 30 : 40}
+        barWidth={category === "Monthly" ? 30 : 40}
         spacing={24}
         maxV
         width={screenWidth * 0.65}

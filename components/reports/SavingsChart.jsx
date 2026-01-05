@@ -4,6 +4,7 @@ import { LineChart } from 'react-native-gifted-charts';
 import { AntDesign } from '@expo/vector-icons';
 
 const SavingsChart = ({ lineData1, lineData2, chartMax, styles }) => {
+
     const screenWidth = Dimensions.get('window').width;
     const [savingsModal, setSavingsModal] = useState(false);
     const [selectedAppliance, setSelectedAppliance] = useState(null);
