@@ -86,6 +86,15 @@ export const useDeviceStore = create((set, get) => ({
         });
     },
 
+    toggleRelay: async (deviceId, value) => {
+        await firebaseDevicesServices.toggleRelay(deviceId, value);
+        set(state => ({
+            userDevices: state.userDevices.map(d =>
+                d.id === deviceId ? { ...d, relay_desired: value } : d
+            )
+        }));
+    },
+
 
     reset: () =>
         set({
@@ -373,27 +382,32 @@ export const useUsageStore = create(
 export const useBudgetStore = create((set, get) => ({
     locationRate: 0,
     allBudget: [],
-    monthlyBudget: null,
+    monthlyBudget: undefined,
+    budgetReady: false,
     _unsubBudget: null,
     percentUsed: 0,
 
     subscribeToBudget: (userId) => {
         if (get()._unsubBudget) return;
 
+        set({ monthlyBudget: undefined, budgetReady: false });
+
         const unsubscribe = firebaseBudgetServices.fetchMonthlyBudget(userId, (currentBudget) => {
-            set({ monthlyBudget: currentBudget });
+            set({
+                monthlyBudget: currentBudget, // null or object
+                budgetReady: true,
+            });
         });
 
         set({ _unsubBudget: unsubscribe });
     },
 
     unsubscribeToBudget: () => {
-        const unsubBudget = get()._unsubBudget
+        const unsubBudget = get()._unsubBudget;
         if (unsubBudget) {
             unsubBudget();
-            set({ _unsubBudget: null, monthlyBudget: null })
+            set({ _unsubBudget: null, monthlyBudget: undefined, budgetReady: false });
         }
-
     },
 
     fetchPercentUsed: (usedKwh) => {

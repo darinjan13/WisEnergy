@@ -60,7 +60,7 @@ export default function Dashboard() {
     locationRate,
     fetchLocationRate,
     monthlyBudget,
-    percentUsed,
+    budgetReady,
     fetchPercentUsed,
     subscribeToBudget,
   } = useBudgetStore();
@@ -89,6 +89,7 @@ export default function Dashboard() {
         await calculateWeeklySavings(userId);
 
         listenToUserAppliances(userId);
+        subscribeToBudget(userId);
 
         await Promise.allSettled([
           fetchDailyTotals(userId),
@@ -100,7 +101,6 @@ export default function Dashboard() {
           monthlyTotalConsumption === 0
         ) {
           await fetchLocationRate(userId);
-          subscribeToBudget(userId);
           await fetchLatestMonthlyTotalConsumption(userId);
         }
 
@@ -112,7 +112,7 @@ export default function Dashboard() {
           await fetchAllMonthlyTotalConsumption(userId);
         }
       };
-      if (!monthlyBudget || Number(monthlyBudget?.budget_php) <= 0) {
+      if (budgetReady && Number(monthlyBudget?.budget_php) <= 0) {
         setModalVisible(true);
       }
       if (!active) return;
@@ -130,6 +130,13 @@ export default function Dashboard() {
       };
     }, [locationRate, monthlyBudget])
   );
+
+  useEffect(() => {
+    if (!budgetReady) return;
+
+    const hasBudget = Number(monthlyBudget?.budget_php) > 0;
+    setModalVisible(!hasBudget);
+  }, [budgetReady, monthlyBudget]);
 
   const calculateWeeklySavings = async (userId) => {
     try {
@@ -602,7 +609,7 @@ export default function Dashboard() {
         </AutoSkeletonView>
       </ScrollView>
       <BudgetModal
-        visible={modalVisible}
+        visible={budgetReady && modalVisible}
         onClose={() => setModalVisible(false)}
         rate={locationRate}
         showPrompt

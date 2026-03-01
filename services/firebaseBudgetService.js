@@ -29,7 +29,6 @@ export const fetchLocationRate = async (userId) => {
     // Try current month
     let rateRef = ref(db, `city/${locationVal}/${year}/${month}/rate`);
     let rateSnap = await get(rateRef);
-
     if (rateSnap.exists()) return rateSnap.val();
 
     // Try previous month
@@ -38,19 +37,37 @@ export const fetchLocationRate = async (userId) => {
       prevMonth = 12;
       year -= 1;
     }
-
     const prevMonthStr = String(prevMonth).padStart(2, "0");
-    const fallbackRef = ref(
-      db,
-      `city/${locationVal}/${year}/${prevMonthStr}/rate`
-    );
+    const fallbackRef = ref(db, `city/${locationVal}/${year}/${prevMonthStr}/rate`);
     const fallbackSnap = await get(fallbackRef);
+    if (fallbackSnap.exists()) return fallbackSnap.val();
 
-    if (fallbackSnap.exists()) {
-      console.warn(
-        `⚠ No rate for current month; using fallback ${year}/${prevMonthStr}`
-      );
-      return fallbackSnap.val();
+    // ← NEW: scan all years/months and return the latest available rate
+    console.warn("⚠ No recent rate found, scanning for latest available...");
+    const cityRef = ref(db, `city/${locationVal}`);
+    const citySnap = await get(cityRef);
+    if (!citySnap.exists()) return null;
+
+    const cityData = citySnap.val();
+    let latestRate = null;
+    let latestKey = "";
+
+    for (const y of Object.keys(cityData).sort()) {
+      for (const m of Object.keys(cityData[y]).sort()) {
+        const rate = cityData[y][m]?.rate;
+        if (rate !== undefined) {
+          const key = `${y}-${m}`;
+          if (key > latestKey) {
+            latestKey = key;
+            latestRate = rate;
+          }
+        }
+      }
+    }
+
+    if (latestRate !== null) {
+      console.warn(`⚠ Using latest available rate from ${latestKey}`);
+      return latestRate;
     }
 
     return null;
@@ -59,7 +76,6 @@ export const fetchLocationRate = async (userId) => {
     return null;
   }
 };
-
 /* --------------------------------------------
    2️⃣ Real-time Monthly Budget Listener
 -------------------------------------------- */
@@ -70,7 +86,7 @@ export const fetchMonthlyBudget = (userId, callback) => {
 
   const budgetRef = ref(db, `user_monthly_budget/${userId}/${y}/${m}`);
 
-  const listener = onValue(budgetRef, (snap) => {
+  const unsubscribe = onValue(budgetRef, (snap) => {
     const data = snap.val();
 
     if (!data) {
@@ -79,13 +95,7 @@ export const fetchMonthlyBudget = (userId, callback) => {
     }
 
     const setAt = data?.set_at ? new Date(data.set_at) : null;
-    const resetAt = setAt
-      ? (() => {
-        const d = new Date(setAt);
-        d.setMonth(d.getMonth() + 1);
-        return d;
-      })()
-      : null;
+    const resetAt = setAt ? new Date(setAt.getFullYear(), setAt.getMonth() + 1, 1) : null;
 
     callback({
       budget_php: data.budget_php,
@@ -96,7 +106,7 @@ export const fetchMonthlyBudget = (userId, callback) => {
     });
   });
 
-  return () => off(budgetRef, "value");
+  return unsubscribe;
 };
 
 /* --------------------------------------------

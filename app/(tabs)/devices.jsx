@@ -20,7 +20,6 @@ import DeviceCard from "@/components/appliances/DeviceCard";
 import Header from "@/components/ui/Header.jsx";
 import { useDeviceStore } from "@/store/firebaseStore.js";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Picker } from "@react-native-picker/picker";
 import Tooltip from "@/components/ui/Tooltip.jsx";
 import {
   AutoSkeletonIgnoreView,
@@ -42,6 +41,7 @@ export default function Devices() {
     userAppliances,
     updateDeviceNickname,
     deleteDevice,
+    toggleRelay
   } = useDeviceStore();
 
   const [deviceCode, setDeviceCode] = useState("");
@@ -225,6 +225,10 @@ export default function Devices() {
     router.replace(`/appliances/${userDevice.id}`);
   };
 
+  const handleSwitchToggle = async (turnedOn, deviceData) => {
+    await toggleRelay(deviceData.id, turnedOn);
+  };
+
   return (
     <View>
       <ScrollView
@@ -278,6 +282,7 @@ export default function Devices() {
                   deviceData={userDevice}
                   editDevice={() => showEditModal(userDevice)}
                   deleteDevice={() => openConfirmModal(userDevice.id, "delete")}
+                  onToggle={handleSwitchToggle}
                 />
               ))}
             </View>
