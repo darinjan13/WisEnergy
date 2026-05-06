@@ -1,50 +1,144 @@
-# Welcome to your Expo app 👋
+# WisEnergy
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native (Expo) mobile application for monitoring and managing home energy consumption, budgets, and smart devices.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Dashboard**: Real-time energy consumption overview with AI-powered insights and usage trends
+- **Device Management**: Connect and monitor smart appliances
+- **Budget Tracking**: Set and track monthly energy budgets with rate calculations
+- **Reports**: Detailed consumption analytics with daily, weekly, and monthly charts
+- **Notifications**: Push notifications for budget alerts and device status updates
+- **Authentication**: Email/password auth with password reset functionality
+- **Settings**: Profile management, privacy policy, terms of service, subscription management
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+- **Framework**: Expo SDK 54 (React Native 0.81)
+- **Routing**: Expo Router (file-based routing)
+- **UI**: NativeWind (TailwindCSS for React Native)
+- **Backend**: Firebase (Auth, Realtime Database, Firestore)
+- **State Management**: Zustand
+- **Charts**: react-native-gifted-charts
+- **Notifications**: expo-notifications
+- **Storage**: @react-native-async-storage/async-storage
 
-   ```bash
-    npx expo start
-   ```
+## Project Structure
 
-In the output, you'll find options to open the app in a
+```
+app/                    # Expo Router pages and layouts
+├── (auth)/            # Authentication screens
+├── (tabs)/            # Main tab navigation
+│   ├── appliances/    # Appliance detail screens
+│   ├── budget.jsx     # Budget tracking
+│   ├── dashboard.jsx  # Home dashboard
+│   ├── devices.jsx    # Device management
+│   ├── notifications.jsx
+│   └── reports.jsx    # Usage reports
+├── (settings)/       # Settings screens
+│   └── contactSupport/
+├── _layout.jsx       # Root layout
+├── index.jsx         # Entry point
+├── onboarding.jsx     # Onboarding flow
+├── payment-failed.jsx
+└── payment-success.jsx
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+components/              # Reusable UI components
+├── ai/                # AI insights components
+├── budget/            # Budget-related components
+├── reports/           # Charts and reports
+└── ui/               # Base UI components
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+firebase/              # Firebase configuration
+hooks/                # Custom React hooks
+services/             # API and Firebase services
+store/                # Zustand state stores
+utils/                # Utility functions
+assets/               # Images and fonts
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting Started
 
-## Learn more
+### Prerequisites
 
-To learn more about developing your project with Expo, look at the following resources:
+- Node.js 18+
+- npm or yarn
+- Expo CLI
+- Android Studio (for Android)
+- Xcode (for iOS)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Installation
 
-## Join the community
+```bash
+npm install
+```
 
-Join our community of developers creating universal apps.
+### Running the App
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+# Start development server
+npx expo start
+
+# Run on Android
+npx expo run:android
+
+# Run on iOS
+npx expo run:ios
+
+# Run on web
+npx expo start --web
+```
+
+### Testing
+
+```bash
+npm test
+```
+
+### Linting
+
+```bash
+npm run lint
+```
+
+## Firebase Configuration
+
+The app uses Firebase for:
+- **Authentication**: Email/password user authentication
+- **Realtime Database**: Device data, usage metrics
+- **Firestore**: User profiles, settings
+- **Cloud Messaging**: Push notifications
+
+Configure your Firebase credentials in `firebase/firebaseConfig.jsx`.
+
+## App Routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Entry point (redirects to auth or tabs) |
+| `/onboarding` | First-time user onboarding |
+| `/auth/login` | User login |
+| `/auth/register` | User registration |
+| `/(tabs)/dashboard` | Main dashboard |
+| `/(tabs)/devices` | Device list |
+| `/(tabs)/budget` | Budget management |
+| `/(tabs)/reports` | Usage reports |
+| `/(tabs)/notifications` | Notification center |
+| `/(settings)/settings` | App settings |
+| `/(settings)/editProfile` | Profile editing |
+| `/(settings)/subscription` | Subscription management |
+
+## Dependencies
+
+Key dependencies include:
+- `@react-navigation/native` - Navigation framework
+- `firebase` - Backend services
+- `zustand` - State management
+- `react-native-gifted-charts` - Data visualization
+- `nativewind` - Tailwind styling
+- `expo-router` - File-based routing
+- `expo-notifications` - Push notifications
+
+## License
+
+Private - All rights reserved
