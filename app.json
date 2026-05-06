@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "WisEnergy",
-    "slug": "wisenergy",
+    "slug": "WisEnergy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "wisenergy",
+    "scheme": "WisEnergy",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "androidStatusBar": {
@@ -32,7 +32,7 @@
           "action": "VIEW",
           "data": [
             {
-              "scheme": "wisenergy",
+              "scheme": "WisEnergy",
               "host": "*"
             }
           ],

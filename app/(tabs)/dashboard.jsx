@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import {
   View,
@@ -12,7 +12,6 @@ import {
 import {
   AntDesign,
   Feather,
-  FontAwesome6,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { BarChart, PieChart } from "react-native-gifted-charts";
@@ -35,6 +34,9 @@ import {
   AutoSkeletonIgnoreView,
   AutoSkeletonView,
 } from "react-native-auto-skeleton";
+
+const DEBOUNCE_MS = 500;
+const FETCH_CACHE_TTL = 30000;
 
 export default function Dashboard() {
   const screenWidth = Dimensions.get("window").width;
@@ -75,20 +77,32 @@ export default function Dashboard() {
   const [weeklySavings, setWeeklySavings] = useState(null);
   const [lastMonthKwh, setLastMonthKwh] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
+  
+  const lastFetchTime = useRef(0);
+  const fetchTimeoutRef = useRef(null);
+
+  const { unsubscribeFromUserAppliances } = useDeviceStore();
+  const { unsubscribeToBudget } = useBudgetStore();
 
   useFocusEffect(
     useCallback(() => {
       const userId = auth?.currentUser?.uid;
-      let active = true;
       if (!userId) return;
 
+      const now = Date.now();
+      if (now - lastFetchTime.current < DEBOUNCE_MS) {
+        return;
+      }
+
+      let active = true;
+
       const setupData = async () => {
+        lastFetchTime.current = now;
+        
         if (devices.length === 0) {
           await setDevices();
         }
-        await calculateWeeklySavings(userId);
 
-        listenToUserAppliances(userId);
         subscribeToBudget(userId);
 
         await Promise.allSettled([
@@ -112,23 +126,33 @@ export default function Dashboard() {
           await fetchAllMonthlyTotalConsumption(userId);
         }
       };
+
       if (budgetReady && Number(monthlyBudget?.budget_php) <= 0) {
         setModalVisible(true);
       }
+
       if (!active) return;
-      setupData();
-      const timeout = setTimeout(() => {
-        if (locationRate > 0 && monthlyBudget) {
-          setIsLoading(false);
-        }
-      }, 1000);
+      
+      fetchTimeoutRef.current = setTimeout(() => {
+        setupData().then(() => {
+          if (active && locationRate > 0 && monthlyBudget) {
+            setIsLoading(false);
+          }
+        });
+      }, DEBOUNCE_MS);
+
       return () => {
         active = false;
+        if (fetchTimeoutRef.current) {
+          clearTimeout(fetchTimeoutRef.current);
+          fetchTimeoutRef.current = null;
+        }
         setIsLoading(true);
-        clearTimeout(timeout);
         setToolTip(false);
+        unsubscribeFromUserAppliances();
+        unsubscribeToBudget();
       };
-    }, [locationRate, monthlyBudget])
+    }, [locationRate, monthlyBudget, subscribeToBudget, fetchDailyTotals, fetchWeeklyTotals, fetchLocationRate, fetchLatestMonthlyTotalConsumption, fetchTodayTrend, fetchAllMonthlyTotalConsumption, unsubscribeFromUserAppliances, unsubscribeToBudget, devices.length, monthlyBudget, monthlyTotalConsumption, todayTrend, allMonthlyTotalConsumption.length])
   );
 
   useEffect(() => {
