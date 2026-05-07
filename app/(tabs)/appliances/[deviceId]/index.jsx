@@ -35,7 +35,6 @@ export default function DeviceDetails() {
     devices,
     userAppliances,
     setDeviceApplianceName,
-    setApplianceActive,
     setOnlyOneActive,
   } = useDeviceStore();
 
@@ -69,6 +68,11 @@ export default function DeviceDetails() {
     );
   }, [devices, deviceId]);
 
+  const onBackPress = useCallback(() => {
+    router.replace("/devices");
+    return true;
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       const backHandler = BackHandler.addEventListener(
@@ -85,7 +89,7 @@ export default function DeviceDetails() {
         backHandler.remove();
         setToolTip(false);
       };
-    }, [deviceAppliances])
+    }, [onBackPress])
   );
 
   useApplianceStreams({
@@ -105,12 +109,7 @@ export default function DeviceDetails() {
       setOnlyOneActive(auth.currentUser.uid, deviceId, device.appliance_name);
       setSelectedAppliance(device.appliance_name);
     }
-  }, [device]);
-
-  const onBackPress = () => {
-    router.replace("/devices");
-    return true;
-  };
+  }, [device, deviceId, selectedAppliance, setOnlyOneActive]);
 
   const handleSelectedAppliance = async (value) => {
     if (value === selectedAppliance) return;

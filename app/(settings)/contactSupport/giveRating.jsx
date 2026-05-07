@@ -4,7 +4,7 @@ import { Feather, FontAwesome } from '@expo/vector-icons';
 import { Divider } from 'react-native-paper';
 import { router } from 'expo-router';
 import { db, auth } from '@/firebase/firebaseConfig';
-import { ref, push, serverTimestamp, get, set } from 'firebase/database';
+import { ref, get, set } from 'firebase/database';
 import { format } from 'date-fns-tz';
 
 export default function GiveRatingScreen() {
@@ -73,7 +73,7 @@ export default function GiveRatingScreen() {
                 <Feather name='arrow-left' size={30} color="#095333" />
             </TouchableOpacity>
             <Text className="text-2xl text-black mb-2">Give a rating</Text>
-            <Text className="text-lg text-gray-600 mb-4">Thank you for taking the time! We'd love to hear your thoughts.</Text>
+            <Text className="text-lg text-gray-600 mb-4">Thank you for taking the time! We&apos;d love to hear your thoughts.</Text>
             <Divider className="mb-4" />
 
             <Text className="text-lg text-gray-600 mb-2">Tap the stars to rate your experience:</Text>

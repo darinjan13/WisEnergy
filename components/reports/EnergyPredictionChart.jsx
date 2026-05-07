@@ -64,7 +64,7 @@ export default function EnergyPredictionChart({
     });
 
     return merged;
-  }, [actualData, predictedData, allLabels]);
+  }, [actualData, predictedData, allLabels, category]);
 
   const maxValue =
     category === "Daily"

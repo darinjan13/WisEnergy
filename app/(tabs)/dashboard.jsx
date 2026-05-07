@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import {
   View,
@@ -30,19 +30,14 @@ import CustomProgressBar from "@/components/reports/CustomProgressBar";
 import AIInsightsCarousel from "@/components/ai/Messages";
 import Tooltip from "@/components/ui/Tooltip";
 import BudgetModal from "@/components/budget/SetBudget";
-import {
-  AutoSkeletonIgnoreView,
-  AutoSkeletonView,
-} from "react-native-auto-skeleton";
+import { AutoSkeletonView } from "react-native-auto-skeleton";
 
 const DEBOUNCE_MS = 500;
-const FETCH_CACHE_TTL = 30000;
 
 export default function Dashboard() {
   const screenWidth = Dimensions.get("window").width;
   const insets = useSafeAreaInsets();
-  const { devices, userDevices, setDevices, listenToUserAppliances } =
-    useDeviceStore();
+  const { devices, userDevices, setDevices } = useDeviceStore();
   const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
   const {
     monthlyTotalConsumption,
@@ -81,7 +76,6 @@ export default function Dashboard() {
   const lastFetchTime = useRef(0);
   const fetchTimeoutRef = useRef(null);
 
-  const { unsubscribeFromUserAppliances } = useDeviceStore();
   const { unsubscribeToBudget } = useBudgetStore();
 
   useFocusEffect(
@@ -149,20 +143,29 @@ export default function Dashboard() {
         }
         setIsLoading(true);
         setToolTip(false);
-        unsubscribeFromUserAppliances();
         unsubscribeToBudget();
       };
-    }, [locationRate, monthlyBudget, subscribeToBudget, fetchDailyTotals, fetchWeeklyTotals, fetchLocationRate, fetchLatestMonthlyTotalConsumption, fetchTodayTrend, fetchAllMonthlyTotalConsumption, unsubscribeFromUserAppliances, unsubscribeToBudget, devices.length, monthlyBudget, monthlyTotalConsumption, todayTrend, allMonthlyTotalConsumption.length])
+    }, [
+      allMonthlyTotalConsumption.length,
+      budgetReady,
+      devices.length,
+      fetchAllMonthlyTotalConsumption,
+      fetchDailyTotals,
+      fetchLatestMonthlyTotalConsumption,
+      fetchLocationRate,
+      fetchTodayTrend,
+      fetchWeeklyTotals,
+      locationRate,
+      monthlyBudget,
+      monthlyTotalConsumption,
+      setDevices,
+      subscribeToBudget,
+      todayTrend,
+      unsubscribeToBudget,
+    ])
   );
 
-  useEffect(() => {
-    if (!budgetReady) return;
-
-    const hasBudget = Number(monthlyBudget?.budget_php) > 0;
-    setModalVisible(!hasBudget);
-  }, [budgetReady, monthlyBudget]);
-
-  const calculateWeeklySavings = async (userId) => {
+  const calculateWeeklySavings = useCallback(async (userId) => {
     try {
       if (!userId) return;
 
@@ -229,7 +232,21 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Error computing weekly savings:", err);
     }
-  };
+  }, [dailyData, locationRate, weeklyData]);
+
+  useEffect(() => {
+    const userId = auth?.currentUser?.uid;
+    if (!userId) return;
+
+    calculateWeeklySavings(userId);
+  }, [calculateWeeklySavings]);
+
+  useEffect(() => {
+    if (!budgetReady) return;
+
+    const hasBudget = Number(monthlyBudget?.budget_php) > 0;
+    setModalVisible(!hasBudget);
+  }, [budgetReady, monthlyBudget]);
 
   useEffect(() => {
     if (totalEnergyConsumption <= 0) {
@@ -264,7 +281,7 @@ export default function Dashboard() {
       const last = sorted[sorted.length - 2]?.value || 0;
       setLastMonthKwh(last);
     }
-  }, [allMonthlyTotalConsumption]);
+  }, [allMonthlyTotalConsumption, totalEnergyConsumption]);
 
   useEffect(() => {
     const user = auth?.currentUser;
@@ -298,7 +315,7 @@ export default function Dashboard() {
       setEfficiency(null);
       setEfficiencyColor("#d1d5db"); // neutral gray
     }
-  }, [locationRate, monthlyTotalConsumption, lastMonthKwh]);
+  }, [fetchPercentUsed, monthlyTotalConsumption, lastMonthKwh]);
 
   const handleBarPress = (label) => {
     const ranges = {
@@ -338,22 +355,27 @@ export default function Dashboard() {
     const userId = auth?.currentUser?.uid;
     if (!userId) return;
 
-    const fetchInitialData = async () => {
-      if (insights.length === 0) {
-        console.log("Fetching AI Insights");
-        const now = Date.now();
-        const todayStr = format(now, "yyyy-MM-dd", { timeZone: "Asia/Manila" });
-        await fetchDailyAiGeneratedContent(userId, todayStr);
-      }
+      const fetchInitialData = async () => {
+        if (insights.length === 0) {
+          const now = Date.now();
+          const todayStr = format(now, "yyyy-MM-dd", {
+            timeZone: "Asia/Manila",
+          });
+          await fetchDailyAiGeneratedContent(userId, todayStr);
+        }
 
-      if (topAppliances.length === 0) {
-        console.log("Fetching top Appliances");
-        await fetchTopAppliances(userId);
-      }
-    };
+        if (topAppliances.length === 0) {
+          await fetchTopAppliances(userId);
+        }
+      };
 
-    fetchInitialData();
-  }, []);
+      fetchInitialData();
+  }, [
+    fetchDailyAiGeneratedContent,
+    fetchTopAppliances,
+    insights.length,
+    topAppliances.length,
+  ]);
 
   return (
     <View>
@@ -452,7 +474,7 @@ export default function Dashboard() {
                 <View className="flex-row items-center">
                   <Feather name="trending-down" size={15} color="#16a34a" />
                   <Text className="text-green-700 ml-2 text-sm font-sm">
-                    You've saved ₱{weeklySavings} this week compared to last!
+                    You&apos;ve saved ₱{weeklySavings} this week compared to last!
                   </Text>
                 </View>
               ) : weeklySavings < 0 ? (
@@ -510,7 +532,7 @@ export default function Dashboard() {
             style={styles.cardShadow}
           >
             <Text className="text-xl font-semibold mb-2">
-              Today's Energy Trend
+              Today&apos;s Energy Trend
             </Text>
             <Text className="text-gray-500 text-sm mb-4">
               Tap a bar to see exact time range & kWh

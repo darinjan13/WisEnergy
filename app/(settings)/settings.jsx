@@ -8,7 +8,7 @@ import { auth, db } from "@/firebase/firebaseConfig";
 import { onValue, ref, update } from "firebase/database";
 import { LinearGradient } from "expo-linear-gradient";
 
-export default function settings() {
+export default function Settings() {
     const { width } = useWindowDimensions();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -43,6 +43,11 @@ export default function settings() {
         return `${firstInitial}${lastInitial}`;
     };
 
+    const onBackPress = useCallback(() => {
+        router.replace('/(tabs)/dashboard');
+        return true;
+    }, [router]);
+
     useFocusEffect(
         useCallback(() => {
             const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
@@ -66,10 +71,8 @@ export default function settings() {
             });
 
             return () => { unsubscribe(); backHandler.remove(); }
-        }, [])
+        }, [onBackPress])
     )
-
-    const onBackPress = () => { router.replace('/(tabs)/dashboard'); return true; };
 
     const toggleSwitch = (key, setter) => () => {
         setter((prev) => {

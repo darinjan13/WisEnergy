@@ -1,17 +1,17 @@
 import { Tabs, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { View, ActivityIndicator, useColorScheme } from "react-native";
+import { useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
 import useAuth from "@/hooks/useAuth";
 import { StatusBar } from 'expo-status-bar';
-import { auth, db } from "@/firebase/firebaseConfig";
-import { get, ref } from "firebase/database";
-import { generate_otp } from "@/services/apiService";
 import TabBar from "@/components/ui/TabBar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDeviceStore } from "@/store/firebaseStore";
 
 export default function TabLayout() {
   const router = useRouter();
   const { user, checkingAuth } = useAuth();
+  const { setDevices, listenToUserAppliances, unsubscribeFromUserAppliances } =
+    useDeviceStore();
   const cleanExpiredCache = async () => {
     const keys = await AsyncStorage.getAllKeys();
     const entries = await AsyncStorage.multiGet(keys);
@@ -30,14 +30,27 @@ export default function TabLayout() {
     }
   };
   useEffect(() => {
-
     if (!checkingAuth) {
       if (!user) {
         router.replace("/(auth)/login");
       }
     }
     cleanExpiredCache();
-  }, [checkingAuth, user]);
+  }, [checkingAuth, user, router]);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      unsubscribeFromUserAppliances();
+      return;
+    }
+
+    setDevices();
+    listenToUserAppliances(user.uid);
+
+    return () => {
+      unsubscribeFromUserAppliances();
+    };
+  }, [user?.uid, setDevices, listenToUserAppliances, unsubscribeFromUserAppliances]);
 
   if (checkingAuth) {
     return (

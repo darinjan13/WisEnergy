@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
     View,
     Text,
@@ -16,6 +16,7 @@ import { ref, update } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { clearLocalSession } from "@/utils/sessionCleanup";
 
 export default function DeleteAccount() {
     const router = useRouter();
@@ -52,6 +53,7 @@ export default function DeleteAccount() {
                 notify_system_updates: false,
             });
 
+            await clearLocalSession(uid);
             await signOut(auth);
             setShowSuccessModal(true);
         } catch (error) {

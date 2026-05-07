@@ -30,6 +30,11 @@ export const useDeviceStore = create((set, get) => ({
         set({ devices: updatedDevices });
     },
     listenToUserAppliances: (userId) => {
+        const existingUnsubscribe = get()._unsubUserAppliances;
+        if (existingUnsubscribe) {
+            existingUnsubscribe();
+        }
+
         const unsubscribe = firebaseDevicesServices.listenToUserAppliances(userId,
             (userAppliances) => {
                 set({ userAppliances: Array.isArray(userAppliances) ? [...userAppliances] : [] });
@@ -96,14 +101,20 @@ export const useDeviceStore = create((set, get) => ({
     },
 
 
-    reset: () =>
+    reset: () => {
+        const unsubUserAppliances = get()._unsubUserAppliances;
+        if (unsubUserAppliances) {
+            unsubUserAppliances();
+        }
+
         set({
             devices: [],
             userDevices: [],
             unpairedDevices: [],
             userAppliances: [],
             _unsubUserAppliances: null,
-        }),
+        })
+    },
 }));
 
 const getNextFourHourCutoff = () => {

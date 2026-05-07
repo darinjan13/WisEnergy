@@ -12,15 +12,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PieChart } from "react-native-gifted-charts";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Header from "@/components/ui/Header";
-import { auth } from "@/firebase/firebaseConfig";
+import { auth, db } from "@/firebase/firebaseConfig";
 import { useFocusEffect } from "expo-router";
 import {
   useAiGeneratedStore,
   useBudgetStore,
   useUsageStore,
 } from "@/store/firebaseStore";
-import { db } from "@/firebase/firebaseConfig";
-import { get, off, onValue, ref, update } from "firebase/database";
+import { get, ref } from "firebase/database";
 
 import BudgetModal from "@/components/budget/SetBudget";
 import AIInsightsCarousel from "@/components/ai/Messages";
@@ -115,7 +114,7 @@ export default function Budget() {
 
   useFocusEffect(
     useCallback(() => {
-      if (locationRate == 0) {
+      if (locationRate === 0) {
         fetchLocationRate(auth.currentUser.uid);
       }
       const timeout = setTimeout(() => {
@@ -129,7 +128,7 @@ export default function Budget() {
         setLoading(true);
         clearTimeout(timeout);
       };
-    }, [locationRate])
+    }, [fetchLocationRate, locationRate])
   );
 
   const onRefresh = useCallback(() => {
@@ -140,7 +139,7 @@ export default function Budget() {
       setRefreshing(false);
       setLoading(false);
     }, 1500);
-  }, []);
+  }, [fetchLocationRate]);
   useEffect(() => {
     const est = usedKWh * locationRate;
     const budKwh = budget / locationRate;
@@ -153,7 +152,7 @@ export default function Budget() {
     setRemainingKWh(remKwh);
 
     fetchPercentUsed(monthlyTotalConsumption);
-  }, [budget, usedKWh, locationRate, monthlyTotalConsumption]);
+  }, [budget, usedKWh, locationRate, monthlyTotalConsumption, fetchPercentUsed]);
 
   useEffect(() => {
     if (monthlyBudget?.budget_php > 0) {

@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Modal,
-  useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
@@ -29,9 +27,7 @@ import {
 } from "@/store/firebaseStore";
 
 export default function Reports() {
-  const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
-  const isDark = scheme === "dark";
 
   const { userDevices, userAppliances } = useDeviceStore();
   const {
@@ -106,7 +102,7 @@ export default function Reports() {
         setSelectedDevice("All Devices");
         setReportData([]);
       };
-    }, [userDevices, userAppliances])
+    }, [fetchAllBudget, fetchDailyTotals, fetchMonthlyTotals, fetchWeeklyTotals, userAppliances, userDevices])
   );
 
   // -----------------------------
@@ -168,7 +164,17 @@ export default function Reports() {
     return () => {
       cancelled = true;
     };
-  }, [reportCategory, selectedDevice, reportData]);
+  }, [
+    dailyData,
+    fetchDailyReport,
+    fetchMonthlyReport,
+    fetchWeeklyReport,
+    monthlyData,
+    reportCategory,
+    reportData,
+    selectedDevice,
+    weeklyData,
+  ]);
 
   // -----------------------------
   // C. UPDATE REPORTS PER DEVICE

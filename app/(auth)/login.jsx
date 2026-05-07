@@ -5,7 +5,6 @@ import {
     TextInput,
     TouchableOpacity,
     ActivityIndicator,
-    Image,
     KeyboardAvoidingView,
     Platform,
     Modal
@@ -31,18 +30,18 @@ export default function LoginForm() {
     const [errors, setErrors] = useState({ email: "", password: "" });
 
     useEffect(() => {
-        const checkRememberedUser = async () => {
-            const rememberedUser = await AsyncStorage.getItem('rememberedUser')
+        const loadRememberedEmail = async () => {
+            const rememberedEmail = await AsyncStorage.getItem('rememberedEmail');
 
-            if (rememberedUser) {
-                setIsLoading(true)
-                const { email, password } = JSON.parse(rememberedUser)
-                login(setIsLoading, email, password)
-            } else {
-                setIsLoading(false)
+            if (rememberedEmail) {
+                setEmail(rememberedEmail);
+                setRememberMe(true);
             }
-        }
-        checkRememberedUser()
+
+            setIsLoading(false);
+        };
+
+        loadRememberedEmail();
     }, [])
 
     const validateForm = () => {

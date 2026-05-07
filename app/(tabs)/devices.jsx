@@ -25,20 +25,16 @@ import {
   AutoSkeletonIgnoreView,
   AutoSkeletonView,
 } from "react-native-auto-skeleton";
-import { set } from "date-fns";
 
 export default function Devices() {
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
+  useColorScheme();
   const insets = useSafeAreaInsets();
 
   const {
     devices,
     setDevices,
     userDevices,
-    unpairedDevices,
     addDevice,
-    userAppliances,
     updateDeviceNickname,
     deleteDevice,
     toggleRelay
@@ -70,7 +66,7 @@ export default function Devices() {
         setDisableDevice(false);
         setToolTip(false);
       };
-    }, [devices.length, userAppliances.length])
+    }, [devices.length, setDevices])
   );
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -80,7 +76,7 @@ export default function Devices() {
       setRefreshing(false);
       setIsLoading(false);
     }, 1500);
-  }, []);
+  }, [setDevices]);
 
   const showAddDeviceModal = () => {
     setModalVisible(true);
@@ -126,13 +122,13 @@ export default function Devices() {
           text2: addDeviceStatus?.error || "Failed to add device.",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       Toast.show({
         type: "error",
         text1: "Error",
         text2: "An unexpected error occurred. Please try again.",
       });
-      console.error("Error in handleAddDevice:", error);
+      console.error("Error in handleAddDevice:", _error);
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +175,7 @@ export default function Devices() {
       setDeviceId(null);
       setDeviceNickname("");
       setAction(null);
-    } catch (error) {
+    } catch (_error) {
       Toast.show({
         type: "error",
         text1: "Error",
@@ -209,7 +205,7 @@ export default function Devices() {
       });
       setDeviceId(null);
       setSelectedUnpairedDevice("");
-    } catch (error) {
+    } catch (_error) {
       Toast.show({
         type: "error",
         text1: "Error",

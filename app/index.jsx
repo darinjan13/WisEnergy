@@ -3,14 +3,11 @@ import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useAuth from "@/hooks/useAuth";
 import * as SplashScreen from "expo-splash-screen";
-import { useNotifications } from "@/hooks/useNotifications";
 
 export default function Index() {
   const { user, checkingAuth } = useAuth();
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [seen, setSeen] = useState(null);
-
-  useNotifications();
 
   useEffect(() => {
     let isMounted = true;

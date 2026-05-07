@@ -1,14 +1,19 @@
 // hooks/useAuth.js
 import { useState, useEffect, useCallback } from "react";
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import {
+    fetchSignInMethodsForEmail,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut,
+} from "firebase/auth";
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
-import { get, ref, set, update } from "firebase/database";
-import { clearStates } from "@/store/firebaseStore";
+import { get, ref, update } from "firebase/database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generate_otp } from "@/services/apiService";
-import { clearCache } from "@/utils/asyncStorageUtils";
+import { setRegisterDraft } from "@/utils/registerDraft";
+import { clearLocalSession } from "@/utils/sessionCleanup";
 
 
 
@@ -28,32 +33,29 @@ export default function useAuth() {
 
     const register = useCallback(async (setIsLoading, location, firstName, lastName, email, password) => {
         try {
-            const usersRef = ref(db, "users");
-            const snapshot = await get(usersRef);
+            const signInMethods = await fetchSignInMethodsForEmail(auth, email);
 
-            let emailExists = false;
-            snapshot.forEach(child => {
-                if (child.val()?.email?.toLowerCase() === email.toLowerCase()) {
-                    emailExists = true;
-                }
-            });
-
-            if (emailExists) {
+            if (signInMethods.length > 0) {
                 setIsLoading(false);
                 return { success: false, code: "email-exists" };
             }
+
             const result = await generate_otp(email, true);
 
             if (result.success) {
+                setRegisterDraft({
+                    email,
+                    firstName,
+                    lastName,
+                    location,
+                    password,
+                });
+
                 router.navigate({
                     pathname: '/forgotPassword/verification',
                     params: {
                         email,
                         from: "register",
-                        location,
-                        firstName,
-                        lastName,
-                        password
                     },
                 });
             } else {
@@ -84,8 +86,6 @@ export default function useAuth() {
             // 🔍 Check if account is flagged for deletion
             const userRef = ref(db, `users/${user.uid}/deletion_date`);
             const snapshot = await get(userRef);
-            console.log(snapshot);
-
 
             if (snapshot.exists()) {
                 setPendingDeletionUser({ uid: user.uid, email: user.email });
@@ -98,9 +98,9 @@ export default function useAuth() {
                 text2: "You are now logged in.",
             });
             if (rememberMe)
-                await AsyncStorage.setItem('rememberedUser', JSON.stringify({ email, password }))
+                await AsyncStorage.setItem('rememberedEmail', email)
             else
-                await AsyncStorage.removeItem('rememberedUser')
+                await AsyncStorage.removeItem('rememberedEmail')
             setIsLoading(false);
             router.replace("/(tabs)/dashboard");
         } catch (e) {
@@ -121,9 +121,8 @@ export default function useAuth() {
 
     const logout = useCallback(async (setIsLoading) => {
         try {
-            clearStates();
-            clearCache();
-            await AsyncStorage.removeItem('rememberedUser')
+            const userId = auth.currentUser?.uid;
+            await clearLocalSession(userId);
             await signOut(auth);
             router.replace("/(auth)/login");
             Toast.show({

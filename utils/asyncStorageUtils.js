@@ -18,7 +18,8 @@ export const clearCache = async () => {
                 key.startsWith("@Totals:") ||
                 key.startsWith("@overall_top_appliances:") ||
                 key.startsWith("@ai_insights:") ||
-                key === "rememberedUser"
+                key === "rememberedUser" ||
+                key === "rememberedEmail"
         );
 
         if (keysToRemove.length > 0) {

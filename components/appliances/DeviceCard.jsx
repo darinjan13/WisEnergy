@@ -54,7 +54,7 @@ export default function DeviceCard({
             off(presenceRef, "value", handler);
             clearInterval(interval);
         };
-    }, [deviceData?.id]);
+    }, [deviceData?.id, isUnpaired]);
     useEffect(() => {
         setToggleValue(deviceData?.relay_desired ?? false);
     }, [deviceData?.relay_desired]);

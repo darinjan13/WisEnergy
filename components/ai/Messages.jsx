@@ -4,7 +4,6 @@ import Carousel from "react-native-reanimated-carousel";
 
 const AIInsightsCarousel = ({ insights }) => {
     const { width } = useWindowDimensions();
-    const [heights, setHeights] = useState({});
     const [activeIndex, setActiveIndex] = useState(0);
 
     return (
@@ -12,11 +11,7 @@ const AIInsightsCarousel = ({ insights }) => {
             <Carousel
                 loop={false}
                 width={width - 60}
-                height={
-                    Object.keys(heights).length > 0
-                        ? Math.max(...Object.values(heights)) + 10
-                        : 110
-                }
+                height={110}
                 autoPlay={false}
                 data={insights}
                 scrollAnimationDuration={400}

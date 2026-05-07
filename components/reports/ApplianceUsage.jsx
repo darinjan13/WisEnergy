@@ -1,12 +1,9 @@
-import { List } from 'react-native-paper';
-import { BarChart, LineChart } from 'react-native-gifted-charts';
-import { View, Text, StyleSheet } from 'react-native';
-import { useState } from 'react';
+import { LineChart } from 'react-native-gifted-charts';
+import { View, Text } from 'react-native';
 import { getMonthName } from '../../utils/dateHelper';
 
 export default function ApplianceUsage({ category, data }) {
     const monthValue = data?.barData[0]?.month || "";
-    console.log(data);
     const values = [
         ...(data?.barData?.map(b => b.value) || []),
         ...(data?.barData2?.map(b => b.value) || []),
@@ -16,7 +13,7 @@ export default function ApplianceUsage({ category, data }) {
 
     // const isExpanded = expandedIndex === index;
     return (
-        <View /*style={style.barGraph}*/ className="bg-white p-5 rounded-2xl mt-20 mb-4 shadow-xl">
+        <View className="bg-white p-5 rounded-2xl mt-20 mb-4 shadow-xl">
             {/* Dynamic Text Based on Category */}
             {category === "Daily" ? (
                 <Text className="mb-5 text-lg font-semibold">Power Usage for the Past 5 Days</Text>
@@ -181,38 +178,3 @@ export default function ApplianceUsage({ category, data }) {
         //                     /> */}
     );
 }
-
-const style = StyleSheet.create({
-    barGraph: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-        backgroundColor: 'white',
-        elevation: 4,
-    },
-    barStyle: {
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 8,
-        elevation: 10,
-    },
-    accordionStyle: {
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        backgroundColor: 'white',
-        elevation: 4
-    },
-    accordionCollapsed: {
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        borderBottomLeftRadius: 16,
-        borderBottomRightRadius: 16,
-        marginBottom: 10,
-        backgroundColor: 'white',
-    },
-    titleStyle: {
-        color: '#14532d',
-        fontWeight: 'bold',
-    },
-});

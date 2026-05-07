@@ -105,10 +105,6 @@ export default function EditProfile() {
             setIsLoading(false);
         }
     };
-    const sanitizeName = (value) => {
-        return value.replace(/[^a-zA-Z\s-]/g, "");
-    };
-
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "android" ? "padding" : "height"}

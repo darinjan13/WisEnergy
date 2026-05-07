@@ -3,11 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform
 import { generate_otp } from "../../../services/apiService";
 import { router } from 'expo-router';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ForgotPasswordScreen() {
-  const insets = useSafeAreaInsets();
-
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);

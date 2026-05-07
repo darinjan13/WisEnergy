@@ -4,8 +4,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { auth } from "@/firebase/firebaseConfig";
-import { api } from "@/services/apiService.js"; // 👈 your axios instance file
+import { ref, update } from "firebase/database";
+
+import { auth, db } from "@/firebase/firebaseConfig";
+import { api } from "@/services/apiService.js";
 
 export default function PremiumPlans() {
     const router = useRouter();
@@ -22,7 +24,7 @@ export default function PremiumPlans() {
         {
             title: "Monthly",
             price: "₱249 / month",
-            amount: 20,
+            amount: 24900,
             description: "WisEnergy Monthly Plan",
             features: [
                 "Unlimited number of devices",
@@ -35,7 +37,7 @@ export default function PremiumPlans() {
         {
             title: "Yearly",
             price: "₱2,499 / year",
-            amount: 20,
+            amount: 249900,
             description: "WisEnergy Yearly Plan",
             features: [
                 "Includes all Premium features —",
@@ -54,8 +56,6 @@ export default function PremiumPlans() {
                     const res = await api.get(`/check-payment-status/${qrModal.id}`);
                     const { status, payment_id, amount } = res.data;
 
-                    console.log("QR Status:", status);
-
                     if (status === "paid") {
                         clearInterval(interval);
 
@@ -64,12 +64,13 @@ export default function PremiumPlans() {
                         // Mark user as premium in Firebase
                         await update(ref(db, `subscriptions/${auth.currentUser.uid}`), {
                             is_premium: true,
+                            status: "active",
                             premium_payment_id: payment_id,
                             premium_amount: amount,
                             premium_date: new Date().toISOString(),
                         });
 
-                        setQrModal({ visible: false });
+                        setQrModal({ visible: false, image: "", label: "", amount: 0, id: "" });
                     }
                 } catch (err) {
                     console.error("Polling Error:", err.message);
@@ -106,10 +107,12 @@ export default function PremiumPlans() {
                 });
                 setIsLoading(false);
             } else {
+                setIsLoading(false);
                 alert("QRPH payment data not found.");
             }
         } catch (err) {
             console.error("Payment Error:", err.message);
+            setIsLoading(false);
             alert("Something went wrong. Please try again later.");
         }
     };
@@ -187,7 +190,7 @@ export default function PremiumPlans() {
                         <View className="bg-white rounded-xl p-5 w-80">
                             <Text className="text-lg font-bold text-center mb-2">Scan to Pay (QRPH)</Text>
                             <Text className="text-center text-gray-500 mb-4">
-                                {qrModal.label} — ₱249.00
+                                {qrModal.label} — ₱{Number(qrModal.amount || 0).toFixed(2)}
                             </Text>
                             <Image
                                 source={{ uri: qrModal.image }}
@@ -195,7 +198,7 @@ export default function PremiumPlans() {
                                 resizeMode="contain"
                             />
                             <TouchableOpacity
-                                onPress={() => setQrModal({ visible: false })}
+                                onPress={() => setQrModal({ visible: false, image: "", label: "", amount: 0, id: "" })}
                                 className="mt-5 bg-red-700 py-2 rounded-md"
                             >
                                 <Text className="text-white text-center font-semibold">Close</Text>

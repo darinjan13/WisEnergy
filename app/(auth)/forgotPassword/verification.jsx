@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { db } from '@/firebase/firebaseConfig';
+import { auth, db } from '@/firebase/firebaseConfig';
 import { router, useLocalSearchParams } from 'expo-router';
 import { generate_otp, verify_otp } from '@/services/apiService';
 import { Feather } from '@expo/vector-icons';
@@ -8,8 +8,8 @@ import OTPTextInput from "react-native-otp-textinput";
 import { ref, set } from 'firebase/database';
 import SuccessModal from '@/components/Modals/SuccessModal';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../../../firebase/firebaseConfig';
 import Toast from 'react-native-toast-message';
+import { clearRegisterDraft, getRegisterDraft } from '@/utils/registerDraft';
 
 export default function CodeVerificationScreen() {
 
@@ -34,7 +34,7 @@ export default function CodeVerificationScreen() {
         });
     }
 
-    const { email, from, firstName, lastName, password, location } = useLocalSearchParams();
+    const { email, from } = useLocalSearchParams();
 
     const [isLoading, setIsLoading] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
@@ -46,9 +46,6 @@ export default function CodeVerificationScreen() {
         const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
         return () => clearInterval(interval);
     }, [timer]);
-    const timers = 0
-    console.log(timer > 0);
-
     const handleResend = async () => {
         setTimer(300);
         try {
@@ -81,11 +78,27 @@ export default function CodeVerificationScreen() {
                     params: { email },
                 });
             } else if (from === "register") {
+                const draft = getRegisterDraft();
 
-                const res = await createUserWithEmailAndPassword(auth, email, password);
-                await updateProfile(res.user, { displayName: firstName + " " + lastName });
+                if (!draft || draft.email !== email) {
+                    Alert.alert("Session expired", "Please fill out registration again.");
+                    router.replace("/(auth)/register");
+                    setIsLoading(false);
+                    return;
+                }
 
-                await saveUserDetails(res.user.uid, location, email, firstName, lastName, "user");
+                const res = await createUserWithEmailAndPassword(auth, email, draft.password);
+                await updateProfile(res.user, { displayName: draft.firstName + " " + draft.lastName });
+
+                await saveUserDetails(
+                    res.user.uid,
+                    draft.location,
+                    email,
+                    draft.firstName,
+                    draft.lastName,
+                    "user"
+                );
+                clearRegisterDraft();
 
                 Toast.show({
                     type: "success",
@@ -134,7 +147,7 @@ export default function CodeVerificationScreen() {
                     {from === "register" ? (
                         <Text className="text-gray-500">
                             Please enter the 6-digit verification code sent to
-                            your email address. If you don't see it, please check
+                            your email address. If you don&apos;t see it, please check
                             your spam or junk folder.
                         </Text>
                     ) : (
@@ -148,7 +161,7 @@ export default function CodeVerificationScreen() {
                 {/* OTP Input */}
 
                 <OTPTextInput
-                    inputCount={5}
+                    inputCount={6}
                     handleTextChange={(code) => setOtp(code)}
                     containerStyle={{ marginBottom: 20 }}
                     textInputStyle={{
@@ -171,7 +184,7 @@ export default function CodeVerificationScreen() {
                     <TouchableOpacity
                         onPress={verifyCode}
                         className="bg-green-700 py-4 rounded-xl mb-3 mt-6 "
-                        disabled={isLoading || otp.length < 5}
+                        disabled={isLoading || otp.length < 6}
                     >
                         {!isLoading ? (
                             <Text className=" text-white text-center font-semibold">

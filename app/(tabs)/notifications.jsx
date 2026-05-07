@@ -38,7 +38,7 @@ export default function Notifications() {
         useCallback(() => {
             const user = auth.currentUser;
             if (user) fetchNotifications(user.uid);
-        }, [])
+        }, [fetchNotifications])
     );
 
     const getIcon = (type) => {

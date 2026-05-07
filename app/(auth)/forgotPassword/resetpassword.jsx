@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import AuthHeader from '../../../components/ui/AuthHeader';
 import { router, useLocalSearchParams } from 'expo-router';
 import { reset_password } from '../../../services/apiService';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, Fontisto } from '@expo/vector-icons';
 
 export default function ResetPasswordScreen() {

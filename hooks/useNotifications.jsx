@@ -2,10 +2,12 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
-import { db } from "@/firebase/firebaseConfig";
-import { ref, set, get } from "firebase/database";
 import useAuth from "@/hooks/useAuth";
 import { router } from "expo-router";
+import {
+  persistPushToken,
+  registerPushTokenForUser,
+} from "@/services/pushTokenService";
 
 export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState(null);
@@ -18,25 +20,13 @@ export function useNotifications() {
       const token = await registerForPushNotificationsAsync();
       if (token && isMounted) {
         setExpoPushToken(token);
-        console.log("Expo Push Token:", token);
+        await persistPushToken(token);
 
         if (user?.uid) {
           try {
-            const tokensRef = ref(db, `tokens/${user.uid}`);
-            const snap = await get(tokensRef);
-            let tokens = snap.exists() ? snap.val() : [];
-
-            if (!Array.isArray(tokens)) tokens = [];
-
-            if (!tokens.includes(token)) {
-              tokens.push(token);
-              await set(tokensRef, tokens);
-              console.log("✅ Token saved in Firebase:", token);
-            } else {
-              console.log("ℹ️ Token already exists in Firebase");
-            }
+            await registerPushTokenForUser(user.uid, token);
           } catch (err) {
-            console.error("❌ Failed to save token:", err.message);
+            console.error("Failed to save token:", err.message);
           }
         }
       }
@@ -45,13 +35,10 @@ export function useNotifications() {
     setupNotifications();
 
     // Foreground listener
-    const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
-      console.log("📩 Foreground notification:", notification);
-    });
+    const foregroundSub = Notifications.addNotificationReceivedListener(() => {});
 
     // Tap listener (background/open)
     const tapSub = Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log("👉 User tapped notification:", response.notification.request.content.data);
       const screen = response.notification.request.content.data?.screen;
       if (screen) {
         router.push(`/(tabs)/${screen}`);
