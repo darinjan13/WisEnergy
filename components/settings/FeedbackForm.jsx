@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { auth, db } from '../../firebase/firebaseConfig';
-import { get, ref, set } from 'firebase/database';
+import { push, ref, set } from 'firebase/database';
 import { format } from 'date-fns-tz';
 
 export default function FeedbackForm({ type, title, description, placeholder }) {
@@ -20,20 +20,7 @@ export default function FeedbackForm({ type, title, description, placeholder }) 
         setLoading(true);
 
         try {
-            const feedbackRef = ref(db, "feedback");
-            const snapshot = await get(feedbackRef);
-
-            // Count existing entries
-            let newIdNumber = 1;
-            if (snapshot.exists()) {
-                newIdNumber = Object.keys(snapshot.val()).length + 1;
-            }
-
-            // Format ID like 00001
-            const newId = String(newIdNumber).padStart(5, "0");
-
-            // Save under /feedback/{newId}
-            const reportRef = ref(db, `feedback/${newId}`);
+            const reportRef = push(ref(db, "feedback"));
             await set(reportRef, {
                 type,
                 message,

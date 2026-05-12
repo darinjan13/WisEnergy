@@ -4,7 +4,7 @@ import { Feather, FontAwesome } from '@expo/vector-icons';
 import { Divider } from 'react-native-paper';
 import { router } from 'expo-router';
 import { db, auth } from '@/firebase/firebaseConfig';
-import { ref, get, set } from 'firebase/database';
+import { push, ref, set } from 'firebase/database';
 import { format } from 'date-fns-tz';
 
 export default function GiveRatingScreen() {
@@ -31,20 +31,7 @@ export default function GiveRatingScreen() {
         setLoading(true);
 
         try {
-            const reviewsRef = ref(db, "reviews");
-            const snapshot = await get(reviewsRef);
-
-            // count existing reviews
-            let newIdNumber = 1;
-            if (snapshot.exists()) {
-                newIdNumber = Object.keys(snapshot.val()).length + 1;
-            }
-
-            // format ID like 00001
-            const newId = String(newIdNumber).padStart(5, "0");
-
-            // save review under /reviews/{newId}
-            const reviewRef = ref(db, `reviews/${newId}`);
+            const reviewRef = push(ref(db, "reviews"));
             await set(reviewRef, {
                 rating,
                 message: review || "No message provided",

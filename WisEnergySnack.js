@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet, StatusBar, SafeAreaView, Dimensions, Image } from 'react-native';
+import { Ionicons, MaterialCommunityIcons, MaterialIcons, Feather, Fontisto } from '@expo/vector-icons';
+
+// NOTE: In Expo Snack, upload these images to assets folder:
+// - Login-house.png (from assets/images/Login-house.png)  
+// - WisEnergy_LOGO2.png (from assets/images/WisEnergy_LOGO2.png)
+const houseImage = require('./assets/Login-house.png');
+const logoImage = require('./assets/WisEnergy_LOGO2.png');
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -87,20 +94,8 @@ const App = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
-      {/* Header - Exact Match Main App */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          {/* Placeholder for Logo - would be an Image in main app */}
-          <Text style={styles.logoPlaceholder}>🏠</Text>
-          <Text style={styles.headerTitle}>WisEnergy</Text>
-        </View>
-        <TouchableOpacity 
-          onPress={() => setScreen('settings')}
-          style={styles.settingsButton}
-        >
-          <Text style={styles.settingsIcon}>⚙️</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Global Header */}
+      {screen !== 'login' && <Header onSettingsPress={() => setScreen('settings')} />}
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 20}}>
@@ -127,17 +122,17 @@ const App = () => {
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.tabItem} onPress={() => setScreen('devices')}>
-          <Text style={[styles.tabIcon, screen === 'devices' && styles.tabIconActive]}>⚡</Text>
+          <MaterialCommunityIcons name="lightning-bolt" size={24} color={screen === 'devices' ? COLORS.SUCCESS : COLORS.SUBTEXT} />
           <Text style={[styles.tabLabel, screen === 'devices' && styles.tabLabelActive]}>Devices</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.tabItem} onPress={() => setScreen('budget')}>
-          <Text style={[styles.tabIcon, screen === 'budget' && styles.tabIconActive]}>💰</Text>
+          <Ionicons name="cash-outline" size={24} color={screen === 'budget' ? COLORS.SUCCESS : COLORS.SUBTEXT} />
           <Text style={[styles.tabLabel, screen === 'budget' && styles.tabLabelActive]}>Budget</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.tabItem} onPress={() => setScreen('reports')}>
-          <Text style={[styles.tabIcon, screen === 'reports' && styles.tabIconActive]}>📊</Text>
+          <Ionicons name="bar-chart-outline" size={24} color={screen === 'reports' ? COLORS.SUCCESS : COLORS.SUBTEXT} />
           <Text style={[styles.tabLabel, screen === 'reports' && styles.tabLabelActive]}>Reports</Text>
         </TouchableOpacity>
       </View>
@@ -145,187 +140,228 @@ const App = () => {
   );
 };
 
-// ----- LOGIN SCREEN (Exact Match Main App) -----
+// ----- LOGIN SCREEN (Exact Copy from Main App) -----
 
-const LoginScreen = ({ onLogin }) => (
-  <View style={styles.loginContainer}>
-    {/* Top Header with Logo - Exact Match Main App */}
-    <View style={styles.loginTop}>
-      <View style={styles.loginLogoContainer}>
-        <Text style={styles.loginLogo}>🏠</Text>
-        <Text style={styles.loginAppName}>WisEnergy</Text>
-      </View>
+  const LoginScreen = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({ email: '', password: '' });
+
+  return (
+    <View style={styles.loginContainer}>
+      <AuthHeader />
+      <ScrollView 
+        style={styles.loginFormScrollView} 
+        contentContainerStyle={styles.loginFormContent}
+      >
+        <Text style={styles.loginTitle}>Login</Text>
+        <Text style={styles.loginSubtitleText}>Sign in to continue to your dashboard</Text>
+
+        {/* Email Input */}
+        <View style={{ marginBottom: 16 }}>
+          <View style={[styles.inputWrapper, errors.email && styles.inputError]}>
+            <MaterialIcons name="email" size={18} color={COLORS.SUBTEXT} />
+            <TextInput
+              style={styles.loginInput}
+              placeholder="Enter Email Address"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+          {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+        </View>
+
+        {/* Password Input */}
+        <View style={{ marginBottom: 16 }}>
+          <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
+            <Fontisto name="locked" size={18} color={COLORS.SUBTEXT} />
+            <TextInput
+              style={styles.loginInput}
+              placeholder="Enter Password"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity 
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <Feather name={showPassword ? "eye-off" : "eye"} size={20} color={COLORS.SUBTEXT} />
+            </TouchableOpacity>
+          </View>
+          {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+        </View>
+
+        {/* Remember Me + Forgot Password */}
+        <View style={styles.rememberRow}>
+          <TouchableOpacity 
+            onPress={() => setRememberMe(!rememberMe)}
+            style={styles.checkboxRow}
+          >
+            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+              {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.rememberText}>Remember Me</Text>
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Text style={styles.forgotLink}>Forgot Password?</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Sign In Button */}
+        <TouchableOpacity 
+          style={styles.signInButton}
+          onPress={onLogin}
+        >
+          <Text style={styles.signInButtonText}>Sign In</Text>
+        </TouchableOpacity>
+
+        {/* Divider */}
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Register Link */}
+        <View style={styles.registerRow}>
+          <Text style={styles.registerText}>Don't have an account? </Text>
+          <TouchableOpacity>
+            <Text style={styles.registerLink}>Register Now</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
-    
-    {/* Bottom Form - Exact Match Main App */}
-    <View style={styles.loginFormContainer}>
-      <Text style={styles.loginWelcome}>Welcome Back!</Text>
-      <Text style={styles.loginSubtitle}>Login to continue monitoring your energy</Text>
-      
-      <Text style={styles.inputLabel}>Email Address</Text>
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputIcon}>📧</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="Enter your email" 
-          placeholderTextColor="#9CA3AF"
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-      </View>
-      
-      <Text style={styles.inputLabel}>Password</Text>
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputIcon}>🔒</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="Enter your password" 
-          placeholderTextColor="#9CA3AF"
-          secureTextEntry
-        />
-      </View>
+  );
+};
 
-      {/* Remember Me Checkbox - Exact Match Main App */}
-      <View style={styles.rememberRow}>
-        <TouchableOpacity style={styles.checkbox}>
-          <Text style={styles.checkboxTick}>✓</Text>
-        </TouchableOpacity>
-        <Text style={styles.rememberText}>Remember Me</Text>
-        <TouchableOpacity style={styles.forgotContainer}>
-          <Text style={styles.forgotText}>Forgot Password?</Text>
-        </TouchableOpacity>
-      </View>
+// Extracted AuthHeader to match Main App structure exactly
+const AuthHeader = () => (
+  <View style={styles.loginHeader}>
+    <View style={styles.loginHeaderBg}>
+      <Image source={houseImage} style={styles.loginHeaderHouse} resizeMode="cover" />
+    </View>
+    <Image source={logoImage} style={styles.loginLogoImg} resizeMode="contain" />
+  </View>
+);
 
-      <TouchableOpacity style={styles.loginButton} onPress={onLogin}>
-        <Text style={styles.loginButtonText}>Login</Text>
+// Extracted Header for other screens - Match Main App Layout
+const Header = ({ onSettingsPress }) => (
+  <View style={styles.appHeader}>
+    {/* Logo */}
+    <View style={styles.appLogoContainer}>
+      <MaterialCommunityIcons name="lightning-bolt" size={36} color={COLORS.PRIMARY} />
+    </View>
+
+    {/* Right side: Notification + Avatar */}
+    <View style={styles.appHeaderRight}>
+      <TouchableOpacity onPress={() => console.log('notifications')}>
+        <View style={styles.appNotifyButton}>
+          <Ionicons name="notifications-outline" size={24} color="black" />
+        </View>
       </TouchableOpacity>
-
-      <View style={styles.loginDivider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>OR</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <TouchableOpacity style={styles.registerButton}>
-        <Text style={styles.registerText}>Don't have an account? <Text style={styles.registerLink}>Register</Text></Text>
+      <TouchableOpacity onPress={onSettingsPress}>
+        <View style={styles.appAvatar}>
+          <Text style={styles.appAvatarText}>JD</Text>
+        </View>
       </TouchableOpacity>
     </View>
   </View>
 );
 
-// ----- DASHBOARD SCREEN (Exact Match Main App) -----
+// ----- LOGIN SCREEN (Exact Copy from Main App) -----
+
+
 
 const DashboardScreen = () => (
-  <View style={styles.screen}>
-    {/* Header */}
-    <View style={styles.dashboardHeader}>
-      <Text style={styles.dashboardGreeting}>Hello, John! 👋</Text>
-      <Text style={styles.dashboardDate}>Today, May 11</Text>
+  <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: 150, paddingTop: 10 }}>
+    {/* Energy Efficiency Index - Donut Chart - Exact Match Main App */}
+    <View style={styles.efficiencyChartCard}>
+      <View style={styles.efficiencyPie}>
+        <Text style={styles.efficiencyPiePercent}>{mockData.efficiency}%</Text>
+        <Text style={styles.efficiencyChartLabel}>Energy Efficiency Index</Text>
+        <TouchableOpacity style={styles.efficiencyInfoIcon}>
+          <Feather name="info" size={16} color="#fff" />
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.efficiencyChartDesc}>Outstanding! You've used much less energy than last month.</Text>
     </View>
 
-    {/* Energy Efficiency Card - Exact Match Main App */}
-    <Card>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Energy Efficiency Index</Text>
-        <TouchableOpacity>
-          <Text style={styles.cardAction}>ℹ️</Text>
-        </TouchableOpacity>
+    {/* Welcome Back + Stats Row - Exact Match Main App */}
+    <View style={styles.welcomeStatsRow}>
+      <View style={styles.welcomeCard}>
+        <Text style={styles.welcomeTitle}>Welcome Back, John!</Text>
+        <Text style={styles.welcomeSubtitle}>
+          Keep tracking your usage to see weekly changes!
+        </Text>
       </View>
-      
-      <View style={styles.efficiencyRow}>
-        <View style={styles.efficiencyCircleLarge}>
-          <Text style={styles.efficiencyPercent}>{mockData.efficiency}%</Text>
-          <Text style={styles.efficiencyLabel}>Efficiency</Text>
-        </View>
-        
-        <View style={styles.efficiencyInfo}>
-          <View style={styles.efficiencyBadge}>
-            <Text style={styles.efficiencyBadgeIcon}>🏆</Text>
-            <Text style={styles.efficiencyBadgeText}>Outstanding</Text>
+      <View style={styles.statsColumn}>
+        <View style={styles.statCard}>
+          <View style={styles.statRow}>
+            <MaterialCommunityIcons name="power-plug-outline" size={30} color="gray" />
+            <Text style={styles.statValue}>{mockData.devices.length}</Text>
           </View>
-          <Text style={styles.efficiencyDesc}>
-            You're using 15% less energy than last month. Great job!
-          </Text>
+          <Text style={styles.statLabel}>Devices</Text>
         </View>
+        <View style={styles.statCard}>
+          <View style={styles.statRow}>
+            <MaterialCommunityIcons name="lightning-bolt-outline" size={30} color="gray" />
+            <Text style={styles.statValue}>4.4</Text>
+          </View>
+          <Text style={styles.statLabelSmall}>Energy Consumption(kWh)</Text>
+        </View>
+      </View>
+    </View>
+
+    {/* Today's Energy Trend - Exact Match Main App */}
+    <Card>
+      <Text style={styles.cardTitleLarge}>Today's Energy Trend</Text>
+      <Text style={styles.cardSubtitle}>Tap a bar to see exact time range & kWh</Text>
+      <BarChart data={mockData.hourlyUsage.slice(0, 6)} height={100} barWidth={24} showLabels={true} />
+    </Card>
+
+    {/* Monthly Goals - Exact Match Main App */}
+    <Card>
+      <Text style={styles.cardTitleLarge}>Monthly Goals</Text>
+      <Text style={styles.cardSubtitle}>Monitor your estimated monthly energy bills against your set target.</Text>
+      <View style={styles.goalsRow}>
+        <Text style={styles.goalsLabel}>Current: ₱1,625.00</Text>
+        <Text style={styles.goalsLabel}>Goal: ₱2,500.00</Text>
+      </View>
+      <View style={styles.progressBar}>
+        <View style={[styles.progressFill, { width: '65%' }]} />
       </View>
     </Card>
 
-    {/* Budget Card - Exact Match Main App */}
+    {/* Top Appliances - Exact Match Main App */}
     <Card>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Monthly Budget</Text>
-        <TouchableOpacity>
-          <Text style={styles.cardAction}>✏️</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.budgetRow}>
-        <View>
-          <Text style={styles.budgetLabel}>Monthly Budget</Text>
-          <Text style={styles.budgetValue}>₱2,500.00</Text>
-        </View>
-        <View style={styles.budgetDivider} />
-        <View>
-          <Text style={styles.budgetLabel}>Remaining</Text>
-          <Text style={[styles.budgetValue, { color: COLORS.SUCCESS }]}>₱875.00</Text>
-        </View>
-      </View>
-      
-      <View style={styles.budgetProgressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: '65%' }]} />
-        </View>
-        <Text style={styles.progressLabel}>65% used</Text>
-      </View>
-    </Card>
-
-    {/* Today's Usage Chart */}
-    <Card>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Today's Usage</Text>
-        <Text style={styles.cardSubtitle}>kWh</Text>
-      </View>
-      <BarChart data={mockData.hourlyUsage.slice(0, 6)} height={80} barWidth={18} showLabels={false} />
-    </Card>
-
-    {/* Connected Devices Summary */}
-    <Card>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Connected Devices</Text>
-        <TouchableOpacity>
-          <Text style={styles.seeAllLink}>See All</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {mockData.devices.slice(0, 2).map(device => (
-        <View key={device.id} style={styles.deviceRow}>
-          <View style={styles.deviceLeft}>
-            <View style={styles.deviceIcon}>
-              <Text style={styles.deviceIconText}>⚡</Text>
-            </View>
-            <View>
-              <Text style={styles.deviceName}>{device.name}</Text>
-              <Text style={styles.deviceMeta}>{device.room}</Text>
-            </View>
+      <Text style={styles.cardTitleLarge}>Top Appliances</Text>
+      <Text style={styles.cardSubtitle}>See which appliances are consuming the most energy</Text>
+      {mockData.devices.slice(0, 3).map((device, i) => (
+        <View key={device.id} style={styles.topApplianceRow}>
+          <View style={styles.topApplianceLeft}>
+            <MaterialCommunityIcons name={`numeric-${i + 1}-circle`} size={22} color={COLORS.PRIMARY} />
+            <Text style={styles.topApplianceName}>{device.name}</Text>
           </View>
-          <View style={styles.deviceRight}>
-            <Text style={styles.deviceKwh}>{device.kwh} kWh</Text>
-            <View style={[
-              styles.deviceStatusBadge,
-              device.status ? styles.deviceStatusOn : styles.deviceStatusOff
-            ]}>
-              <Text style={[
-                styles.deviceStatusText,
-                device.status ? styles.deviceStatusTextOn : styles.deviceStatusTextOff
-              ]}>
-                {device.status ? 'ON' : 'OFF'}
-              </Text>
-            </View>
-          </View>
+          <Text style={styles.topApplianceKw}>{device.kwh} kWh</Text>
         </View>
       ))}
     </Card>
-  </View>
+
+    {/* AI Insights - Exact Match Main App */}
+    <Card>
+      <Text style={styles.cardTitleLarge}>AI Insights</Text>
+      <Text style={styles.aiInsightText}>
+        AI will give you personalized tips to save energy when data is available
+      </Text>
+    </Card>
+  </ScrollView>
 );
 
 // ----- DEVICES SCREEN (Exact Match Main App) -----
@@ -349,7 +385,7 @@ const DevicesScreen = ({ devices, toggleStates, toggleDevice }) => (
       >
         <View style={styles.deviceCardLeft}>
           <View style={styles.deviceCardIcon}>
-            <Text style={styles.deviceCardIconText}>⚡</Text>
+            <MaterialCommunityIcons name="lightning-bolt" size={24} color={COLORS.WARNING} />
           </View>
           <View style={styles.deviceCardInfo}>
             <Text style={styles.deviceCardName}>{device.name}</Text>
@@ -616,109 +652,116 @@ const styles = StyleSheet.create({
   tabLabel: { fontSize: 10, color: COLORS.SUBTEXT, marginTop: 2 },
   tabLabelActive: { color: COLORS.PRIMARY, fontWeight: '700' },
 
-  // ----- LOGIN SCREEN STYLES -----
+  // ----- LOGIN SCREEN STYLES (Exact Copy from Main App) -----
   loginContainer: { flex: 1, backgroundColor: '#fff' },
-  loginTop: {
-    backgroundColor: COLORS.PRIMARY,
-    paddingTop: 50,
-    paddingBottom: 40,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+  loginHeader: {
+    height: 208, // h-52 is 208
   },
-  loginLogoContainer: { alignItems: 'center' },
-  loginLogo: { fontSize: 56, marginBottom: 8 },
-  loginAppName: { fontSize: 28, fontWeight: '700', color: '#fff' },
-  loginFormContainer: { padding: 24 },
-  loginWelcome: { fontSize: 24, fontWeight: '700', color: COLORS.TEXT, marginBottom: 4 },
-  loginSubtitle: { fontSize: 14, color: COLORS.SUBTEXT, marginBottom: 24 },
-  inputLabel: { fontSize: 14, fontWeight: '600', color: COLORS.TEXT, marginBottom: 8 },
-  inputContainer: {
+  loginHeaderBg: {
+    position: 'absolute',
+    width: '100%',
+    height: 240, // h-60 is 240
+  },
+  loginHeaderHouse: { width: '100%', height: '100%' },
+  loginLogoImg: {
+    position: 'absolute',
+    left: 0,
+    width: 160, // w-40 is 160
+    height: 144, // h-36 is 144
+  },
+loginFormScrollView: {
+    flex: 1,
+    marginTop: -60,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    paddingTop: 32,
+  },
+  loginFormContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+  loginTitle: { fontSize: 24, fontWeight: '700', color: COLORS.TEXT, textAlign: 'center', marginBottom: 4 },
+  loginSubtitleText: { fontSize: 14, color: COLORS.SUBTEXT, textAlign: 'center', marginBottom: 24 },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.BACKGROUND,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.BORDER,
-    marginBottom: 16,
-    paddingHorizontal: 12,
+    padding: 12,
   },
-  inputIcon: { fontSize: 16, marginRight: 8 },
-  input: { flex: 1, paddingVertical: 14, fontSize: 16 },
-  rememberRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  inputError: { borderColor: COLORS.DANGER, borderWidth: 2 },
+  errorText: { color: COLORS.DANGER, fontSize: 12, marginTop: 4 },
+  inputIconText: { fontSize: 16, marginRight: 8 },
+  loginInput: { flex: 1, paddingVertical: 12, fontSize: 16, color: COLORS.TEXT },
+  eyeIcon: { padding: 4 },
+  rememberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: COLORS.PRIMARY,
-    marginRight: 10,
+    borderColor: '#15803d',
+    marginRight: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkboxTick: { color: COLORS.PRIMARY, fontSize: 12, fontWeight: 'bold' },
-  rememberText: { flex: 1, fontSize: 14, color: COLORS.TEXT },
-  forgotContainer: {},
-  forgotText: { color: COLORS.PRIMARY, fontSize: 14, fontWeight: '600' },
-  loginButton: {
+  checkboxChecked: { backgroundColor: '#15803d' },
+  checkmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  rememberText: { fontSize: 14, color: COLORS.TEXT, marginLeft: 8 },
+  forgotLink: { color: '#15803d', fontSize: 14, fontWeight: '500' },
+  signInButton: {
     backgroundColor: COLORS.PRIMARY,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 8,
+    paddingVertical: 20,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
+    height: 64,
+    justifyContent: 'center',
   },
-  loginButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  loginDivider: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  signInButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.BORDER },
-  dividerText: { paddingHorizontal: 16, color: COLORS.SUBTEXT, fontSize: 12 },
-  registerButton: { alignItems: 'center' },
+  dividerText: { paddingHorizontal: 8, color: COLORS.SUBTEXT, fontSize: 12 },
+  registerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
   registerText: { color: COLORS.SUBTEXT, fontSize: 14 },
   registerLink: { color: COLORS.PRIMARY, fontWeight: '700' },
 
-  // ----- DASHBOARD STYLES -----
-  dashboardHeader: { marginBottom: 16 },
-  dashboardGreeting: { fontSize: 24, fontWeight: '700', color: COLORS.TEXT },
-  dashboardDate: { fontSize: 14, color: COLORS.SUBTEXT },
-  efficiencyRow: { flexDirection: 'row', alignItems: 'center' },
-  efficiencyCircleLarge: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: COLORS.SUCCESS,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  efficiencyPercent: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  efficiencyLabel: { fontSize: 10, color: '#fff' },
-  efficiencyInfo: { flex: 1, marginLeft: 16 },
-  efficiencyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  efficiencyBadgeIcon: { fontSize: 12, marginRight: 4 },
-  efficiencyBadgeText: { fontSize: 12, fontWeight: '600', color: '#B45309' },
-  efficiencyDesc: { fontSize: 13, color: COLORS.SUBTEXT, lineHeight: 18 },
-  budgetRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  budgetLabel: { fontSize: 12, color: COLORS.SUBTEXT },
-  budgetValue: { fontSize: 20, fontWeight: '700', color: COLORS.TEXT },
-  budgetDivider: { width: 1, backgroundColor: COLORS.BORDER },
-  budgetProgressContainer: {},
-  progressBar: { height: 10, backgroundColor: COLORS.BORDER, borderRadius: 5, overflow: 'hidden', marginBottom: 4 },
-  progressFill: { height: '100%', backgroundColor: COLORS.SUCCESS, borderRadius: 5 },
-  progressLabel: { fontSize: 12, color: COLORS.SUBTEXT, textAlign: 'right' },
-  seeAllLink: { color: COLORS.PRIMARY, fontSize: 14, fontWeight: '600' },
-  deviceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: COLORS.BORDER },
-  deviceLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  deviceIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
-  deviceIconText: { fontSize: 18 },
-  deviceRight: { alignItems: 'flex-end' },
-  deviceName: { fontSize: 16, fontWeight: '600' },
-  deviceMeta: { fontSize: 12, color: COLORS.SUBTEXT },
+// ----- DASHBOARD STYLES -----
+  appHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff' },
+  appLogoContainer: { width: 40, height: 40, justifyContent: 'center', marginLeft: -8 },
+  appHeaderRight: { flexDirection: 'row', alignItems: 'center' },
+  appNotifyButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', marginRight: 12, shadowColor: '#136B1E', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.35, shadowRadius: 5, elevation: 6 },
+  appAvatar: { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.PRIMARY, justifyContent: 'center', alignItems: 'center' },
+  appAvatarText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  welcomeStatsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  welcomeCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, width: '48%', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  welcomeTitle: { fontSize: 16, fontWeight: '700', color: COLORS.TEXT, marginBottom: 8 },
+  welcomeSubtitle: { fontSize: 12, color: COLORS.SUBTEXT },
+  statsColumn: { width: '48%', flexDirection: 'column' },
+  statCard: { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  statRow: { flexDirection: 'row', alignItems: 'center' },
+  statValue: { fontSize: 20, fontWeight: '700', color: COLORS.SUCCESS, marginLeft: 8 },
+  statLabel: { fontSize: 12, color: COLORS.SUBTEXT, marginTop: 4 },
+  statLabelSmall: { fontSize: 9, color: COLORS.SUBTEXT, fontStyle: 'italic', marginTop: 4 },
+  efficiencyChartCard: { backgroundColor: '#fff', borderRadius: 24, padding: 24, marginBottom: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  efficiencyPie: { width: 140, height: 140, borderRadius: 70, backgroundColor: COLORS.SUCCESS, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  efficiencyPiePercent: { fontSize: 36, fontWeight: '700', color: COLORS.TEXT, position: 'absolute', top: 35 },
+  efficiencyChartLabel: { fontSize: 10, color: '#fff', textAlign: 'center', marginTop: 80, width: '80%' },
+  efficiencyInfoIcon: { position: 'absolute', top: 105, left: '50%', marginLeft: -8 },
+  efficiencyChartDesc: { fontSize: 12, color: COLORS.SUCCESS, textAlign: 'center', marginTop: 16 },
+  cardTitleLarge: { fontSize: 18, fontWeight: '700', color: COLORS.TEXT, marginBottom: 4 },
+  cardSubtitle: { fontSize: 12, color: COLORS.SUBTEXT, marginBottom: 16 },
+  goalsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  goalsLabel: { fontSize: 12, color: COLORS.SUBTEXT },
+  topApplianceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, marginLeft: 10 },
+  topApplianceLeft: { flexDirection: 'row', alignItems: 'center' },
+  topApplianceName: { fontSize: 13, fontWeight: '500', color: COLORS.TEXT, marginLeft: 8 },
+  topApplianceKw: { fontSize: 13, fontWeight: '600', color: COLORS.TEXT },
+  aiInsightText: { fontSize: 13, color: COLORS.SUBTEXT },
   deviceKwh: { fontSize: 12, color: COLORS.SUBTEXT, marginBottom: 4 },
   deviceStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   deviceStatusOn: { backgroundColor: COLORS.LIGHT_GREEN },
