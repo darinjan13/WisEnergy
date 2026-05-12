@@ -142,12 +142,18 @@ export default function Reports() {
 
         await Promise.all(promises);
         if (!cancelled) {
+          const {
+            dailyData: currentDailyData,
+            weeklyData: currentWeeklyData,
+            monthlyData: currentMonthlyData,
+          } = useUsageStore.getState();
+
           const source =
             reportCategory === "Daily"
-              ? dailyData
+              ? currentDailyData
               : reportCategory === "Weekly"
-                ? weeklyData
-                : monthlyData;
+                ? currentWeeklyData
+                : currentMonthlyData;
 
           setReportsTotal(source);
           setReportLoading(false);
@@ -165,15 +171,12 @@ export default function Reports() {
       cancelled = true;
     };
   }, [
-    dailyData,
     fetchDailyReport,
     fetchMonthlyReport,
     fetchWeeklyReport,
-    monthlyData,
     reportCategory,
     reportData,
     selectedDevice,
-    weeklyData,
   ]);
 
   // -----------------------------

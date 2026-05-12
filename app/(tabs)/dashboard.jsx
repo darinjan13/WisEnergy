@@ -37,6 +37,7 @@ const DEBOUNCE_MS = 500;
 export default function Dashboard() {
   const screenWidth = Dimensions.get("window").width;
   const insets = useSafeAreaInsets();
+  const userId = auth?.currentUser?.uid;
   const { devices, userDevices, setDevices } = useDeviceStore();
   const { insights, fetchDailyAiGeneratedContent } = useAiGeneratedStore();
   const {
@@ -78,9 +79,18 @@ export default function Dashboard() {
 
   const { unsubscribeToBudget } = useBudgetStore();
 
+  useEffect(() => {
+    if (!userId) return;
+
+    subscribeToBudget(userId);
+
+    return () => {
+      unsubscribeToBudget();
+    };
+  }, [subscribeToBudget, unsubscribeToBudget, userId]);
+
   useFocusEffect(
     useCallback(() => {
-      const userId = auth?.currentUser?.uid;
       if (!userId) return;
 
       const now = Date.now();
@@ -92,44 +102,47 @@ export default function Dashboard() {
 
       const setupData = async () => {
         lastFetchTime.current = now;
-        
+
         if (devices.length === 0) {
           await setDevices();
         }
-
-        subscribeToBudget(userId);
 
         await Promise.allSettled([
           fetchDailyTotals(userId),
           fetchWeeklyTotals(userId),
         ]);
+
+        const { locationRate: currentLocationRate, monthlyBudget: currentMonthlyBudget } =
+          useBudgetStore.getState();
+        const { monthlyTotalConsumption: currentMonthlyTotalConsumption, todayTrend: currentTodayTrend, allMonthlyTotalConsumption: currentAllMonthlyTotalConsumption } =
+          useUsageStore.getState();
+
         if (
-          locationRate === 0 ||
-          monthlyBudget === null ||
-          monthlyTotalConsumption === 0
+          currentLocationRate === 0 ||
+          currentMonthlyBudget === null ||
+          currentMonthlyTotalConsumption === 0
         ) {
           await fetchLocationRate(userId);
           await fetchLatestMonthlyTotalConsumption(userId);
         }
 
-        if (!todayTrend) {
+        if (!currentTodayTrend) {
           await fetchTodayTrend(userId);
         }
 
-        if (allMonthlyTotalConsumption.length === 0) {
+        if (currentAllMonthlyTotalConsumption.length === 0) {
           await fetchAllMonthlyTotalConsumption(userId);
         }
       };
-
-      if (budgetReady && Number(monthlyBudget?.budget_php) <= 0) {
-        setModalVisible(true);
-      }
 
       if (!active) return;
       
       fetchTimeoutRef.current = setTimeout(() => {
         setupData().then(() => {
-          if (active && locationRate > 0 && monthlyBudget) {
+          const { locationRate: currentLocationRate, monthlyBudget: currentMonthlyBudget } =
+            useBudgetStore.getState();
+
+          if (active && currentLocationRate > 0 && currentMonthlyBudget) {
             setIsLoading(false);
           }
         });
@@ -143,11 +156,8 @@ export default function Dashboard() {
         }
         setIsLoading(true);
         setToolTip(false);
-        unsubscribeToBudget();
       };
     }, [
-      allMonthlyTotalConsumption.length,
-      budgetReady,
       devices.length,
       fetchAllMonthlyTotalConsumption,
       fetchDailyTotals,
@@ -155,13 +165,8 @@ export default function Dashboard() {
       fetchLocationRate,
       fetchTodayTrend,
       fetchWeeklyTotals,
-      locationRate,
-      monthlyBudget,
-      monthlyTotalConsumption,
       setDevices,
-      subscribeToBudget,
-      todayTrend,
-      unsubscribeToBudget,
+      userId,
     ])
   );
 
@@ -235,11 +240,10 @@ export default function Dashboard() {
   }, [dailyData, locationRate, weeklyData]);
 
   useEffect(() => {
-    const userId = auth?.currentUser?.uid;
     if (!userId) return;
 
     calculateWeeklySavings(userId);
-  }, [calculateWeeklySavings]);
+  }, [calculateWeeklySavings, userId]);
 
   useEffect(() => {
     if (!budgetReady) return;
@@ -352,7 +356,6 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const userId = auth?.currentUser?.uid;
     if (!userId) return;
 
       const fetchInitialData = async () => {
@@ -375,6 +378,7 @@ export default function Dashboard() {
     fetchTopAppliances,
     insights.length,
     topAppliances.length,
+    userId,
   ]);
 
   return (
