@@ -221,6 +221,7 @@ export default function Devices() {
   };
 
   const handleDevicePressed = (userDevice) => {
+    if ((userDevice.mode ?? "appliance") === "room") return;  // room cards are terminal: live + relay live here
     setDisableDevice(true);
     router.replace(`/appliances/${userDevice.id}`);
   };

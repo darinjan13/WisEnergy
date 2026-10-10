@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { db, auth } from "@/firebase/firebaseConfig";
-import { ref, onValue, off } from "firebase/database";
+import { ref, onValue, off, update } from "firebase/database";
 import { timeAgo } from "@/utils/dateHelper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { approve_firmware } from "@/services/apiService";
@@ -139,10 +139,24 @@ export default function DeviceCard({
                                 </Text>
                             </View>
                         )}
-                        <View className="px-2 py-1 rounded-full bg-blue-50">
-                            <Text className="text-[10px] font-semibold text-blue-700">
-                                {deviceData?.mode === "room" ? "Whole room" : "One appliance"}
-                            </Text>
+                        <View className="flex-row items-center gap-x-1 rounded-full bg-gray-100 p-0.5">
+                            {["appliance", "room"].map((m) => {
+                                const active = (deviceData?.mode ?? "appliance") === m;
+                                return (
+                                    <TouchableOpacity
+                                        key={m}
+                                        disabled={isDisabled}
+                                        onPress={() => {
+                                            if (!active) update(ref(db, `devices/${deviceData.id}`), { mode: m });
+                                        }}
+                                        className={`px-2 py-1 rounded-full ${active ? "bg-blue-600" : ""}`}
+                                    >
+                                        <Text className={`text-[10px] font-semibold ${active ? "text-white" : "text-gray-500"}`}>
+                                            {m === "room" ? "Whole room" : "Appliance"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </View>
 
