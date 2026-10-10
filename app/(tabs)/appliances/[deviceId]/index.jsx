@@ -292,6 +292,27 @@ export default function DeviceDetails() {
       <Text className="text-gray-700 mt-2">Device ID: {deviceId}</Text>
       <Text className="text-gray-700">Status: {device.status}</Text>
       <Text className="text-gray-700">Paired at: {device.paired_at}</Text>
+      <View className="flex-row items-center gap-x-2 mt-3">
+        <Text className="text-gray-700 text-sm font-semibold">Monitors:</Text>
+        {["appliance", "room"].map((m) => (
+          <TouchableOpacity
+            key={m}
+            onPress={async () => {
+              if (device.mode !== m) {
+                await update(ref(db, `devices/${deviceId}`), { mode: m });
+              }
+            }}
+            className={`px-3 py-2 rounded-full border ${device.mode === m || (!device.mode && m === "appliance")
+              ? "bg-green-700 border-green-700"
+              : "bg-white border-gray-300"
+              }`}
+          >
+            <Text className={`${device.mode === m || (!device.mode && m === "appliance") ? "text-white" : "text-black"} text-xs font-semibold capitalize`}>
+              {m === "room" ? "Whole room" : "One appliance"}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <TouchableOpacity
         onPress={() => {
           if (!selectedAppliance) {

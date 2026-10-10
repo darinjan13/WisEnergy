@@ -139,6 +139,11 @@ export default function DeviceCard({
                                 </Text>
                             </View>
                         )}
+                        <View className="px-2 py-1 rounded-full bg-blue-50">
+                            <Text className="text-[10px] font-semibold text-blue-700">
+                                {deviceData?.mode === "room" ? "Whole room" : "One appliance"}
+                            </Text>
+                        </View>
                     </View>
 
                     {/* LIVE V/A/W (overwrite-only node, ~3s cadence) */}

@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
+  Alert,
   useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,7 +21,8 @@ import CustomProgressBar from "@/components/reports/CustomProgressBar";
 import EnergyPredictionChart from "@/components/reports/EnergyPredictionChart";
 import ApplianceModal from "@/components/reports/ApplianceModal";
 
-import { auth } from "@/firebase/firebaseConfig";
+import { auth, db } from "@/firebase/firebaseConfig";
+import { ref, remove } from "firebase/database";
 
 import {
   useBudgetStore,
@@ -58,6 +60,42 @@ export default function Reports() {
   const [reportLoading, setReportLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAppliance, setSelectedAppliance] = useState(null);
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetDeviceData = () => {
+    if (selectedDevice === "All Devices") return;
+    Alert.alert(
+      "Reset device data?",
+      "Deletes ALL history for this device (readings, summaries, kWh). Totals may keep residue. Cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setResetting(true);
+              const uid = auth.currentUser?.uid;
+              const did = selectedDevice;
+              await Promise.all([
+                remove(ref(db, `usage/${uid}/${did}`)),
+                remove(ref(db, `daily_summary/${uid}/${did}`)),
+                remove(ref(db, `weekly_summary/${uid}/${did}`)),
+                remove(ref(db, `monthly_summary/${uid}/${did}`)),
+                remove(ref(db, `appliances/${uid}/${did}`)),
+              ]);
+              Alert.alert("Done", "Device history cleared.");
+            } catch (e) {
+              console.error("Reset device data failed", e);
+              Alert.alert("Error", "Failed to reset device data.");
+            } finally {
+              setResetting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const category = ["Monthly", "Weekly", "Daily"];
 
@@ -344,6 +382,17 @@ export default function Reports() {
               </Picker>
             </View>
           </View>
+          {selectedDevice !== "All Devices" && (
+            <TouchableOpacity
+              onPress={handleResetDeviceData}
+              disabled={resetting}
+              className="mb-4 px-3 py-2 rounded-lg border border-red-300 self-start bg-white"
+            >
+              <Text className="text-red-600 text-xs font-bold">
+                {resetting ? "Resetting…" : "Reset device data"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ------------------------- */}
