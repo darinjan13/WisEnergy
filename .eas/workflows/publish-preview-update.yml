@@ -1,0 +1,28 @@
+name: Publish preview update
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - app/**
+      - components/**
+      - services/**
+      - hooks/**
+      - store/**
+      - utils/**
+      - firebase/**
+      - assets/**
+      - app.json
+      - package.json
+      - babel.config.js
+      - metro.config.js
+      - tailwind.config.js
+      - '!**/*.md'
+
+jobs:
+  publish_preview_update:
+    name: Publish preview update
+    type: update
+    params:
+      branch: ${{ github.ref_name || 'test' }}
