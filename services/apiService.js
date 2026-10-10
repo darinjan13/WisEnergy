@@ -153,4 +153,14 @@ export const reset_password = async (email, password) => {
     } catch (error) {
         return { success: false, message: error.response.data.detail };
     }
-}
+};
+
+export const approve_firmware = async (uid, deviceId, version) => {
+    try {
+        const response = await api.post(`/firmware/approve`, { uid, device_id: deviceId, version });
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error("Firmware approve failed:", error.message);
+        return { success: false, message: error.response?.data?.detail || "Approve failed" };
+    }
+};

@@ -1,9 +1,11 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { db } from "@/firebase/firebaseConfig";
+import { db, auth } from "@/firebase/firebaseConfig";
 import { ref, onValue, off } from "firebase/database";
 import { timeAgo } from "@/utils/dateHelper";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { approve_firmware } from "@/services/apiService";
 
 export default function DeviceCard({
     disabled,
@@ -20,6 +22,10 @@ export default function DeviceCard({
     const [isToggling, setIsToggling] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
     const [lastSeen, setLastSeen] = useState(null);
+    const [live, setLive] = useState(null);
+    const [latestFw, setLatestFw] = useState(null);
+    const [fwBusy, setFwBusy] = useState(false);
+    const [snoozed, setSnoozed] = useState(false);
 
     useEffect(() => {
         if (!deviceData?.id || isUnpaired) return;
@@ -34,30 +40,64 @@ export default function DeviceCard({
             const lastSeenTs = snapshot.val();
             setLastSeen(lastSeenTs * 1000);
             const now = Math.floor(Date.now() / 1000);
-            setIsOnline(now - lastSeenTs <= 10);
+            setIsOnline(now - lastSeenTs <= 90);
         };
 
         onValue(presenceRef, handler);
 
-        // ← re-check every 5 seconds locally
+        const liveRef = ref(db, `devices/${deviceData.id}/live`);
+        const liveHandler = (snap) => setLive(snap.exists() ? snap.val() : null);
+        onValue(liveRef, liveHandler);
+
+        const latestRef = ref(db, `firmware/20A/latest`);
+        const latestHandler = (snap) => setLatestFw(snap.exists() ? snap.val() : null);
+        onValue(latestRef, latestHandler);
+        AsyncStorage.getItem(`@fw_snooze:${deviceData.id}`).then((v) => {
+            setSnoozed(v && Date.now() < Number(v));
+        });
+
+        // ← re-check every 30 seconds locally (heartbeat is 30s)
         const interval = setInterval(() => {
             setLastSeen(prev => {
                 if (prev) {
                     const now = Math.floor(Date.now() / 1000);
-                    setIsOnline(now - Math.floor(prev / 1000) <= 10);
+                    setIsOnline(now - Math.floor(prev / 1000) <= 90);
                 }
                 return prev;
             });
-        }, 5000);
+        }, 30000);
 
         return () => {
             off(presenceRef, "value", handler);
+            off(liveRef, "value", liveHandler);
+            off(latestRef, "value", latestHandler);
             clearInterval(interval);
         };
     }, [deviceData?.id]);
     useEffect(() => {
         setToggleValue(deviceData?.relay_desired ?? false);
     }, [deviceData?.relay_desired]);
+
+    const running = deviceData?.fw?.running ?? "0.0.0";
+    const fwState = deviceData?.fw?.state ?? "idle";
+    const fwProgress = deviceData?.fw?.progress ?? 0;
+    const cmpVer = (a, b) => {
+        const pa = String(a).split(".").map(Number), pb = String(b).split(".").map(Number);
+        for (let i = 0; i < 3; i++) { if (pa[i] !== pb[i]) return pa[i] < pb[i] ? -1 : 1; }
+        return 0;
+    };
+    const updateReady = latestFw?.version && cmpVer(running, latestFw.version) < 0 && !snoozed;
+    const onUpdateTap = async () => {
+        if (fwBusy) return;
+        setFwBusy(true);
+        const r = await approve_firmware(auth?.currentUser?.uid, deviceData.id, latestFw.version);
+        setFwBusy(false);
+        if (!r.success) alert(r.message);
+    };
+    const onLaterTap = () => {
+        AsyncStorage.setItem(`@fw_snooze:${deviceData.id}`, String(Date.now() + 24 * 3600 * 1000));
+        setSnoozed(true);
+    };
 
     return (
         <View
@@ -100,6 +140,44 @@ export default function DeviceCard({
                             </View>
                         )}
                     </View>
+
+                    {/* LIVE V/A/W (overwrite-only node, ~3s cadence) */}
+                    {!isUnpaired && live && (
+                        <View className="mt-3 flex-row items-center gap-x-3">
+                            <Text className="text-xs font-bold text-[#2E4F4F]">{live.v?.toFixed?.(1) ?? live.v} V</Text>
+                            <Text className="text-xs font-bold text-[#2E4F4F]">{live.a?.toFixed?.(2) ?? live.a} A</Text>
+                            <Text className="text-[10px] text-gray-500">
+                                {live.t ? `live ${Math.max(0, Math.floor(Date.now() / 1000) - live.t)}s ago` : ""}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* FIRMWARE UPDATE banner */}
+                    {!isUnpaired && updateReady && (
+                        <View className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                            <Text className="text-xs font-bold text-amber-800">
+                                Update {running} → {latestFw.version} available
+                            </Text>
+                            {fwState === "downloading" || fwState === "updating" ? (
+                                <Text className="text-[11px] text-amber-700 mt-1">
+                                    {fwState === "downloading" ? `Downloading… ${fwProgress}%` : "Installing…"}
+                                </Text>
+                            ) : fwState === "error" ? (
+                                <Text className="text-[11px] text-red-600 mt-1">Update failed — tap Update to retry.</Text>
+                            ) : null}
+                            <View className="flex-row gap-x-2 mt-2">
+                                <TouchableOpacity onPress={onUpdateTap} disabled={fwBusy}
+                                    className="px-3 py-2 rounded-lg bg-amber-600">
+                                    <Text className="text-white text-xs font-bold">
+                                        {fwBusy ? "Working…" : fwState === "error" ? "Retry" : "Update"}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={onLaterTap} className="px-3 py-2 rounded-lg bg-gray-200">
+                                    <Text className="text-gray-700 text-xs font-bold">Later</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
                 </TouchableOpacity>
 
                 {/* RIGHT SIDE */}
