@@ -22,7 +22,7 @@
       "bundleIdentifier": "com.storeblues123.WisEnergy"
     },
     "android": {
-      "googleServicesFile": "./android/app/google-services.json",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/WisEnergy_LOGO1.png",
         "backgroundColor": "#ffffff"
