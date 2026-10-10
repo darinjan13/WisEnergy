@@ -27,21 +27,6 @@
         "foregroundImage": "./assets/images/WisEnergy_LOGO1.png",
         "backgroundColor": "#ffffff"
       },
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "data": [
-            {
-              "scheme": "wisenergy",
-              "host": "*"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
-      ],
       "package": "com.storeblues123.WisEnergy"
     },
     "web": {
