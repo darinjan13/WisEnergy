@@ -77,17 +77,32 @@ export default function Reports() {
               setResetting(true);
               const uid = auth.currentUser?.uid;
               const did = selectedDevice;
-              await Promise.all([
-                remove(ref(db, `usage/${uid}/${did}`)),
-                remove(ref(db, `daily_summary/${uid}/${did}`)),
-                remove(ref(db, `weekly_summary/${uid}/${did}`)),
-                remove(ref(db, `monthly_summary/${uid}/${did}`)),
-                remove(ref(db, `appliances/${uid}/${did}`)),
-              ]);
-              Alert.alert("Done", "Device history cleared.");
+              const targets = [
+                `usage/${uid}/${did}`,
+                `daily_summary/${uid}/${did}`,
+                `weekly_summary/${uid}/${did}`,
+                `monthly_summary/${uid}/${did}`,
+                `appliances/${uid}/${did}`,
+              ];
+              const failed = [];
+              for (const path of targets) {
+                try {
+                  await remove(ref(db, path));
+                } catch (e) {
+                  failed.push(`${path} (${e?.code || e?.message || "denied"})`);
+                }
+              }
+              if (failed.length === 0) {
+                Alert.alert("Done", "Device history cleared.");
+              } else {
+                Alert.alert(
+                  "Partially cleared",
+                  `These refused to delete:\n${failed.join("\n")}`
+                );
+              }
             } catch (e) {
               console.error("Reset device data failed", e);
-              Alert.alert("Error", "Failed to reset device data.");
+              Alert.alert("Error", `Failed to reset device data. (${e?.code || e?.message || "unknown"})`);
             } finally {
               setResetting(false);
             }
