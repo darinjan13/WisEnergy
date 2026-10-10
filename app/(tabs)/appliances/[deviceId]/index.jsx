@@ -135,6 +135,10 @@ export default function DeviceDetails() {
   };
 
   const handleDeleteConfirmed = async () => {
+    if (action === "clear-day") {
+      await handleClearDayConfirmed();
+      return;
+    }
     const applianceRef = ref(
       db,
       `appliances/${userId}/${deviceId}/${applianceId}`
@@ -142,6 +146,30 @@ export default function DeviceDetails() {
 
     await remove(applianceRef);
     setShowConfirmModal(false);
+  };
+
+  const handleClearDayConfirmed = async () => {
+    try {
+      const today = format(new Date(), "yyyy-MM-dd", { timeZone: "Asia/Manila" });
+      const name = selectedAppliance;
+      if (!name) {
+        Toast.show({ type: "error", text1: "No appliance selected" });
+        return;
+      }
+      await remove(ref(db, `usage/${userId}/${deviceId}/${name}/${today}`));
+      await remove(ref(db, `daily_summary/${userId}/${deviceId}/${name}/${today}`));
+      Toast.show({
+        type: "success",
+        text1: "Test data cleared",
+        text2: `Today's readings for ${name} removed.`,
+      });
+    } catch (error) {
+      console.error("Clear day failed", error);
+      Alert.alert("Error", "Failed to clear today's data.");
+    } finally {
+      setShowConfirmModal(false);
+      setAction(null);
+    }
   };
 
   const showAddModal = () => {
@@ -264,6 +292,19 @@ export default function DeviceDetails() {
       <Text className="text-gray-700 mt-2">Device ID: {deviceId}</Text>
       <Text className="text-gray-700">Status: {device.status}</Text>
       <Text className="text-gray-700">Paired at: {device.paired_at}</Text>
+      <TouchableOpacity
+        onPress={() => {
+          if (!selectedAppliance) {
+            Toast.show({ type: "error", text1: "Select an appliance first" });
+            return;
+          }
+          setAction("clear-day");
+          setShowConfirmModal(true);
+        }}
+        className="mt-3 self-start px-3 py-2 rounded-lg border border-red-300"
+      >
+        <Text className="text-red-600 text-xs font-bold">Clear today's test data</Text>
+      </TouchableOpacity>
 
       <View className="flex-row items-center justify-between my-5">
         <View className="flex-row items-center gap-x-2">
