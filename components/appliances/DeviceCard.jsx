@@ -31,7 +31,10 @@ export default function DeviceCard({
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuAnchorY, setMenuAnchorY] = useState(120);
     const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
-    const mode = deviceData?.mode ?? "appliance";
+    // Optimistic mode: reflect taps instantly, reconcile when store catches up.
+    const [modeOverride, setModeOverride] = useState(null);
+    const mode = modeOverride ?? deviceData?.mode ?? "appliance";
+    useEffect(() => { setModeOverride(null); }, [deviceData?.mode]);
     const openMenu = (e) => {
         try {
             e?.currentTarget?.measure?.((x, y, w, h, pageX, pageY) => {
@@ -266,12 +269,13 @@ export default function DeviceCard({
                                     disabled={isDisabled}
                                     onPress={() => {
                                         if (mode === m) return;
+                                        setModeOverride(m);
                                         // Room mode needs a canonical appliance name or the
                                         // firmware path (usage/.../<appliance>/...) breaks.
                                         const patch = m === "room"
                                             ? { mode: m, appliance_name: "WholeRoom" }
                                             : { mode: m };
-                                        update(ref(db, `devices/${deviceData.id}`), patch);
+                                        update(ref(db, `devices/${deviceData.id}`), patch).catch(() => setModeOverride(null));
                                     }}
                                 >
                                     <MaterialCommunityIcons
