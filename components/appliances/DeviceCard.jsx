@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Modal, Pressable } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { db, auth } from "@/firebase/firebaseConfig";
@@ -220,11 +220,20 @@ export default function DeviceCard({
                         <Feather name="more-vertical" size={20} color="#2E4F4F" />
                     </TouchableOpacity>
                     {menuOpen && (
-                        <View
-                            testID="card-menu"
-                            className="absolute top-10 right-0 w-52 bg-white rounded-xl border border-gray-200 p-2 shadow-lg"
-                            style={{ zIndex: 50, elevation: 50 }}
+                        <Modal
+                            transparent
+                            visible={menuOpen}
+                            animationType="fade"
+                            onRequestClose={() => setMenuOpen(false)}
                         >
+                            <Pressable
+                                onPress={() => setMenuOpen(false)}
+                                className="flex-1 justify-start items-end bg-black/30 pt-24 pr-6"
+                            >
+                                <Pressable
+                                    testID="card-menu"
+                                    className="w-52 bg-white rounded-xl border border-gray-200 p-2 shadow-lg"
+                                >
                             <TouchableOpacity
                                 testID="menu-edit-button"
                                 className="px-3 py-2 rounded-lg"
@@ -268,7 +277,9 @@ export default function DeviceCard({
                             >
                                 <Text className="text-sm text-red-600">Reset data…</Text>
                             </TouchableOpacity>
-                        </View>
+                                </Pressable>
+                            </Pressable>
+                        </Modal>
                     )}
 
                     <TouchableOpacity
