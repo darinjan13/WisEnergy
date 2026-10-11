@@ -7,6 +7,7 @@ import { timeAgo } from "@/utils/dateHelper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { approve_firmware } from "@/services/apiService";
 import { resetDeviceHistory } from "@/services/firebaseDevicesService";
+import ResultModal from "@/components/ui/ResultModal";
 
 export default function DeviceCard({
     disabled,
@@ -29,6 +30,7 @@ export default function DeviceCard({
     const [snoozed, setSnoozed] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuAnchorY, setMenuAnchorY] = useState(120);
+    const [resetResult, setResetResult] = useState(null);
     const mode = deviceData?.mode ?? "appliance";
     const openMenu = (e) => {
         try {
@@ -128,9 +130,10 @@ export default function DeviceCard({
                     style: "destructive",
                     onPress: async () => {
                         const { failed } = await resetDeviceHistory(auth?.currentUser?.uid, deviceData.id);
-                        Alert.alert(
-                            failed.length === 0 ? "Done" : "Partially cleared",
-                            failed.length === 0 ? "Device history cleared." : `Refused:\n${failed.join("\n")}`
+                        setResetResult(
+                            failed.length === 0
+                                ? { success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed."] }
+                                : { success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] }
                         );
                     },
                 },
@@ -325,6 +328,13 @@ export default function DeviceCard({
 
                 </View>
             </View>
+            <ResultModal
+                visible={!!resetResult}
+                success={resetResult?.success ?? true}
+                title={resetResult?.title ?? ""}
+                lines={resetResult?.lines ?? []}
+                onClose={() => setResetResult(null)}
+            />
         </View>
     );
 }

@@ -16,6 +16,7 @@ import { Picker } from "@react-native-picker/picker";
 import { AutoSkeletonView } from "react-native-auto-skeleton";
 
 import Header from "@/components/ui/Header";
+import ResultModal from "@/components/ui/ResultModal";
 import SavingsChart from "@/components/reports/SavingsChart";
 import CustomProgressBar from "@/components/reports/CustomProgressBar";
 import EnergyPredictionChart from "@/components/reports/EnergyPredictionChart";
@@ -61,6 +62,7 @@ export default function Reports() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAppliance, setSelectedAppliance] = useState(null);
   const [resetting, setResetting] = useState(false);
+  const [resetResult, setResetResult] = useState(null);
 
   const handleResetDeviceData = () => {
     if (selectedDevice === "All Devices") return;
@@ -78,16 +80,13 @@ export default function Reports() {
               const uid = auth.currentUser?.uid;
               const { failed } = await resetDeviceHistory(uid, selectedDevice);
               if (failed.length === 0) {
-                Alert.alert("Done", "Device history cleared.");
+                setResetResult({ success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed."] });
               } else {
-                Alert.alert(
-                  "Partially cleared",
-                  `These refused to delete:\n${failed.join("\n")}`
-                );
+                setResetResult({ success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] });
               }
             } catch (e) {
               console.error("Reset device data failed", e);
-              Alert.alert("Error", `Failed to reset device data. (${e?.code || e?.message || "unknown"})`);
+              setResetResult({ success: false, title: "Reset failed", lines: [e?.code || e?.message || "Unknown error"] });
             } finally {
               setResetting(false);
             }
@@ -535,6 +534,13 @@ export default function Reports() {
         }}
         applianceData={selectedAppliance}
         reportCategory={reportCategory}
+      />
+      <ResultModal
+        visible={!!resetResult}
+        success={resetResult?.success ?? true}
+        title={resetResult?.title ?? ""}
+        lines={resetResult?.lines ?? []}
+        onClose={() => setResetResult(null)}
       />
     </View>
   );
