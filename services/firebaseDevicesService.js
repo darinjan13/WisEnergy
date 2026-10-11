@@ -3,11 +3,23 @@ import { auth, db } from '../firebase/firebaseConfig';
 
 /* Delete one device's full history (readings + summaries + kWh).
    Deletes per-date so big histories never trip WRITE_TOO_BIG.
-   Returns { failed: ["path (reason)", ...], skipped: <unsummarized-date count> }.
+   Dates are discovered with a shallow REST list (keys only, no downloads),
+   so unsummarized stray dates are caught too.
+   Returns { failed: ["path (reason)", ...] }.
    User-level totals are intentionally left alone (shared across devices). */
+const shallowKeys = async (dbRootUrl, token, path) => {
+    try {
+        const r = await fetch(`${dbRootUrl}${path}.json?shallow=true&auth=${token}`);
+        if (!r.ok) return [];
+        const j = await r.json();
+        return j ? Object.keys(j) : [];
+    } catch (e) {
+        return [];
+    }
+};
+
 export const resetDeviceHistory = async (uid, deviceId) => {
     const failed = [];
-    let skipped = 0;
     const rm = async (path) => {
         try {
             await remove(ref(db, path));
@@ -16,35 +28,32 @@ export const resetDeviceHistory = async (uid, deviceId) => {
         }
     };
     const today = new Date().toISOString().slice(0, 10);
-    let appliances = {};
+    let dbRoot = "";
+    let token = "";
     try {
-        const snap = await get(ref(db, `appliances/${uid}/${deviceId}`));
-        appliances = snap.exists() ? snap.val() : {};
+        dbRoot = ref(db).toString().replace(/\/$/, "");
+        token = await auth.currentUser.getIdToken();
     } catch (e) {
-        failed.push(`appliances/${uid}/${deviceId} (list: ${e?.code || e?.message})`);
+        failed.push(`(auth/db url: ${e?.code || e?.message})`);
+        return { failed };
     }
-    for (const name of Object.keys(appliances)) {
-        let summaryDays = {};
-        try {
-            const snap = await get(ref(db, `daily_summary/${uid}/${deviceId}/${name}`));
-            summaryDays = snap.exists() ? snap.val() : {};
-        } catch (e) {
-            failed.push(`daily_summary/${uid}/${deviceId}/${name} (list: ${e?.code || e?.message})`);
-            continue;
-        }
-        const dates = new Set([...Object.keys(summaryDays), today]);
+    const applianceNames = await shallowKeys(dbRoot, token, `appliances/${uid}/${deviceId}`);
+    const names = applianceNames.length > 0 ? applianceNames : ["Whole Room"];
+    for (const name of names) {
+        const usageDays = await shallowKeys(dbRoot, token, `usage/${uid}/${deviceId}/${name}`);
+        const summaryDays = await shallowKeys(dbRoot, token, `daily_summary/${uid}/${deviceId}/${name}`);
+        const dates = new Set([...usageDays, ...summaryDays, today]);
         for (const date of dates) {
             await rm(`usage/${uid}/${deviceId}/${name}/${date}`);
             await rm(`daily_summary/${uid}/${deviceId}/${name}/${date}`);
         }
     }
-    // Dates that were never summarized (and aren't today) are left alone.
     for (const p of [
         `weekly_summary/${uid}/${deviceId}`,
         `monthly_summary/${uid}/${deviceId}`,
         `appliances/${uid}/${deviceId}`,
     ]) await rm(p);
-    return { failed, skipped };
+    return { failed };
 };
 
 export const fetchDevices = async () => {
