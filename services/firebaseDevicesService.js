@@ -38,7 +38,7 @@ export const resetDeviceHistory = async (uid, deviceId) => {
         return { failed };
     }
     const applianceNames = await shallowKeys(dbRoot, token, `appliances/${uid}/${deviceId}`);
-    const names = applianceNames.length > 0 ? applianceNames : ["Whole Room"];
+    const names = applianceNames.length > 0 ? applianceNames : ["WholeRoom"];
     for (const name of names) {
         const usageDays = await shallowKeys(dbRoot, token, `usage/${uid}/${deviceId}/${name}`);
         const summaryDays = await shallowKeys(dbRoot, token, `daily_summary/${uid}/${deviceId}/${name}`);

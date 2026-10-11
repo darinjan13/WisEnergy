@@ -269,7 +269,7 @@ export default function DeviceCard({
                                         // Room mode needs a canonical appliance name or the
                                         // firmware path (usage/.../<appliance>/...) breaks.
                                         const patch = m === "room"
-                                            ? { mode: m, appliance_name: "Whole Room" }
+                                            ? { mode: m, appliance_name: "WholeRoom" }
                                             : { mode: m };
                                         update(ref(db, `devices/${deviceData.id}`), patch);
                                     }}
