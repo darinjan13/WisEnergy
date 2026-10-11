@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Modal, Pressable } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Modal, Pressable, Dimensions } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { db, auth } from "@/firebase/firebaseConfig";
@@ -28,7 +28,22 @@ export default function DeviceCard({
     const [fwBusy, setFwBusy] = useState(false);
     const [snoozed, setSnoozed] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [menuAnchorY, setMenuAnchorY] = useState(120);
     const mode = deviceData?.mode ?? "appliance";
+    const openMenu = (e) => {
+        try {
+            e?.currentTarget?.measure?.((x, y, w, h, pageX, pageY) => {
+                if (typeof pageY === "number") setMenuAnchorY(pageY);
+                setMenuOpen(true);
+            });
+        } catch {
+            setMenuOpen(true);
+        }
+    };
+    const menuTop = (() => {
+        const H = Dimensions.get("window").height;
+        return Math.max(80, Math.min(menuAnchorY - 10, H - 400));
+    })();
 
     useEffect(() => {
         if (!deviceData?.id || isUnpaired) return;
@@ -214,7 +229,7 @@ export default function DeviceCard({
                     <TouchableOpacity
                         testID="card-menu-button"
                         activeOpacity={0.8}
-                        onPress={() => setMenuOpen((v) => !v)}
+                        onPress={openMenu}
                         className="w-10 h-10 rounded-full items-center justify-center"
                     >
                         <Feather name="more-vertical" size={20} color="#2E4F4F" />
@@ -228,7 +243,8 @@ export default function DeviceCard({
                         >
                             <Pressable
                                 onPress={() => setMenuOpen(false)}
-                                className="flex-1 justify-start items-end bg-black/30 pt-24 pr-6"
+                                className="flex-1 justify-start items-end bg-black/30 pr-6"
+                                style={{ paddingTop: menuTop }}
                             >
                                 <Pressable
                                     testID="card-menu"
