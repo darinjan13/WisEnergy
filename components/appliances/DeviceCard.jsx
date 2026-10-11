@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Modal, Pressable, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, Pressable, Dimensions } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { db, auth } from "@/firebase/firebaseConfig";
@@ -30,7 +30,7 @@ export default function DeviceCard({
     const [snoozed, setSnoozed] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuAnchorY, setMenuAnchorY] = useState(120);
-    const [resetResult, setResetResult] = useState(null);
+    const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
     const mode = deviceData?.mode ?? "appliance";
     const openMenu = (e) => {
         try {
@@ -120,24 +120,14 @@ export default function DeviceCard({
     };
     const onResetTap = () => {
         setMenuOpen(false);
-        Alert.alert(
-            "Reset device data?",
-            "Deletes ALL history for this device (readings, summaries, kWh). Cannot be undone.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Reset",
-                    style: "destructive",
-                    onPress: async () => {
-                        const { failed } = await resetDeviceHistory(auth?.currentUser?.uid, deviceData.id);
-                        setResetResult(
-                            failed.length === 0
-                                ? { success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed."] }
-                                : { success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] }
-                        );
-                    },
-                },
-            ]
+        setResetDialog({ kind: "confirm" });
+    };
+    const onResetConfirm = async () => {
+        const { failed } = await resetDeviceHistory(auth?.currentUser?.uid, deviceData.id);
+        setResetDialog(
+            failed.length === 0
+                ? { kind: "result", success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed."] }
+                : { kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] }
         );
     };
 
@@ -329,11 +319,14 @@ export default function DeviceCard({
                 </View>
             </View>
             <ResultModal
-                visible={!!resetResult}
-                success={resetResult?.success ?? true}
-                title={resetResult?.title ?? ""}
-                lines={resetResult?.lines ?? []}
-                onClose={() => setResetResult(null)}
+                visible={!!resetDialog}
+                mode={resetDialog?.kind === "confirm" ? "confirm" : "result"}
+                success={resetDialog?.success ?? true}
+                title={resetDialog?.kind === "confirm" ? "Reset device data?" : resetDialog?.title ?? ""}
+                lines={resetDialog?.kind === "confirm" ? ["Deletes ALL history for this device (readings, summaries, kWh).", "Cannot be undone."] : resetDialog?.lines ?? []}
+                confirmText="Reset"
+                onConfirm={onResetConfirm}
+                onClose={() => setResetDialog(null)}
             />
         </View>
     );

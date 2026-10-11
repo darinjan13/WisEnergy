@@ -2,25 +2,49 @@ import { get, off, onValue, ref, remove, update } from 'firebase/database';
 import { auth, db } from '../firebase/firebaseConfig';
 
 /* Delete one device's full history (readings + summaries + kWh).
-   Returns { failed: ["path (reason)", ...] } — empty means fully cleared.
+   Deletes per-date so big histories never trip WRITE_TOO_BIG.
+   Returns { failed: ["path (reason)", ...], skipped: <unsummarized-date count> }.
    User-level totals are intentionally left alone (shared across devices). */
 export const resetDeviceHistory = async (uid, deviceId) => {
-    const targets = [
-        `usage/${uid}/${deviceId}`,
-        `daily_summary/${uid}/${deviceId}`,
-        `weekly_summary/${uid}/${deviceId}`,
-        `monthly_summary/${uid}/${deviceId}`,
-        `appliances/${uid}/${deviceId}`,
-    ];
     const failed = [];
-    for (const path of targets) {
+    let skipped = 0;
+    const rm = async (path) => {
         try {
             await remove(ref(db, path));
         } catch (e) {
             failed.push(`${path} (${e?.code || e?.message || "denied"})`);
         }
+    };
+    const today = new Date().toISOString().slice(0, 10);
+    let appliances = {};
+    try {
+        const snap = await get(ref(db, `appliances/${uid}/${deviceId}`));
+        appliances = snap.exists() ? snap.val() : {};
+    } catch (e) {
+        failed.push(`appliances/${uid}/${deviceId} (list: ${e?.code || e?.message})`);
     }
-    return { failed };
+    for (const name of Object.keys(appliances)) {
+        let summaryDays = {};
+        try {
+            const snap = await get(ref(db, `daily_summary/${uid}/${deviceId}/${name}`));
+            summaryDays = snap.exists() ? snap.val() : {};
+        } catch (e) {
+            failed.push(`daily_summary/${uid}/${deviceId}/${name} (list: ${e?.code || e?.message})`);
+            continue;
+        }
+        const dates = new Set([...Object.keys(summaryDays), today]);
+        for (const date of dates) {
+            await rm(`usage/${uid}/${deviceId}/${name}/${date}`);
+            await rm(`daily_summary/${uid}/${deviceId}/${name}/${date}`);
+        }
+    }
+    // Dates that were never summarized (and aren't today) are left alone.
+    for (const p of [
+        `weekly_summary/${uid}/${deviceId}`,
+        `monthly_summary/${uid}/${deviceId}`,
+        `appliances/${uid}/${deviceId}`,
+    ]) await rm(p);
+    return { failed, skipped };
 };
 
 export const fetchDevices = async () => {

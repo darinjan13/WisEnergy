@@ -62,38 +62,29 @@ export default function Reports() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAppliance, setSelectedAppliance] = useState(null);
   const [resetting, setResetting] = useState(false);
-  const [resetResult, setResetResult] = useState(null);
+  const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
 
   const handleResetDeviceData = () => {
     if (selectedDevice === "All Devices") return;
-    Alert.alert(
-      "Reset device data?",
-      "Deletes ALL history for this device (readings, summaries, kWh). Totals may keep residue. Cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setResetting(true);
-              const uid = auth.currentUser?.uid;
-              const { failed } = await resetDeviceHistory(uid, selectedDevice);
-              if (failed.length === 0) {
-                setResetResult({ success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed."] });
-              } else {
-                setResetResult({ success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] });
-              }
-            } catch (e) {
-              console.error("Reset device data failed", e);
-              setResetResult({ success: false, title: "Reset failed", lines: [e?.code || e?.message || "Unknown error"] });
-            } finally {
-              setResetting(false);
-            }
-          },
-        },
-      ]
-    );
+    setResetDialog({ kind: "confirm" });
+  };
+
+  const handleResetConfirm = async () => {
+    try {
+      setResetting(true);
+      const uid = auth.currentUser?.uid;
+      const { failed } = await resetDeviceHistory(uid, selectedDevice);
+      if (failed.length === 0) {
+        setResetDialog({ kind: "result", success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed."] });
+      } else {
+        setResetDialog({ kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] });
+      }
+    } catch (e) {
+      console.error("Reset device data failed", e);
+      setResetDialog({ kind: "result", success: false, title: "Reset failed", lines: [e?.code || e?.message || "Unknown error"] });
+    } finally {
+      setResetting(false);
+    }
   };
 
   const category = ["Monthly", "Weekly", "Daily"];
@@ -536,11 +527,14 @@ export default function Reports() {
         reportCategory={reportCategory}
       />
       <ResultModal
-        visible={!!resetResult}
-        success={resetResult?.success ?? true}
-        title={resetResult?.title ?? ""}
-        lines={resetResult?.lines ?? []}
-        onClose={() => setResetResult(null)}
+        visible={!!resetDialog}
+        mode={resetDialog?.kind === "confirm" ? "confirm" : "result"}
+        success={resetDialog?.success ?? true}
+        title={resetDialog?.kind === "confirm" ? "Reset device data?" : resetDialog?.title ?? ""}
+        lines={resetDialog?.kind === "confirm" ? ["Deletes ALL history for this device (readings, summaries, kWh).", "Totals may keep residue.", "Cannot be undone."] : resetDialog?.lines ?? []}
+        confirmText="Reset"
+        onConfirm={handleResetConfirm}
+        onClose={() => setResetDialog(null)}
       />
     </View>
   );
