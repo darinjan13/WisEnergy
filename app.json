@@ -58,6 +58,12 @@
         "projectId": "1b2e2304-e953-495b-ac21-c86deaabb1f7"
       }
     },
-    "owner": "storeblues123"
+    "owner": "storeblues123",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1b2e2304-e953-495b-ac21-c86deaabb1f7"
+    }
   }
 }
