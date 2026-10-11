@@ -21,8 +21,8 @@ import CustomProgressBar from "@/components/reports/CustomProgressBar";
 import EnergyPredictionChart from "@/components/reports/EnergyPredictionChart";
 import ApplianceModal from "@/components/reports/ApplianceModal";
 
-import { auth, db } from "@/firebase/firebaseConfig";
-import { ref, remove } from "firebase/database";
+import { auth } from "@/firebase/firebaseConfig";
+import { resetDeviceHistory } from "@/services/firebaseDevicesService";
 
 import {
   useBudgetStore,
@@ -76,22 +76,7 @@ export default function Reports() {
             try {
               setResetting(true);
               const uid = auth.currentUser?.uid;
-              const did = selectedDevice;
-              const targets = [
-                `usage/${uid}/${did}`,
-                `daily_summary/${uid}/${did}`,
-                `weekly_summary/${uid}/${did}`,
-                `monthly_summary/${uid}/${did}`,
-                `appliances/${uid}/${did}`,
-              ];
-              const failed = [];
-              for (const path of targets) {
-                try {
-                  await remove(ref(db, path));
-                } catch (e) {
-                  failed.push(`${path} (${e?.code || e?.message || "denied"})`);
-                }
-              }
+              const { failed } = await resetDeviceHistory(uid, selectedDevice);
               if (failed.length === 0) {
                 Alert.alert("Done", "Device history cleared.");
               } else {

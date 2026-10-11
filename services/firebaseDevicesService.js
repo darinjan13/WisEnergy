@@ -1,5 +1,27 @@
-import { get, off, onValue, ref, update } from 'firebase/database';
+import { get, off, onValue, ref, remove, update } from 'firebase/database';
 import { auth, db } from '../firebase/firebaseConfig';
+
+/* Delete one device's full history (readings + summaries + kWh).
+   Returns { failed: ["path (reason)", ...] } — empty means fully cleared.
+   User-level totals are intentionally left alone (shared across devices). */
+export const resetDeviceHistory = async (uid, deviceId) => {
+    const targets = [
+        `usage/${uid}/${deviceId}`,
+        `daily_summary/${uid}/${deviceId}`,
+        `weekly_summary/${uid}/${deviceId}`,
+        `monthly_summary/${uid}/${deviceId}`,
+        `appliances/${uid}/${deviceId}`,
+    ];
+    const failed = [];
+    for (const path of targets) {
+        try {
+            await remove(ref(db, path));
+        } catch (e) {
+            failed.push(`${path} (${e?.code || e?.message || "denied"})`);
+        }
+    }
+    return { failed };
+};
 
 export const fetchDevices = async () => {
 

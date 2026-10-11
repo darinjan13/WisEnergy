@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { db, auth } from "@/firebase/firebaseConfig";
@@ -6,6 +6,7 @@ import { ref, onValue, off, update } from "firebase/database";
 import { timeAgo } from "@/utils/dateHelper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { approve_firmware } from "@/services/apiService";
+import { resetDeviceHistory } from "@/services/firebaseDevicesService";
 
 export default function DeviceCard({
     disabled,
@@ -26,6 +27,8 @@ export default function DeviceCard({
     const [latestFw, setLatestFw] = useState(null);
     const [fwBusy, setFwBusy] = useState(false);
     const [snoozed, setSnoozed] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const mode = deviceData?.mode ?? "appliance";
 
     useEffect(() => {
         if (!deviceData?.id || isUnpaired) return;
@@ -98,6 +101,27 @@ export default function DeviceCard({
         AsyncStorage.setItem(`@fw_snooze:${deviceData.id}`, String(Date.now() + 24 * 3600 * 1000));
         setSnoozed(true);
     };
+    const onResetTap = () => {
+        setMenuOpen(false);
+        Alert.alert(
+            "Reset device data?",
+            "Deletes ALL history for this device (readings, summaries, kWh). Cannot be undone.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Reset",
+                    style: "destructive",
+                    onPress: async () => {
+                        const { failed } = await resetDeviceHistory(auth?.currentUser?.uid, deviceData.id);
+                        Alert.alert(
+                            failed.length === 0 ? "Done" : "Partially cleared",
+                            failed.length === 0 ? "Device history cleared." : `Refused:\n${failed.join("\n")}`
+                        );
+                    },
+                },
+            ]
+        );
+    };
 
     return (
         <View
@@ -139,24 +163,10 @@ export default function DeviceCard({
                                 </Text>
                             </View>
                         )}
-                        <View className="flex-row items-center gap-x-1 rounded-full bg-gray-100 p-0.5">
-                            {["appliance", "room"].map((m) => {
-                                const active = (deviceData?.mode ?? "appliance") === m;
-                                return (
-                                    <TouchableOpacity
-                                        key={m}
-                                        disabled={isDisabled}
-                                        onPress={() => {
-                                            if (!active) update(ref(db, `devices/${deviceData.id}`), { mode: m });
-                                        }}
-                                        className={`px-2 py-1 rounded-full ${active ? "bg-blue-600" : ""}`}
-                                    >
-                                        <Text className={`text-[10px] font-semibold ${active ? "text-white" : "text-gray-500"}`}>
-                                            {m === "room" ? "Whole room" : "Appliance"}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                        <View className="px-2 py-1 rounded-full bg-blue-50">
+                            <Text className="text-[10px] font-semibold text-blue-700">
+                                {mode === "room" ? "Whole room" : "One appliance"}
+                            </Text>
                         </View>
                     </View>
 
@@ -200,7 +210,66 @@ export default function DeviceCard({
                 </TouchableOpacity>
 
                 {/* RIGHT SIDE */}
-                <View className="items-end">
+                <View className="items-end relative">
+                    <TouchableOpacity
+                        testID="card-menu-button"
+                        activeOpacity={0.8}
+                        onPress={() => setMenuOpen((v) => !v)}
+                        className="w-10 h-10 rounded-full items-center justify-center"
+                    >
+                        <Feather name="more-vertical" size={20} color="#2E4F4F" />
+                    </TouchableOpacity>
+                    {menuOpen && (
+                        <View
+                            testID="card-menu"
+                            className="absolute top-10 right-0 w-52 bg-white rounded-xl border border-gray-200 p-2 shadow-lg"
+                            style={{ zIndex: 50, elevation: 50 }}
+                        >
+                            <TouchableOpacity
+                                testID="menu-edit-button"
+                                className="px-3 py-2 rounded-lg"
+                                onPress={() => { setMenuOpen(false); !isDisabled && editDevice(); }}
+                            >
+                                <Text className="text-sm text-gray-800">Edit</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                testID="menu-delete-button"
+                                className="px-3 py-2 rounded-lg"
+                                onPress={() => { setMenuOpen(false); !isDisabled && deleteDevice(); }}
+                            >
+                                <Text className="text-sm text-red-600">Delete</Text>
+                            </TouchableOpacity>
+                            <View className="h-px bg-gray-200 my-1" />
+                            <Text className="px-3 pt-1 text-[10px] font-bold text-gray-500">MONITORS</Text>
+                            {["appliance", "room"].map((m) => (
+                                <TouchableOpacity
+                                    key={m}
+                                    className="px-3 py-2 rounded-lg flex-row items-center gap-x-2"
+                                    disabled={isDisabled}
+                                    onPress={() => {
+                                        if (mode !== m) update(ref(db, `devices/${deviceData.id}`), { mode: m });
+                                    }}
+                                >
+                                    <MaterialCommunityIcons
+                                        name={mode === m ? "radiobox-marked" : "radiobox-blank"}
+                                        size={18}
+                                        color={mode === m ? "#2E4F4F" : "#9CA3AF"}
+                                    />
+                                    <Text className="text-sm text-gray-800">
+                                        {m === "room" ? "Whole room" : "One appliance"}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                            <View className="h-px bg-gray-200 my-1" />
+                            <TouchableOpacity
+                                testID="menu-reset-button"
+                                className="px-3 py-2 rounded-lg"
+                                onPress={onResetTap}
+                            >
+                                <Text className="text-sm text-red-600">Reset data…</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     <TouchableOpacity
                         activeOpacity={0.85}
@@ -226,27 +295,6 @@ export default function DeviceCard({
                             />
                         )}
                     </TouchableOpacity>
-                    <View className="flex-row items-center gap-x-4">
-                        <TouchableOpacity
-                            testID="edit-button"
-                            activeOpacity={0.8}
-                            onPress={() => !isDisabled && editDevice()}
-                            disabled={isDisabled}
-                            className={`w-10 h-10 rounded-full items-center justify-center`}
-                        >
-                            <Feather name="edit" size={20} color={isDisabled ? "#9CA3AF" : "#2E4F4F"} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            testID="delete-button"
-                            activeOpacity={0.8}
-                            onPress={() => !isDisabled && deleteDevice()}
-                            disabled={isDisabled}
-                            className={`w-10 h-10 rounded-full items-center justify-center`}
-                        >
-                            <MaterialCommunityIcons name="trash-can" size={20} color={isDisabled ? "#9CA3AF" : "#DC2626"} />
-                        </TouchableOpacity>
-                    </View>
 
                 </View>
             </View>
