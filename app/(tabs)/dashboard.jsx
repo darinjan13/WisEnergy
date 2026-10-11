@@ -418,7 +418,7 @@ export default function Dashboard() {
               style={styles.cardShadow}
             >
               <Text className="text-md font-extrabold mb-6">
-                Welcome Back, Gwapo!
+                Welcome Back, {userName}!
               </Text>
               {weeklySavings === null ? (
                 <Text className="text-gray-500 text-sm">
