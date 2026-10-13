@@ -4,6 +4,17 @@
 > Rules: keep every color token below exactly. Light theme only. No new
 > data concepts — same screens, better hierarchy. Thumb-friendly (44px targets).
 
+## 0. Product Context (read first — generators get this wrong)
+
+WisEnergy monitors **room-level electricity in Philippine homes** with
+ESP32 hardware (voltage + current sensors, relay). There is **no solar,
+no battery, no EV charger, no grid export, no dollar pricing** — omitting
+inventions matters more than adding features. Typical loads: electric fan
+(~60W), monitor (~25W), desktop PC via UPS. Currency is **Philippine pesos
+(₱)**, rates are per-kWh utility rates (e.g. ₱9–12/kWh). Tone: practical
+utility app, not fintech, not eco-luxury. If a widget needs hardware the
+user doesn't own (solar/battery/EV), it does not belong on screen.
+
 ## 1. Brand & Color Tokens
 
 | Token | Hex | Usage |
