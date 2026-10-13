@@ -56,10 +56,10 @@ export const resetDeviceHistory = async (uid, deviceId) => {
     return { failed };
 };
 
-/* Delete a whole account's energy history: every owned device (chunked,
-   reuses resetDeviceHistory) plus user-level totals and predictions.
-   Devices registry, profile, budgets, tokens and notifications are kept. */
-export const resetAccountData = async (uid) => {
+/* Delete every owned device's readings + summaries + kWh (chunked),
+   but keep the devices themselves, totals and predictions.
+   Returns { failed: [...] }. */
+export const resetAllDevicesData = async (uid) => {
     const failed = [];
     let dbRoot = "";
     let token = "";
@@ -82,6 +82,65 @@ export const resetAccountData = async (uid) => {
         if (owner !== uid) continue;
         const r = await resetDeviceHistory(uid, deviceId);
         failed.push(...r.failed);
+    }
+    return { failed };
+};
+
+/* Delete a whole account's energy history: every owned device (chunked,
+   reuses resetAllDevicesData) plus user-level totals and predictions.
+   Devices registry, profile, budgets, tokens and notifications are kept. */
+export const resetAccountData = async (uid) => {
+    const failed = [];
+    const perDevice = await resetAllDevicesData(uid);
+    failed.push(...perDevice.failed);
+    for (const p of [
+        `daily_total_consumption/${uid}`,
+        `weekly_total_consumption/${uid}`,
+        `monthly_total_consumption/${uid}`,
+        `predictions/${uid}`,
+    ]) {
+        try {
+            await remove(ref(db, p));
+        } catch (e) {
+            failed.push(`${p} (${e?.code || e?.message || "denied"})`);
+        }
+    }
+    return { failed };
+};
+
+/* Factory reset: account wipe PLUS unpair every owned device (removes their
+   registry entries; firmware re-registers them as unpaired on next boot).
+   Keeps tokens, profile, budgets, reviews, feedback, notifications. */
+export const factoryResetEnergy = async (uid) => {
+    const failed = [];
+    const perDevice = await resetAllDevicesData(uid);
+    failed.push(...perDevice.failed);
+    let dbRoot = "";
+    let token = "";
+    try {
+        dbRoot = ref(db).toString().replace(/\/$/, "");
+        token = await auth.currentUser.getIdToken();
+    } catch (e) {
+        failed.push(`(auth/db url: ${e?.code || e?.message})`);
+    }
+    if (dbRoot && token) {
+        const deviceIds = await shallowKeys(dbRoot, token, "devices");
+        for (const deviceId of deviceIds) {
+            let owner = "";
+            try {
+                const snap = await get(ref(db, `devices/${deviceId}/owner`));
+                owner = snap.exists() ? snap.val() : "";
+            } catch (e) {
+                failed.push(`devices/${deviceId}/owner (read: ${e?.code || e?.message})`);
+                continue;
+            }
+            if (owner !== uid) continue;
+            try {
+                await remove(ref(db, `devices/${deviceId}`));
+            } catch (e) {
+                failed.push(`devices/${deviceId} (${e?.code || e?.message || "denied"})`);
+            }
+        }
     }
     for (const p of [
         `daily_total_consumption/${uid}`,

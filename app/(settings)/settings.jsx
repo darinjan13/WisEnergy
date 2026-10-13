@@ -8,7 +8,7 @@ import { auth, db } from "@/firebase/firebaseConfig";
 import { onValue, ref, update } from "firebase/database";
 import { LinearGradient } from "expo-linear-gradient";
 import ResultModal from "@/components/ui/ResultModal";
-import { resetAccountData } from "@/services/firebaseDevicesService";
+import { resetAccountData, resetAllDevicesData, factoryResetEnergy } from "@/services/firebaseDevicesService";
 
 export default function settings() {
     const { width } = useWindowDimensions();
@@ -28,12 +28,18 @@ export default function settings() {
     const [wipeDialog, setWipeDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
 
     const handleWipeConfirm = async () => {
+        const action = wipeDialog?.action ?? "account";
         try {
             setWiping(true);
-            const { failed } = await resetAccountData(auth.currentUser?.uid);
+            const uid = auth.currentUser?.uid;
+            const { failed } = action === "factory"
+                ? await factoryResetEnergy(uid)
+                : action === "devices"
+                    ? await resetAllDevicesData(uid)
+                    : await resetAccountData(uid);
             setWipeDialog(
                 failed.length === 0
-                    ? { kind: "result", success: true, title: "Data cleared", lines: ["All energy history for this account was removed.", "Devices stay paired; new data accumulates fresh."] }
+                    ? { kind: "result", success: true, title: "Data cleared", lines: [action === "factory" ? "All energy data removed and devices unpaired. They re-register on next boot." : "Selected data was removed. New readings accumulate fresh."] }
                     : { kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] }
             );
         } catch (e) {
@@ -41,6 +47,21 @@ export default function settings() {
         } finally {
             setWiping(false);
         }
+    };
+
+    const WIPE_COPY = {
+        account: {
+            label: "Clear all my energy data",
+            lines: ["Removes every reading, summary, total and prediction for this account.", "Devices stay paired. Cannot be undone."],
+        },
+        devices: {
+            label: "Clear devices' data only",
+            lines: ["Removes readings, summaries and kWh for all devices.", "Devices stay paired; totals and predictions are kept. Cannot be undone."],
+        },
+        factory: {
+            label: "Reset everything (unpair devices)",
+            lines: ["Wipes all usage data AND unpairs every device.", "Devices re-register on next boot. Tokens and profile are kept. Cannot be undone."],
+        },
     };
 
 
@@ -290,10 +311,30 @@ export default function settings() {
                     <TouchableOpacity
                         disabled={wiping}
                         className="flex-row justify-between items-center py-3 ml-10"
-                        onPress={() => setWipeDialog({ kind: "confirm" })}
+                        onPress={() => setWipeDialog({ kind: "confirm", action: "account" })}
                     >
                         <Text className="text-sm text-red-600 font-semibold">
                             {wiping ? "Clearing…" : "Clear all my energy data"}
+                        </Text>
+                        <Feather name="chevron-right" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        disabled={wiping}
+                        className="flex-row justify-between items-center py-3 ml-10"
+                        onPress={() => setWipeDialog({ kind: "confirm", action: "devices" })}
+                    >
+                        <Text className="text-sm text-red-600 font-semibold">
+                            {wiping ? "Clearing…" : "Clear devices' data only"}
+                        </Text>
+                        <Feather name="chevron-right" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        disabled={wiping}
+                        className="flex-row justify-between items-center py-3 ml-10"
+                        onPress={() => setWipeDialog({ kind: "confirm", action: "factory" })}
+                    >
+                        <Text className="text-sm text-red-600 font-semibold">
+                            {wiping ? "Clearing…" : "Reset everything (unpair devices)"}
                         </Text>
                         <Feather name="chevron-right" size={20} color="#6B7280" />
                     </TouchableOpacity>
@@ -334,9 +375,9 @@ export default function settings() {
                     visible={!!wipeDialog}
                     mode={wipeDialog?.kind === "confirm" ? "confirm" : "result"}
                     success={wipeDialog?.success ?? true}
-                    title={wipeDialog?.kind === "confirm" ? "Clear all energy data?" : wipeDialog?.title ?? ""}
-                    lines={wipeDialog?.kind === "confirm" ? ["Removes every reading, summary, total and prediction for this account.", "Devices stay paired. Cannot be undone."] : wipeDialog?.lines ?? []}
-                    confirmText="Clear all"
+                    title={wipeDialog?.kind === "confirm" ? "Clear data?" : wipeDialog?.title ?? ""}
+                    lines={wipeDialog?.kind === "confirm" ? (WIPE_COPY[wipeDialog?.action ?? "account"]?.lines ?? []) : wipeDialog?.lines ?? []}
+                    confirmText="Clear"
                     onConfirm={handleWipeConfirm}
                     onClose={() => setWipeDialog(null)}
                 />
