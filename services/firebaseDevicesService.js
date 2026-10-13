@@ -38,7 +38,9 @@ export const resetDeviceHistory = async (uid, deviceId) => {
         return { failed };
     }
     const applianceNames = await shallowKeys(dbRoot, token, `appliances/${uid}/${deviceId}`);
-    const names = applianceNames.length > 0 ? applianceNames : ["WholeRoom"];
+    const summaryNames = await shallowKeys(dbRoot, token, `daily_summary/${uid}/${deviceId}`);
+    const names = [...new Set([...applianceNames, ...summaryNames])];
+    if (names.length === 0) names.push("WholeRoom");
     for (const name of names) {
         const usageDays = await shallowKeys(dbRoot, token, `usage/${uid}/${deviceId}/${name}`);
         const summaryDays = await shallowKeys(dbRoot, token, `daily_summary/${uid}/${deviceId}/${name}`);
@@ -51,8 +53,22 @@ export const resetDeviceHistory = async (uid, deviceId) => {
     for (const p of [
         `weekly_summary/${uid}/${deviceId}`,
         `monthly_summary/${uid}/${deviceId}`,
-        `appliances/${uid}/${deviceId}`,
     ]) await rm(p);
+    // Preserve the appliance registry (nickname/added_at/is_active) —
+    // zero only the energy counters.
+    try {
+        const snap = await get(ref(db, `appliances/${uid}/${deviceId}`));
+        const apps = snap.exists() ? snap.val() : {};
+        for (const name of Object.keys(apps)) {
+            try {
+                await update(ref(db, `appliances/${uid}/${deviceId}/${name}`), { latest_kwh: 0 });
+            } catch (e) {
+                failed.push(`appliances/${uid}/${deviceId}/${name}/latest_kwh (${e?.code || e?.message || "denied"})`);
+            }
+        }
+    } catch (e) {
+        failed.push(`appliances/${uid}/${deviceId} (list: ${e?.code || e?.message})`);
+    }
     return { failed };
 };
 
@@ -139,6 +155,11 @@ export const factoryResetEnergy = async (uid) => {
                 await remove(ref(db, `devices/${deviceId}`));
             } catch (e) {
                 failed.push(`devices/${deviceId} (${e?.code || e?.message || "denied"})`);
+            }
+            try {
+                await remove(ref(db, `appliances/${uid}/${deviceId}`));
+            } catch (e) {
+                failed.push(`appliances/${uid}/${deviceId} (${e?.code || e?.message || "denied"})`);
             }
         }
     }
