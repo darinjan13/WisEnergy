@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Modal,
   Alert,
+  FlatList,
   useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -492,34 +493,40 @@ export default function Reports() {
                     {reportCategory} Consumption per Appliance
                   </Text>
 
-                  {allAppliancesForAllDevices.map((item, i) => {
-                    const powerUsed = item.latestKwh ?? 0;
-                    return (
-                      <TouchableOpacity
-                        key={item.applianceName + "-" + i}
-                        onPress={() => {
-                          setSelectedAppliance(item);
-                          setModalVisible(true);
-                        }}
-                        className="mb-4"
-                      >
-                        <View className="flex-row items-center">
-                          <Text className="w-24">{item.applianceName}</Text>
-                          <View className="flex-1">
-                            <CustomProgressBar
-                              progress={powerUsed}
-                              maxProgress={totalUsageAll}
-                              color="#4CAF50"
-                              reports
-                            />
-                          </View>
-                          <Text className="ml-2 text-gray-600 text-sm">
-                            {powerUsed.toFixed(2)} kWh
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
+                  {allAppliancesForAllDevices.length > 0 ? (
+                    <FlatList
+                      data={allAppliancesForAllDevices}
+                      keyExtractor={(item, i) => item.applianceName + "-" + i}
+                      scrollEnabled={false}
+                      renderItem={({ item, index: i }) => {
+                        const powerUsed = item.latestKwh ?? 0;
+                        return (
+                          <TouchableOpacity
+                            onPress={() => {
+                              setSelectedAppliance(item);
+                              setModalVisible(true);
+                            }}
+                            className="mb-4"
+                          >
+                            <View className="flex-row items-center">
+                              <Text className="w-24">{item.applianceName}</Text>
+                              <View className="flex-1">
+                                <CustomProgressBar
+                                  progress={powerUsed}
+                                  maxProgress={totalUsageAll}
+                                  color="#4CAF50"
+                                  reports
+                                />
+                              </View>
+                              <Text className="ml-2 text-gray-600 text-sm">
+                                {powerUsed.toFixed(2)} kWh
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      }}
+                    />
+                  ) : null}
                 </View>
               )}
             </View>
@@ -537,38 +544,42 @@ export default function Reports() {
               className="bg-white p-4 rounded-2xl mb-4"
             >
               {reports.length > 0 ? (
-                reports.map((item, i) => {
-                  const powerUsed = item.latestKwh ?? 0;
-                  const total = reports.reduce(
-                    (sum, r) => sum + (r.latestKwh ?? 0),
-                    0
-                  );
-                  return (
-                    <TouchableOpacity
-                      key={item.applianceName + "-" + i}
-                      onPress={() => {
-                        setSelectedAppliance(item);
-                        setModalVisible(true);
-                      }}
-                      className="mb-4"
-                    >
-                      <View className="flex-row items-center">
-                        <Text className="w-24">{item.applianceName}</Text>
-                        <View className="flex-1">
-                          <CustomProgressBar
-                            progress={powerUsed}
-                            maxProgress={total}
-                            color="#4CAF50"
-                            reports
-                          />
+                <FlatList
+                  data={reports}
+                  keyExtractor={(item, i) => item.applianceName + "-" + i}
+                  scrollEnabled={false}
+                  renderItem={({ item, index: i }) => {
+                    const powerUsed = item.latestKwh ?? 0;
+                    const total = reports.reduce(
+                      (sum, r) => sum + (r.latestKwh ?? 0),
+                      0
+                    );
+                    return (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedAppliance(item);
+                          setModalVisible(true);
+                        }}
+                        className="mb-4"
+                      >
+                        <View className="flex-row items-center">
+                          <Text className="w-24">{item.applianceName}</Text>
+                          <View className="flex-1">
+                            <CustomProgressBar
+                              progress={powerUsed}
+                              maxProgress={total}
+                              color="#4CAF50"
+                              reports
+                            />
+                          </View>
+                          <Text className="ml-2 text-gray-600 text-sm">
+                            {powerUsed.toFixed(2)} kWh
+                          </Text>
                         </View>
-                        <Text className="ml-2 text-gray-600 text-sm">
-                          {powerUsed.toFixed(2)} kWh
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
               ) : (
                 <View className="h-40 items-center justify-center">
                   <Text className="text-gray-500 text-lg font-semibold">
