@@ -186,6 +186,7 @@ export default function DeviceCard({
                         <View className="mt-3 flex-row items-center gap-x-3">
                             <Text className="text-xs font-bold text-[#2E4F4F]">{live.v?.toFixed?.(1) ?? live.v} V</Text>
                             <Text className="text-xs font-bold text-[#2E4F4F]">{live.a?.toFixed?.(2) ?? live.a} A</Text>
+                            <Text className="text-xs font-bold text-green-700">{live.w?.toFixed?.(1) ?? live.w} W</Text>
                             <Text className="text-[10px] text-gray-500">
                                 {live.t ? `live ${Math.max(0, Math.floor(Date.now() / 1000) - live.t)}s ago` : ""}
                             </Text>
