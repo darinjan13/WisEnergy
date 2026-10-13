@@ -44,10 +44,12 @@ export default function Reports() {
     fetchDailyTotals,
     fetchWeeklyTotals,
     fetchMonthlyTotals,
+    fetchTopAppliances,
     allMonthlyTotalConsumption,
     dailyData,
     weeklyData,
     monthlyData,
+    topAppliances,
   } = useUsageStore();
 
   const { allBudget, fetchAllBudget } = useBudgetStore();
@@ -105,6 +107,7 @@ export default function Reports() {
             fetchWeeklyTotals(uid),
             fetchMonthlyTotals(uid),
             fetchAllBudget(uid),
+            fetchTopAppliances(uid),
           ]);
 
           if (!active) return;
@@ -183,12 +186,14 @@ export default function Reports() {
 
           setReportsTotal(source);
           setReportLoading(false);
+          setLastUpdatedAt(new Date());
         }
         return;
       }
 
       // 👉 SPECIFIC DEVICE
       setReportLoading(false);
+      setLastUpdatedAt(new Date());
     };
 
     run();
@@ -237,6 +242,31 @@ export default function Reports() {
       0
     );
   }, [allAppliancesForAllDevices]);
+
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+
+  const heroStats = useMemo(() => {
+    const day = dailyData.dailyTotals?.[0];
+    const week = weeklyData.weeklyTotals?.[0];
+    const dayBars = day?.barData ?? [];
+    const weekBars = week?.barData ?? [];
+    const dayDelta = dayBars.length >= 2
+      ? Number((dayBars[dayBars.length - 1].value - dayBars[dayBars.length - 2].value).toFixed(2))
+      : null;
+    const weekDelta = weekBars.length >= 2
+      ? Number((weekBars[weekBars.length - 1].value - weekBars[weekBars.length - 2].value).toFixed(2))
+      : null;
+    const top = topAppliances?.[0] ?? null;
+    return {
+      today: day?.latestKwh ?? null,
+      todayDelta: dayDelta,
+      week: week?.latestKwh ?? null,
+      weekDelta: weekDelta,
+      topName: top?.name ?? null,
+      topKwh: top?.kwh ?? null,
+      topShare: top && totalUsageAll > 0 ? Math.round((top.kwh / totalUsageAll) * 100) : null,
+    };
+  }, [dailyData, weeklyData, topAppliances, totalUsageAll]);
 
   // -----------------------------
   // E. LINE CHART DATA
@@ -295,6 +325,38 @@ export default function Reports() {
       >
         <Header />
         <Text className="text-xl font-bold text-green-800 mb-4">Reports</Text>
+
+        {/* Hero strip */}
+        <View className="flex-row gap-x-3 mb-4">
+          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl">
+            <Text className="text-[11px] text-gray-500 font-semibold">Today</Text>
+            <Text className="text-2xl font-extrabold text-[#2E4F4F]">
+              {heroStats.today ?? "—"}
+            </Text>
+            <Text className="text-xs text-gray-500">kWh{heroStats.todayDelta !== null && ` (${heroStats.todayDelta >= 0 ? "+" : ""}${heroStats.todayDelta})`}</Text>
+          </View>
+          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl">
+            <Text className="text-[11px] text-gray-500 font-semibold">This week</Text>
+            <Text className="text-2xl font-extrabold text-[#2E4F4F]">
+              {heroStats.week ?? "—"}
+            </Text>
+            <Text className="text-xs text-gray-500">kWh{heroStats.weekDelta !== null && ` (${heroStats.weekDelta >= 0 ? "+" : ""}${heroStats.weekDelta})`}</Text>
+          </View>
+          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl">
+            <Text className="text-[11px] text-gray-500 font-semibold">Top appliance</Text>
+            <Text className="text-base font-extrabold text-[#2E4F4F]" numberOfLines={1}>
+              {heroStats.topName ?? "—"}
+            </Text>
+            <Text className="text-xs text-gray-500">
+              {heroStats.topKwh !== null ? `${heroStats.topKwh} kWh${heroStats.topShare !== null ? ` • ${heroStats.topShare}%` : ""}` : "—"}
+            </Text>
+          </View>
+        </View>
+        {lastUpdatedAt && (
+          <Text className="text-[10px] text-gray-400 mb-4">
+            Updated {lastUpdatedAt.toLocaleTimeString()}
+          </Text>
+        )}
 
         {/* Savings Over Time */}
         <Text className="text-xl font-bold text-green-800 mb-4">
