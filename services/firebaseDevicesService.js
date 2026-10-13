@@ -56,6 +56,48 @@ export const resetDeviceHistory = async (uid, deviceId) => {
     return { failed };
 };
 
+/* Delete a whole account's energy history: every owned device (chunked,
+   reuses resetDeviceHistory) plus user-level totals and predictions.
+   Devices registry, profile, budgets, tokens and notifications are kept. */
+export const resetAccountData = async (uid) => {
+    const failed = [];
+    let dbRoot = "";
+    let token = "";
+    try {
+        dbRoot = ref(db).toString().replace(/\/$/, "");
+        token = await auth.currentUser.getIdToken();
+    } catch (e) {
+        return { failed: [`(auth/db url: ${e?.code || e?.message})`] };
+    }
+    const deviceIds = await shallowKeys(dbRoot, token, "devices");
+    for (const deviceId of deviceIds) {
+        let owner = "";
+        try {
+            const snap = await get(ref(db, `devices/${deviceId}/owner`));
+            owner = snap.exists() ? snap.val() : "";
+        } catch (e) {
+            failed.push(`devices/${deviceId}/owner (read: ${e?.code || e?.message})`);
+            continue;
+        }
+        if (owner !== uid) continue;
+        const r = await resetDeviceHistory(uid, deviceId);
+        failed.push(...r.failed);
+    }
+    for (const p of [
+        `daily_total_consumption/${uid}`,
+        `weekly_total_consumption/${uid}`,
+        `monthly_total_consumption/${uid}`,
+        `predictions/${uid}`,
+    ]) {
+        try {
+            await remove(ref(db, p));
+        } catch (e) {
+            failed.push(`${p} (${e?.code || e?.message || "denied"})`);
+        }
+    }
+    return { failed };
+};
+
 export const fetchDevices = async () => {
 
     const devicesRef = ref(db, "devices");

@@ -7,6 +7,8 @@ import useAuth from "@/hooks/useAuth";
 import { auth, db } from "@/firebase/firebaseConfig";
 import { onValue, ref, update } from "firebase/database";
 import { LinearGradient } from "expo-linear-gradient";
+import ResultModal from "@/components/ui/ResultModal";
+import { resetAccountData } from "@/services/firebaseDevicesService";
 
 export default function settings() {
     const { width } = useWindowDimensions();
@@ -22,6 +24,24 @@ export default function settings() {
 
     const [isPremium, setIsPremium] = useState(false);
     const [planEndDate, setPlanEndDate] = useState(null);
+    const [wiping, setWiping] = useState(false);
+    const [wipeDialog, setWipeDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
+
+    const handleWipeConfirm = async () => {
+        try {
+            setWiping(true);
+            const { failed } = await resetAccountData(auth.currentUser?.uid);
+            setWipeDialog(
+                failed.length === 0
+                    ? { kind: "result", success: true, title: "Data cleared", lines: ["All energy history for this account was removed.", "Devices stay paired; new data accumulates fresh."] }
+                    : { kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] }
+            );
+        } catch (e) {
+            setWipeDialog({ kind: "result", success: false, title: "Clear failed", lines: [e?.code || e?.message || "Unknown error"] });
+        } finally {
+            setWiping(false);
+        }
+    };
 
 
     const getInitials = () => {
@@ -264,6 +284,23 @@ export default function settings() {
 
                 <View className="bg-white rounded-xl shadow-md p-4 mb-6">
                     <View className="flex-row items-center mb-2">
+                        <Feather name="database" size={30} color="#23403A" />
+                        <Text className="ml-3 text-base font-semibold text-green-800">Data Management</Text>
+                    </View>
+                    <TouchableOpacity
+                        disabled={wiping}
+                        className="flex-row justify-between items-center py-3 ml-10"
+                        onPress={() => setWipeDialog({ kind: "confirm" })}
+                    >
+                        <Text className="text-sm text-red-600 font-semibold">
+                            {wiping ? "Clearing…" : "Clear all my energy data"}
+                        </Text>
+                        <Feather name="chevron-right" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                </View>
+
+                <View className="bg-white rounded-xl shadow-md p-4 mb-6">
+                    <View className="flex-row items-center mb-2">
                         <Feather name="info" size={30} color="#23403A" />
                         <Text className="ml-3 text-base font-semibold text-green-800">About</Text>
                     </View>
@@ -293,6 +330,16 @@ export default function settings() {
                         )}
                     </View>
                 </TouchableOpacity>
+                <ResultModal
+                    visible={!!wipeDialog}
+                    mode={wipeDialog?.kind === "confirm" ? "confirm" : "result"}
+                    success={wipeDialog?.success ?? true}
+                    title={wipeDialog?.kind === "confirm" ? "Clear all energy data?" : wipeDialog?.title ?? ""}
+                    lines={wipeDialog?.kind === "confirm" ? ["Removes every reading, summary, total and prediction for this account.", "Devices stay paired. Cannot be undone."] : wipeDialog?.lines ?? []}
+                    confirmText="Clear all"
+                    onConfirm={handleWipeConfirm}
+                    onClose={() => setWipeDialog(null)}
+                />
             </ScrollView>
         </View>
     );
