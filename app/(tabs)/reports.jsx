@@ -151,7 +151,11 @@ export default function Reports() {
     if (!uid) return;
 
     const run = async () => {
-      setReportLoading(true);
+      const hasPersisted =
+        (reportCategory === "Daily" && (dailyData.dailyTotals?.length || Object.keys(dailyData.dailyReport || {}).length)) ||
+        (reportCategory === "Weekly" && (weeklyData.weeklyTotals?.length || Object.keys(weeklyData.weeklyReport || {}).length)) ||
+        (reportCategory === "Monthly" && (monthlyData.monthlyTotals?.length || Object.keys(monthlyData.monthlyReport || {}).length));
+      if (!hasPersisted) setReportLoading(true);
 
       // 👉 ALL DEVICES
       if (selectedDevice === "All Devices") {
