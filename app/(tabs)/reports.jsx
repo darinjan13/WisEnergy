@@ -459,7 +459,7 @@ export default function Reports() {
           <AutoSkeletonView isLoading={reportLoading}>
             <View
               style={styles.cardShadow}
-              className="bg-white p-4 rounded-2xl mb-4"
+              className="bg-white p-5 rounded-2xl mb-6 min-h-[320px] justify-center"
             >
               {/* Overall Chart */}
               {reportsTotal?.[reportCategory.toLowerCase() + "Totals"]?.[0] ? (
@@ -541,7 +541,7 @@ export default function Reports() {
             </Text>
             <View
               style={styles.cardShadow}
-              className="bg-white p-4 rounded-2xl mb-4"
+              className="bg-white p-5 rounded-2xl mb-6 min-h-[320px] justify-center"
             >
               {reports.length > 0 ? (
                 <FlatList
