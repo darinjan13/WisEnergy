@@ -20,7 +20,8 @@ import Header from "@/components/ui/Header";
 import useApplianceStreams from "@/hooks/useApplianceStreams";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { BlurView } from "expo-blur";
-import { get, ref, remove, set, update } from "firebase/database";
+import { get, ref, remove, set, update, onValue, off } from "firebase/database";
+import ResultModal from "@/components/ui/ResultModal";
 import Toast from "react-native-toast-message";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,6 +57,44 @@ export default function DeviceDetails() {
   const [appliancePower, setAppliancePower] = useState(0);
   const [selectedAppliance, setSelectedAppliance] = useState("");
   const [applianceNickname, setApplianceNickname] = useState("");
+  const [calCmdId, setCalCmdId] = useState(null);
+  const [calDialog, setCalDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
+
+  // Remote recalibration result listener
+  useEffect(() => {
+    if (!deviceId) return;
+    const resRef = ref(db, `devices/${deviceId}/cal_result`);
+    const handler = (snap) => {
+      if (!snap.exists()) return;
+      const v = snap.val();
+      if (calCmdId && v.id === calCmdId) {
+        setCalDialog({
+          kind: "result",
+          success: !!v.ok,
+          title: v.ok ? "Recalibrating…" : "Command failed",
+          lines: [
+            String(v.message ?? ""),
+            `vSens ${v.vSens} • iSens ${v.iSens} • phase ${v.phase} • adc ${v.adcVrms}/${v.adcIrms}`,
+            v.ok ? "Device reboots and auto-calibrates now." : "",
+          ].filter(Boolean),
+        });
+        setCalCmdId(null);
+      }
+    };
+    onValue(resRef, handler);
+    return () => off(resRef, "value", handler);
+  }, [deviceId, calCmdId]);
+
+  const sendRecalibrate = async () => {
+    const id = String(Date.now());
+    const at = Math.floor(Date.now() / 1000);
+    await set(ref(db, `devices/${deviceId}/cal_cmd`), {
+      id, cmd: "calclear", arg: "", at, state: "pending",
+    });
+    setCalCmdId(id);
+    setCalDialog(null);
+    Toast.show({ type: "info", text1: "Recalibrate sent", text2: "Watch for the result…" });
+  };
 
   // derive appliances directly from store
   const deviceAppliances =
@@ -305,6 +344,12 @@ export default function DeviceDetails() {
       >
         <Text className="text-red-600 text-xs font-bold">Clear today's test data</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => setCalDialog({ kind: "confirm" })}
+        className="mt-3 self-start px-3 py-2 rounded-lg border border-red-300"
+      >
+        <Text className="text-red-600 text-xs font-bold">Factory recalibrate</Text>
+      </TouchableOpacity>
 
       <View className="flex-row items-center justify-between my-5">
         <View className="flex-row items-center gap-x-2">
@@ -428,6 +473,16 @@ export default function DeviceDetails() {
         }}
         onConfirm={handleDeleteConfirmed}
         action={action}
+      />
+      <ResultModal
+        visible={!!calDialog}
+        mode={calDialog?.kind === "confirm" ? "confirm" : "result"}
+        success={calDialog?.success ?? true}
+        title={calDialog?.kind === "confirm" ? "Factory recalibrate?" : calDialog?.title ?? ""}
+        lines={calDialog?.kind === "confirm" ? ["Device reboots and auto-calibrates voltage.", "Mains MUST be connected or gain maxes out.", "Cannot be undone."] : calDialog?.lines ?? []}
+        confirmText="Recalibrate"
+        onConfirm={sendRecalibrate}
+        onClose={() => setCalDialog(null)}
       />
     </View>
   );
