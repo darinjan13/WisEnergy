@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Modal, Pressable, Dime
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { db, auth } from "@/firebase/firebaseConfig";
-import { ref, onValue, off, update } from "firebase/database";
+import { ref, onValue, off, update, set } from "firebase/database";
 import { timeAgo } from "@/utils/dateHelper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { approve_firmware } from "@/services/apiService";
@@ -31,6 +31,8 @@ export default function DeviceCard({
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuAnchorY, setMenuAnchorY] = useState(120);
     const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
+    const [calCmdId, setCalCmdId] = useState(null);
+    const [calDialog, setCalDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
     // Optimistic mode: reflect taps instantly, reconcile when store catches up.
     const [modeOverride, setModeOverride] = useState(null);
     const mode = modeOverride ?? deviceData?.mode ?? "appliance";
@@ -133,6 +135,42 @@ export default function DeviceCard({
                 : { kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] }
         );
     };
+    const onRecalTap = () => {
+        setMenuOpen(false);
+        setCalDialog({ kind: "confirm" });
+    };
+    const sendRecalibrate = async () => {
+        const id = String(Date.now());
+        const at = Math.floor(Date.now() / 1000);
+        await set(ref(db, `devices/${deviceData.id}/cal_cmd`), {
+            id, cmd: "calclear", arg: "", at, state: "pending",
+        });
+        setCalCmdId(id);
+        setCalDialog(null);
+    };
+    useEffect(() => {
+        if (!deviceData?.id) return;
+        const resRef = ref(db, `devices/${deviceData.id}/cal_result`);
+        const handler = (snap) => {
+            if (!snap.exists()) return;
+            const v = snap.val();
+            if (calCmdId && v.id === calCmdId) {
+                setCalDialog({
+                    kind: "result",
+                    success: !!v.ok,
+                    title: v.ok ? "Recalibrating…" : "Command failed",
+                    lines: [
+                        String(v.message ?? ""),
+                        `vSens ${v.vSens} • iSens ${v.iSens} • phase ${v.phase} • adc ${v.adcVrms}/${v.adcIrms}`,
+                        v.ok ? "Device reboots and auto-calibrates now." : "",
+                    ].filter(Boolean),
+                });
+                setCalCmdId(null);
+            }
+        };
+        onValue(resRef, handler);
+        return () => off(resRef, "value", handler);
+    }, [deviceData?.id, calCmdId]);
 
     return (
         <View
@@ -297,6 +335,13 @@ export default function DeviceCard({
                             >
                                 <Text className="text-sm text-red-600">Reset data…</Text>
                             </TouchableOpacity>
+                            <TouchableOpacity
+                                testID="menu-recalibrate-button"
+                                className="px-3 py-2 rounded-lg"
+                                onPress={onRecalTap}
+                            >
+                                <Text className="text-sm text-red-600">Factory recalibrate</Text>
+                            </TouchableOpacity>
                                 </Pressable>
                             </Pressable>
                         </Modal>
@@ -338,6 +383,16 @@ export default function DeviceCard({
                 confirmText="Reset"
                 onConfirm={onResetConfirm}
                 onClose={() => setResetDialog(null)}
+            />
+            <ResultModal
+                visible={!!calDialog}
+                mode={calDialog?.kind === "confirm" ? "confirm" : "result"}
+                success={calDialog?.success ?? true}
+                title={calDialog?.kind === "confirm" ? "Factory recalibrate?" : calDialog?.title ?? ""}
+                lines={calDialog?.kind === "confirm" ? ["Device reboots and auto-calibrates voltage.", "Mains MUST be connected or gain maxes out.", "Cannot be undone."] : calDialog?.lines ?? []}
+                confirmText="Recalibrate"
+                onConfirm={sendRecalibrate}
+                onClose={() => setCalDialog(null)}
             />
         </View>
     );
