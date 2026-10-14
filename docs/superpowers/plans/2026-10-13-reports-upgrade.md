@@ -305,6 +305,26 @@ git push
 - [ ] **Step 3:** 6-state visual pass (3 categories × single device + All Devices); appliance-tap modal opens; reset button, mode chip, firmware banner, live row all behave.
 - [ ] **Step 4:** Record results as a reply. Any failure → file numbers/screenshots, revise Tasks 1–4 first. Commit nothing.
 
+### Task 6: Victory chart swap (added 2026-10-14)
+
+**Files:**
+- Modify: `F:\Capstone\WisEnergy\components\reports\EnergyPredictionChart.jsx`
+
+Swap gifted-charts `BarChart` for victory-native `CartesianChart` + `BarGroup`
+(deps already installed: victory-native 41.x, Skia, Reanimated). Same props
+(`actualData/barData`, `predictedData/barData2`, `category`), same label/sort
+logic, same colors (`#16a34a` actual / `#f87171` predicted), same title +
+legend, same maxValue formula. Axis font = bundled
+`assets/fonts/SpaceMono-Regular.ttf` via Skia `useFont`. No per-bar top
+labels (crowded on mobile; y-axis + Avg chip cover it). No press interaction
+in v1 — gifted had none either; list-row modal remains the drill-down path.
+Callers (`reports.jsx`, `ApplianceModal.jsx`) untouched.
+
+- [ ] **Step 1:** Rewrite component as specified.
+- [ ] **Step 2: Verify** — Verify command on both `components/reports/EnergyPredictionChart.jsx` and `app/(tabs)/reports.jsx`, expect OK twice.
+- [ ] **Step 3: Commit + CLI-publish to `preview`, on-device chart check**
+  (grouped green/red bars, axes legible, empty-state text, modal chart too).
+
 ---
 
 ## Self-Review
