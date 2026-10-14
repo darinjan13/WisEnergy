@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { AutoSkeletonView } from "react-native-auto-skeleton";
 
@@ -66,6 +67,18 @@ export default function Reports() {
   const [selectedAppliance, setSelectedAppliance] = useState(null);
   const [resetting, setResetting] = useState(false);
   const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
+
+  const applianceIcon = (name = "") => {
+    const n = String(name).toLowerCase();
+    if (n.includes("fan") || n.includes("aircon") || n.includes("air-con") || n.includes("ac ")) return "fan";
+    if (n.includes("tv") || n.includes("monitor") || n.includes("screen")) return "television";
+    if (n.includes("pc") || n.includes("computer") || n.includes("desktop") || n.includes("laptop")) return "desktop-tower";
+    if (n.includes("fridge") || n.includes("refrigerator")) return "fridge";
+    if (n.includes("lamp") || n.includes("light") || n.includes("bulb")) return "lightbulb";
+    if (n.includes("heater") || n.includes("kettle") || n.includes("water")) return "kettle";
+    if (n.includes("charger") || n.includes("phone")) return "power-plug";
+    return "power-plug-outline";
+  };
 
   const handleResetDeviceData = () => {
     if (selectedDevice === "All Devices") return;
@@ -248,6 +261,17 @@ export default function Reports() {
     );
   }, [allAppliancesForAllDevices]);
 
+  const chartMeta = useMemo(() => {
+    const src = reportsTotal?.[reportCategory.toLowerCase() + "Totals"]?.[0];
+    const bars = src?.barData ?? [];
+    const vals = bars.map((b) => Number(b.value) || 0);
+    return {
+      avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null,
+      month: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      title: `${reportCategory} Breakdown`,
+    };
+  }, [reportsTotal, reportCategory]);
+
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
 
   const heroStats = useMemo(() => {
@@ -329,31 +353,52 @@ export default function Reports() {
         }}
       >
         <Header />
-        <Text className="text-xl font-bold text-green-800 mb-4">Reports</Text>
+        <Text className="text-xl font-bold text-green-800">Reports</Text>
+        <Text className="text-sm text-gray-500 mb-4">Historical Usage & Insights</Text>
 
         {/* Hero strip */}
-        <View className="flex-row gap-x-3 mb-4">
-          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl">
-            <Text className="text-[11px] text-gray-500 font-semibold">Today</Text>
-            <Text className="text-2xl font-extrabold text-[#2E4F4F]">
-              {heroStats.today ?? "—"}
-            </Text>
-            <Text className="text-xs text-gray-500">kWh{heroStats.todayDelta !== null && ` (${heroStats.todayDelta >= 0 ? "+" : ""}${heroStats.todayDelta})`}</Text>
+        <View className="flex-row gap-x-2.5 mb-5">
+          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-[11px] text-gray-500 font-semibold uppercase">Today</Text>
+            <View className="my-1 flex-row items-baseline">
+              <Text className="text-xl font-extrabold text-green-800 leading-none">
+                {heroStats.today ?? "—"}
+              </Text>
+              <Text className="text-[11px] font-semibold text-gray-500 ml-0.5">kWh</Text>
+            </View>
+            {heroStats.todayDelta !== null && heroStats.todayDelta !== 0 && (
+              <View className={`self-start px-1.5 py-0.5 rounded-md ${heroStats.todayDelta < 0 ? "bg-green-50" : "bg-red-50"}`}>
+                <Text className={`text-[11px] font-semibold ${heroStats.todayDelta < 0 ? "text-green-700" : "text-red-600"}`}>
+                  {heroStats.todayDelta < 0 ? "↓" : "↑"} {Math.abs(heroStats.todayDelta)}
+                </Text>
+              </View>
+            )}
           </View>
-          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl">
-            <Text className="text-[11px] text-gray-500 font-semibold">This week</Text>
-            <Text className="text-2xl font-extrabold text-[#2E4F4F]">
-              {heroStats.week ?? "—"}
-            </Text>
-            <Text className="text-xs text-gray-500">kWh{heroStats.weekDelta !== null && ` (${heroStats.weekDelta >= 0 ? "+" : ""}${heroStats.weekDelta})`}</Text>
+          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-[11px] text-gray-500 font-semibold uppercase">This week</Text>
+            <View className="my-1 flex-row items-baseline">
+              <Text className="text-xl font-extrabold text-green-800 leading-none">
+                {heroStats.week ?? "—"}
+              </Text>
+              <Text className="text-[11px] font-semibold text-gray-500 ml-0.5">kWh</Text>
+            </View>
+            {heroStats.weekDelta !== null && heroStats.weekDelta !== 0 && (
+              <View className={`self-start px-1.5 py-0.5 rounded-md ${heroStats.weekDelta < 0 ? "bg-green-50" : "bg-red-50"}`}>
+                <Text className={`text-[11px] font-semibold ${heroStats.weekDelta < 0 ? "text-green-700" : "text-red-600"}`}>
+                  {heroStats.weekDelta < 0 ? "↓" : "↑"} {Math.abs(heroStats.weekDelta)}
+                </Text>
+              </View>
+            )}
           </View>
-          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl">
-            <Text className="text-[11px] text-gray-500 font-semibold">Top appliance</Text>
-            <Text className="text-base font-extrabold text-[#2E4F4F]" numberOfLines={1}>
-              {heroStats.topName ?? "—"}
-            </Text>
-            <Text className="text-xs text-gray-500">
-              {heroStats.topKwh !== null ? `${heroStats.topKwh} kWh${heroStats.topShare !== null ? ` • ${heroStats.topShare}%` : ""}` : "—"}
+          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-[11px] text-gray-500 font-semibold uppercase">Top app.</Text>
+            <View className="my-1">
+              <Text className="text-base font-extrabold text-green-800 leading-none" numberOfLines={1}>
+                {heroStats.topName ?? "—"}
+              </Text>
+            </View>
+            <Text className="text-[11px] text-gray-500">
+              {heroStats.topShare !== null ? `${heroStats.topShare}% total` : "—"}
             </Text>
           </View>
         </View>
@@ -376,10 +421,7 @@ export default function Reports() {
         />
 
         {/* Category Filters */}
-        <View
-          style={styles.cardShadow}
-          className="flex-row space-x-3 mb-4 bg-white p-4 rounded-2xl justify-between items-center"
-        >
+        <View className="flex-row gap-x-2 mb-5 w-full">
           {category.map((label, index) => (
             <TouchableOpacity
               key={index}
@@ -391,13 +433,14 @@ export default function Reports() {
                   setReportLoading(true);
                 }
               }}
-              className={`px-4 py-2 rounded-full border ${label === reportCategory
-                ? "bg-green-700 border-green-700"
-                : "bg-white border-gray-300"
+              className={`flex-1 min-h-[46px] rounded-full items-center justify-center ${label === reportCategory
+                ? "bg-[#166534]"
+                : "bg-white"
                 }`}
+              style={label === reportCategory ? {} : styles.cardShadow}
             >
               <Text
-                className={`${label === reportCategory ? "text-white" : "text-black"
+                className={`${label === reportCategory ? "text-white" : "text-gray-800"
                   } font-semibold`}
               >
                 {label}
@@ -409,8 +452,11 @@ export default function Reports() {
         {/* Device Picker */}
         <View
           style={styles.cardShadow}
-          className="bg-white p-4 rounded-2xl mb-4"
+          className="bg-white p-4 rounded-2xl mb-5 w-full"
         >
+          <Text className="text-[11px] text-gray-500 font-semibold uppercase mb-2">
+            Select Device
+          </Text>
           <View className="flex-row items-center justify-between">
             <Text className="text-gray-800 font-semibold mr-4">
               Select Device
@@ -462,6 +508,19 @@ export default function Reports() {
               className="bg-white p-5 rounded-2xl mb-6 min-h-[320px] justify-center"
             >
               {/* Overall Chart */}
+              <View className="flex-row items-start justify-between mb-4">
+                <View>
+                  <Text className="text-base font-bold text-gray-800">{chartMeta.title}</Text>
+                  <Text className="text-xs text-gray-500 mt-0.5">{chartMeta.month}</Text>
+                </View>
+                {chartMeta.avg !== null && (
+                  <View className="bg-gray-100 px-2.5 py-1.5 rounded-lg flex-row items-center">
+                    <Text className="text-[11px] font-semibold text-green-800">
+                      Avg: {chartMeta.avg.toFixed(1)} kWh{reportCategory === "Daily" ? "/day" : reportCategory === "Weekly" ? "/week" : "/mo"}
+                    </Text>
+                  </View>
+                )}
+              </View>
               {reportsTotal?.[reportCategory.toLowerCase() + "Totals"]?.[0] ? (
                 <EnergyPredictionChart
                   actualData={
@@ -500,6 +559,7 @@ export default function Reports() {
                       scrollEnabled={false}
                       renderItem={({ item, index: i }) => {
                         const powerUsed = item.latestKwh ?? 0;
+                        const share = totalUsageAll > 0 ? Math.round((powerUsed / totalUsageAll) * 100) : 0;
                         return (
                           <TouchableOpacity
                             onPress={() => {
@@ -509,18 +569,25 @@ export default function Reports() {
                             className="mb-4"
                           >
                             <View className="flex-row items-center">
-                              <Text className="w-24">{item.applianceName}</Text>
-                              <View className="flex-1">
-                                <CustomProgressBar
-                                  progress={powerUsed}
-                                  maxProgress={totalUsageAll}
-                                  color="#4CAF50"
-                                  reports
+                              <View className="w-10 h-10 rounded-xl bg-green-50 items-center justify-center mr-3">
+                                <MaterialCommunityIcons
+                                  name={applianceIcon(item.applianceName)}
+                                  size={20}
+                                  color="#166534"
                                 />
                               </View>
-                              <Text className="ml-2 text-gray-600 text-sm">
-                                {powerUsed.toFixed(2)} kWh
-                              </Text>
+                              <View className="flex-1">
+                                <Text className="text-sm font-semibold text-gray-800" numberOfLines={1}>{item.applianceName}</Text>
+                                <View className="h-2 bg-gray-100 rounded-full overflow-hidden mt-1.5">
+                                  <View className="h-full bg-green-700 rounded-full" style={{ width: `${share}%` }} />
+                                </View>
+                              </View>
+                              <View className="items-end ml-2">
+                                <Text className="text-sm font-extrabold text-green-800">
+                                  {powerUsed.toFixed(2)} <Text className="text-[11px] font-medium text-gray-500">kWh</Text>
+                                </Text>
+                                <Text className="text-[11px] text-gray-500 mt-0.5">{share}% share</Text>
+                              </View>
                             </View>
                           </TouchableOpacity>
                         );
@@ -554,6 +621,7 @@ export default function Reports() {
                       (sum, r) => sum + (r.latestKwh ?? 0),
                       0
                     );
+                    const share = total > 0 ? Math.round((powerUsed / total) * 100) : 0;
                     return (
                       <TouchableOpacity
                         onPress={() => {
@@ -563,18 +631,25 @@ export default function Reports() {
                         className="mb-4"
                       >
                         <View className="flex-row items-center">
-                          <Text className="w-24">{item.applianceName}</Text>
-                          <View className="flex-1">
-                            <CustomProgressBar
-                              progress={powerUsed}
-                              maxProgress={total}
-                              color="#4CAF50"
-                              reports
+                          <View className="w-10 h-10 rounded-xl bg-green-50 items-center justify-center mr-3">
+                            <MaterialCommunityIcons
+                              name={applianceIcon(item.applianceName)}
+                              size={20}
+                              color="#166534"
                             />
                           </View>
-                          <Text className="ml-2 text-gray-600 text-sm">
-                            {powerUsed.toFixed(2)} kWh
-                          </Text>
+                          <View className="flex-1">
+                            <Text className="text-sm font-semibold text-gray-800" numberOfLines={1}>{item.applianceName}</Text>
+                            <View className="h-2 bg-gray-100 rounded-full overflow-hidden mt-1.5">
+                              <View className="h-full bg-green-700 rounded-full" style={{ width: `${share}%` }} />
+                            </View>
+                          </View>
+                          <View className="items-end ml-2">
+                            <Text className="text-sm font-extrabold text-green-800">
+                              {powerUsed.toFixed(2)} <Text className="text-[11px] font-medium text-gray-500">kWh</Text>
+                            </Text>
+                            <Text className="text-[11px] text-gray-500 mt-0.5">{share}% share</Text>
+                          </View>
                         </View>
                       </TouchableOpacity>
                     );
