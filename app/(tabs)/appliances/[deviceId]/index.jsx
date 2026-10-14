@@ -92,8 +92,16 @@ export default function DeviceDetails() {
       id, cmd: "calclear", arg: "", at, state: "pending",
     });
     setCalCmdId(id);
-    setCalDialog(null);
-    Toast.show({ type: "info", text1: "Recalibrate sent", text2: "Watch for the result…" });
+    setCalDialog({ kind: "waiting" });
+    setTimeout(() => {
+      setCalCmdId((pending) => {
+        if (pending === id) {
+          setCalDialog({ kind: "result", success: false, title: "No response", lines: ["Device didn't answer within 90s.", "Check it's powered and online, then try again."] });
+          return null;
+        }
+        return pending;
+      });
+    }, 90000);
   };
 
   // derive appliances directly from store
@@ -476,10 +484,10 @@ export default function DeviceDetails() {
       />
       <ResultModal
         visible={!!calDialog}
-        mode={calDialog?.kind === "confirm" ? "confirm" : "result"}
+        mode={calDialog?.kind ?? "result"}
         success={calDialog?.success ?? true}
-        title={calDialog?.kind === "confirm" ? "Factory recalibrate?" : calDialog?.title ?? ""}
-        lines={calDialog?.kind === "confirm" ? ["Device reboots and auto-calibrates voltage.", "Mains MUST be connected or gain maxes out.", "Cannot be undone."] : calDialog?.lines ?? []}
+        title={calDialog?.kind === "confirm" ? "Factory recalibrate?" : calDialog?.kind === "waiting" ? "Waiting for device…" : calDialog?.title ?? ""}
+        lines={calDialog?.kind === "confirm" ? ["Device reboots and auto-calibrates voltage.", "Mains MUST be connected or gain maxes out.", "Cannot be undone."] : calDialog?.kind === "waiting" ? ["Command sent. Device picks it up within ~30s,", "then reboots and recalibrates."] : calDialog?.lines ?? []}
         confirmText="Recalibrate"
         onConfirm={sendRecalibrate}
         onClose={() => setCalDialog(null)}

@@ -1,11 +1,11 @@
-import { Modal, Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import { Modal, Text, TouchableOpacity, View, ScrollView, ActivityIndicator } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 
 export default function ResultModal({
     visible,
-    mode = 'result', // 'result' | 'confirm'
+    mode = 'result', // 'result' | 'confirm' | 'waiting'
     success = true,
     title = '',
     lines = [],
@@ -14,6 +14,7 @@ export default function ResultModal({
     onClose,
 }) {
     const isConfirm = mode === 'confirm';
+    const isWaiting = mode === 'waiting';
     return (
         <Modal
             transparent={true}
@@ -24,11 +25,15 @@ export default function ResultModal({
             <BlurView intensity={100} tint="dark" className="flex-1 justify-center items-center">
                 <View className="bg-white rounded-xl p-6 w-10/12 max-h-[70%]">
                     <View className="items-center mb-3">
-                        <MaterialCommunityIcons
-                            name={isConfirm ? "help-circle" : success ? "check-circle" : "alert-circle"}
-                            size={44}
-                            color={isConfirm ? "#2E4F4F" : success ? "#16A34A" : "#DC2626"}
-                        />
+                        {isWaiting ? (
+                            <ActivityIndicator size="large" color="#166534" />
+                        ) : (
+                            <MaterialCommunityIcons
+                                name={isConfirm ? "help-circle" : success ? "check-circle" : "alert-circle"}
+                                size={44}
+                                color={isConfirm ? "#2E4F4F" : success ? "#16A34A" : "#DC2626"}
+                            />
+                        )}
                     </View>
                     <Text className="text-lg font-bold text-[#2E4F4F] mb-2 text-center">
                         {title}
@@ -40,7 +45,16 @@ export default function ResultModal({
                             </Text>
                         ))}
                     </ScrollView>
-                    {isConfirm ? (
+                    {isWaiting ? (
+                        <View className="flex-row justify-end">
+                            <TouchableOpacity
+                                className="bg-gray-300 py-2 px-6 rounded-lg"
+                                onPress={onClose}
+                            >
+                                <Text className="text-gray-700 font-semibold">Hide</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : isConfirm ? (
                         <View className="flex-row justify-end">
                             <TouchableOpacity
                                 className="bg-gray-300 py-2 px-6 rounded-lg mr-4"
