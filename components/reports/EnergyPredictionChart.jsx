@@ -1,11 +1,15 @@
 import React, { useMemo } from "react";
-import { View, Text } from "react-native";
+import { View, Text, ScrollView, useWindowDimensions } from "react-native";
 import { CartesianChart, BarGroup } from "victory-native";
 import { useFont } from "@shopify/react-native-skia";
 import { getMonthName } from "../../utils/dateHelper";
 
 const BAR_ACTUAL = "#16a34a";
 const BAR_PREDICTED = "#f87171";
+const CHART_HEIGHT = 250;
+// Fixed width per label-group so bars look identical in every category;
+// the chart scrolls horizontally when groups overflow the viewport.
+const GROUP_WIDTH = { Daily: 30, Weekly: 72, Monthly: 120 };
 
 export default function EnergyPredictionChart({
   actualData = [],
@@ -16,6 +20,7 @@ export default function EnergyPredictionChart({
     require("../../assets/fonts/SpaceMono-Regular.ttf"),
     11
   );
+  const { width: screenWidth } = useWindowDimensions();
 
   const allLabels = useMemo(() => {
     const labels = new Set([
@@ -84,22 +89,33 @@ export default function EnergyPredictionChart({
     );
   }
 
+  const viewportWidth = screenWidth - 80; // card padding + chart padding
+  const chartWidth = Math.max(
+    viewportWidth,
+    data.length * (GROUP_WIDTH[category] ?? 72)
+  );
+
   return (
     <View className="bg-white p-5 rounded-2xl">
       <Text className="text-black text-center text-base font-semibold mb-2">
         Energy Usage vs Predicted
       </Text>
 
-      <View style={{ height: 240 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+      <View style={{ width: chartWidth, height: CHART_HEIGHT }}>
         <CartesianChart
           data={data}
           xKey="x"
           yKeys={["yActual", "yPredicted"]}
           domain={{ y: [0, maxValue] }}
-          domainPadding={{ left: 24, right: 24, top: 12 }}
+          domainPadding={{ left: 12, right: 12, top: 12 }}
           xAxis={{
             font,
-            tickCount: Math.min(8, data.length),
+            tickCount: Math.min(10, data.length),
             lineWidth: 0,
           }}
           yAxes={[
@@ -114,8 +130,8 @@ export default function EnergyPredictionChart({
           {({ points, chartBounds }) => (
             <BarGroup
               chartBounds={chartBounds}
-              betweenGroupPadding={0.35}
-              withinGroupPadding={0.25}
+              betweenGroupPadding={0.3}
+              withinGroupPadding={0.3}
               roundedCorners={{ topLeft: 4, topRight: 4 }}
             >
               <BarGroup.Bar points={points.yActual} color={BAR_ACTUAL} />
@@ -124,6 +140,7 @@ export default function EnergyPredictionChart({
           )}
         </CartesianChart>
       </View>
+      </ScrollView>
 
       <View className="flex-row justify-center mt-3 gap-x-6">
         <View className="flex-row items-center gap-x-2">
