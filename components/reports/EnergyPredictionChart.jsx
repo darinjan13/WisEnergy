@@ -1,26 +1,26 @@
 import React, { useMemo } from "react";
 import { View, Text, ScrollView, useWindowDimensions } from "react-native";
-import { CartesianChart, BarGroup } from "victory-native";
-import { useFont } from "@shopify/react-native-skia";
+import { BarChart } from "react-native-gifted-charts";
 import { getMonthName } from "../../utils/dateHelper";
 
 const BAR_ACTUAL = "#16a34a";
 const BAR_PREDICTED = "#f87171";
-const CHART_HEIGHT = 250;
-// Fixed width per label-group so bars look identical in every category;
-// the chart scrolls horizontally when groups overflow the viewport.
-const GROUP_WIDTH = { Daily: 30, Weekly: 72, Monthly: 120 };
+// Per-category bar geometry: fixed widths keep bars identical in every
+// category; the chart scrolls horizontally when groups overflow.
+const BAR_GEOMETRY = {
+  Daily: { barWidth: 9, spacing: 6, pairWidth: 34 },
+  Weekly: { barWidth: 22, spacing: 12, pairWidth: 76 },
+  Monthly: { barWidth: 34, spacing: 16, pairWidth: 120 },
+};
 
 export default function EnergyPredictionChart({
   actualData = [],
   predictedData = [],
   category,
 }) {
-  const font = useFont(
-    require("../../assets/fonts/SpaceMono-Regular.ttf"),
-    11
-  );
   const { width: screenWidth } = useWindowDimensions();
+  const { barWidth, spacing, pairWidth } =
+    BAR_GEOMETRY[category] ?? BAR_GEOMETRY.Weekly;
 
   const allLabels = useMemo(() => {
     const labels = new Set([
@@ -46,40 +46,40 @@ export default function EnergyPredictionChart({
     });
   }, [actualData, predictedData, category]);
 
-  const data = useMemo(
-    () =>
-      allLabels.map((label) => {
-        const actual = (actualData || []).find((a) => a.label === label);
-        const predicted = (predictedData || []).find(
-          (p) => p.label === label
-        );
+  const barData = useMemo(() => {
+    const merged = [];
 
-        const [week, monthNum] = label.replace("W0", "").split("-");
-        const monthName = getMonthName(Number(monthNum), "short");
-        return {
-          x:
-            category === "Weekly"
-              ? `W${week}-${monthName}`
-              : label.replace("W0", "W"),
-          yActual: actual?.value || 0,
-          yPredicted: Math.max(predicted?.value ?? 0, 0),
-        };
-      }),
-    [allLabels, actualData, predictedData, category]
-  );
+    allLabels.forEach((label) => {
+      const actual = (actualData || []).find((a) => a.label === label);
+      const predicted = (predictedData || []).find(
+        (p) => p.label === label
+      );
 
-  const maxValue =
-    category === "Daily"
-      ? Math.max(
-          ...data.map((d) => Math.max(d.yActual, d.yPredicted)),
-          0
-        ) + 1
-      : Math.max(
-          ...data.map((d) => Math.max(d.yActual, d.yPredicted)),
-          0
-        ) + 10;
+      const [week, monthNum] = label.replace("W0", "").split("-");
+      const monthName = getMonthName(Number(monthNum), "short");
+      const formattedLabel = `W${week}-${monthName}`;
+      const predictedValue = predicted?.value ?? 0;
+      merged.push(
+        {
+          value: actual?.value || 0,
+          label:
+            category === "Weekly" ? formattedLabel : label.replace("W0", "W"),
+          spacing,
+          labelWidth: 50,
+          labelTextStyle: { color: "#6b7280", fontSize: 10 },
+          frontColor: BAR_ACTUAL,
+        },
+        {
+          value: predictedValue < 0 ? 0 : predictedValue,
+          frontColor: BAR_PREDICTED,
+        }
+      );
+    });
 
-  if (data.length === 0) {
+    return merged;
+  }, [actualData, predictedData, allLabels, category, spacing]);
+
+  if (barData.length === 0) {
     return (
       <View className="bg-white p-5 rounded-2xl">
         <Text className="text-gray-500 text-center text-lg font-semibold">
@@ -89,10 +89,14 @@ export default function EnergyPredictionChart({
     );
   }
 
-  const viewportWidth = screenWidth - 80; // card padding + chart padding
+  const maxValue =
+    Math.max(...barData.map((b) => b.value), 0) +
+    (category === "Daily" ? 1 : 10);
+  // Top value labels only when few groups — 31 daily values would clutter.
+  const showTopLabels = allLabels.length <= 14;
   const chartWidth = Math.max(
-    viewportWidth,
-    data.length * (GROUP_WIDTH[category] ?? 72)
+    screenWidth - 110,
+    allLabels.length * pairWidth
   );
 
   return (
@@ -101,45 +105,25 @@ export default function EnergyPredictionChart({
         Energy Usage vs Predicted
       </Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1 }}
-      >
-      <View style={{ width: chartWidth, height: CHART_HEIGHT }}>
-        <CartesianChart
-          data={data}
-          xKey="x"
-          yKeys={["yActual", "yPredicted"]}
-          domain={{ y: [0, maxValue] }}
-          domainPadding={{ left: 12, right: 12, top: 12 }}
-          xAxis={{
-            font,
-            tickCount: Math.min(10, data.length),
-            lineWidth: 0,
-          }}
-          yAxes={[
-            {
-              yKeys: ["yActual", "yPredicted"],
-              tickCount: 4,
-              font,
-              lineWidth: 0,
-            },
-          ]}
-        >
-          {({ points, chartBounds }) => (
-            <BarGroup
-              chartBounds={chartBounds}
-              betweenGroupPadding={0.3}
-              withinGroupPadding={0.3}
-              roundedCorners={{ topLeft: 4, topRight: 4 }}
-            >
-              <BarGroup.Bar points={points.yActual} color={BAR_ACTUAL} />
-              <BarGroup.Bar points={points.yPredicted} color={BAR_PREDICTED} />
-            </BarGroup>
-          )}
-        </CartesianChart>
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <BarChart
+          data={barData}
+          barWidth={barWidth}
+          spacing={spacing}
+          roundedTop
+          width={chartWidth}
+          maxValue={maxValue}
+          noOfSections={4}
+          rulesType="dashed"
+          rulesColor="#e5e7eb"
+          xAxisThickness={0}
+          yAxisThickness={0}
+          yAxisTextStyle={{ color: "#6b7280", fontSize: 10 }}
+          showValuesAsTopLabel={showTopLabels}
+          topLabelTextStyle={{ color: "#111827", fontSize: 10, fontWeight: "600" }}
+          isAnimated
+          animationDuration={400}
+        />
       </ScrollView>
 
       <View className="flex-row justify-center mt-3 gap-x-6">
