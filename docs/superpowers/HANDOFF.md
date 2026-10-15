@@ -9,6 +9,24 @@ wisenergy-11737 is legacy (data migrated off it; do not write there).
   Stitch reports chrome port. NOT merged — merge to master when stable.
 - Firmware repo: `main`, all pushed. Backend repo: `main`, all pushed.
 
+## Dev-client loop (established 2026-10-15)
+- Local debug APK builds on this PC: `npx expo prebuild --platform android`
+  (one-time, `android/` is gitignored) + `gradlew.bat assembleDebug`.
+- WINDOWS GOTCHA (do not re-derive): SDK under `C:\Program Files\Android`
+  breaks ALL native links — CMake 3.22's implicit-lib parser drops STL paths
+  with spaces, so libc++ never links (worklets/skia/expo-modules-core fail).
+  Fix in place: junction `C:\Android-sdk` -> SDK + `android/local.properties`
+  `sdk.dir=C\:\\Android-sdk` (untracked). NDK 27.1, CMake 3.22.1, JDK 21 OK.
+- EAS dev-client build was queued then cancelled (pending-cancel); local
+  build used instead. `C:\Android\ndk\27.1.12297006` copy unused (ndkPath
+  ignored when ndkVersion set) — safe to delete.
+- Servers: Metro dev `npx expo start --port 8081` (LAN 192.168.1.59),
+  APK served via `serve --listen 8000` in
+  `android/app/build/outputs/apk/debug`. Debug APK is debug.keystore-signed:
+  UNINSTALL the Expo-signed preview APK first (same package, sig conflict).
+- Branch `reports-polish`: gifted-chart revert committed locally, NOT pushed
+  (user verifies via dev client first). Preview channel still has victory v1.
+
 ## Pending items (priority order)
 1. **Heap crashes (ESP32):** CORRUPT HEAP asserts persist. Heap steady ~77k → overwriter
    (not leak). Decoder ready: `xtensa-esp32-elf-addr2line` + current `.elf` at
