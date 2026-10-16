@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, ScrollView, useWindowDimensions } from "react-native";
+import { View, Text, useWindowDimensions } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { getMonthName } from "../../utils/dateHelper";
 
@@ -105,24 +105,25 @@ export default function EnergyPredictionChart({
         Energy Usage vs Predicted
       </Text>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <BarChart
-          data={barData}
-          barWidth={barWidth}
-          spacing={spacing}
-          roundedTop
-          width={chartWidth}
-          maxValue={maxValue}
-          noOfSections={4}
-          rulesType="dashed"
-          rulesColor="#e5e7eb"
-          xAxisThickness={0}
-          yAxisThickness={0}
-          yAxisTextStyle={{ color: "#6b7280", fontSize: 10 }}
-          showValuesAsTopLabel={showTopLabels}
-          topLabelTextStyle={{ color: "#111827", fontSize: 10, fontWeight: "600" }}
-        />
-      </ScrollView>
+      {/* gifted-charts scrolls internally; nestedScrollEnabled lets the
+          horizontal swipe win inside the page's vertical scroll */}
+      <BarChart
+        data={barData}
+        barWidth={barWidth}
+        spacing={spacing}
+        roundedTop
+        width={chartWidth}
+        nestedScrollEnabled
+        maxValue={maxValue}
+        noOfSections={4}
+        rulesType="dashed"
+        rulesColor="#e5e7eb"
+        xAxisThickness={0}
+        yAxisThickness={0}
+        yAxisTextStyle={{ color: "#6b7280", fontSize: 10 }}
+        showValuesAsTopLabel={showTopLabels}
+        topLabelTextStyle={{ color: "#111827", fontSize: 10, fontWeight: "600" }}
+      />
 
       <View className="flex-row justify-center mt-3 gap-x-6">
         <View className="flex-row items-center gap-x-2">

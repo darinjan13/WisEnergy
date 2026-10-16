@@ -68,6 +68,9 @@ export default function Reports() {
   const [resetting, setResetting] = useState(false);
   const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
   const [zoneError, setZoneError] = useState({});
+  // Rapid category/device switches obsolete in-flight rounds; only the
+  // latest round may write state (prevents fetch + chart pile-ups).
+  const roundRef = useRef(0);
 
   const applianceIcon = (name = "") => {
     const n = String(name).toLowerCase();
@@ -174,6 +177,7 @@ export default function Reports() {
     if (!uid) return;
 
     const run = async () => {
+      const round = ++roundRef.current;
       const hasPersisted =
         (reportCategory === "Daily" && (dailyData.dailyTotals?.length || Object.keys(dailyData.dailyReport || {}).length)) ||
         (reportCategory === "Weekly" && (weeklyData.weeklyTotals?.length || Object.keys(weeklyData.weeklyReport || {}).length)) ||
@@ -203,7 +207,7 @@ export default function Reports() {
         });
 
         await Promise.all(promises);
-        if (!cancelled) {
+        if (!cancelled && roundRef.current === round) {
           const source =
             reportCategory === "Daily"
               ? dailyData
@@ -219,8 +223,10 @@ export default function Reports() {
       }
 
       // 👉 SPECIFIC DEVICE
-      setReportLoading(false);
-      setLastUpdatedAt(new Date());
+      if (!cancelled && roundRef.current === round) {
+        setReportLoading(false);
+        setLastUpdatedAt(new Date());
+      }
     };
 
     run();
