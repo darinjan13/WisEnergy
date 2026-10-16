@@ -37,7 +37,6 @@ const SavingsChart = ({ lineData1, lineData2, chartMax, styles }) => {
                         showYAxisIndices
                         yAxisColor="#e5e7eb"
                         xAxisColor="#e5e7eb"
-                        animationDuration={1000}
                         noOfSections={4}
                         focusEnabled
                         showFocusCircle

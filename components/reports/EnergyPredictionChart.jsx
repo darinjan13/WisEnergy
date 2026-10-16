@@ -121,8 +121,6 @@ export default function EnergyPredictionChart({
           yAxisTextStyle={{ color: "#6b7280", fontSize: 10 }}
           showValuesAsTopLabel={showTopLabels}
           topLabelTextStyle={{ color: "#111827", fontSize: 10, fontWeight: "600" }}
-          isAnimated
-          animationDuration={400}
         />
       </ScrollView>
 
