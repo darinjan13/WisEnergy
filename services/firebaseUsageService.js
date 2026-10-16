@@ -28,6 +28,17 @@ const safeSetItem = (key, value) => {
 };
 
 /* ---------------------------------------------------------
+   🔥 Dev-only read-size log (spec: prove the 100KB bound)
+--------------------------------------------------------- */
+const logReadSize = (label, snapshot) => {
+  if (!__DEV__) return;
+  try {
+    const bytes = JSON.stringify(snapshot.val()).length;
+    console.log(`[read-size] ${label}: ${(bytes / 1024).toFixed(1)}KB`);
+  } catch {}
+};
+
+/* ---------------------------------------------------------
    🔥 Real-time Listener: Latest POWER
 --------------------------------------------------------- */
 export const listenToLatestPower = (
@@ -173,6 +184,7 @@ export const fetchTopAppliances = async (userId, limit = 5) => {
           limitToLast(30)
         );
         const snap = await get(q);
+        logReadSize(`top30/${deviceId}/${appName}`, snap);
         let sum = 0;
         snap.forEach((dateSnap) => {
           sum += Number(dateSnap.child("total_kWh").val() || 0);
@@ -439,6 +451,7 @@ export const fetchDailyTotalConsumption = async (userId) => {
 
       const refP = ref(db, `daily_total_consumption/${userId}/${d}`);
       const snap = await get(refP);
+      logReadSize(`daily-total/${d}`, snap);
 
       const total = Number(
         (snap.val()?.total_energy_consumption ?? 0).toFixed(2)
@@ -487,6 +500,7 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
 
     const ref1 = ref(db, `weekly_total_consumption/${userId}/${y}/${m}`);
     const snap1 = await get(ref1);
+    logReadSize(`weekly-total/${y}/${m}`, snap1);
 
     const data1 = snap1.exists() ? snap1.val() : {};
     let history = Object.keys(data1)
@@ -558,6 +572,7 @@ export const fetchMonthlyTotalConsumption = async (userId) => {
   const y = new Date().getFullYear().toString();
   const refPath = ref(db, `monthly_total_consumption/${userId}/${y}`);
   const snap = await get(refPath);
+  logReadSize(`monthly-total/${y}`, snap);
 
   if (!snap.exists()) return [];
 
