@@ -245,6 +245,17 @@ export const fetchLatestMonthlyTotalConsumption = async (userId) => {
 };
 
 /* ---------------------------------------------------------
+   🔥 Cap backend prediction wait (cold starts hang for 20s+)
+--------------------------------------------------------- */
+const withTimeout = (promise, ms = 8000) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("predict-timeout")), ms)
+    ),
+  ]).catch(() => null);
+
+/* ---------------------------------------------------------
    🔥 DAILY REPORT (per device per appliance)
 --------------------------------------------------------- */
 export const fetchDailyReport = async (userId, deviceId, appliances) => {
@@ -263,10 +274,8 @@ export const fetchDailyReport = async (userId, deviceId, appliances) => {
       history.push({ label: date.slice(5), value: kwh, dataPointText: kwh });
     }
 
-    const pred = await predictionServices.predict_usage(
-      userId,
-      deviceId,
-      appliance.name
+    const pred = await withTimeout(
+      predictionServices.predict_usage(userId, deviceId, appliance.name)
     );
 
     const barData2 = Array.isArray(pred?.daily)
@@ -362,10 +371,8 @@ export const fetchWeeklyReport = async (userId, deviceId, appliances) => {
       return ma === mb ? Number(wa) - Number(wb) : Number(ma) - Number(mb);
     });
 
-    const pred = await predictionServices.predict_usage(
-      userId,
-      deviceId,
-      appliance.name
+    const pred = await withTimeout(
+      predictionServices.predict_usage(userId, deviceId, appliance.name)
     );
     const barData2 = Array.isArray(pred?.weekly)
       ? pred.weekly.map((p) => ({
@@ -414,10 +421,8 @@ export const fetchMonthlyReport = async (userId, deviceId, appliances) => {
       };
     });
 
-    const pred = await predictionServices.predict_usage(
-      userId,
-      deviceId,
-      appliance.name
+    const pred = await withTimeout(
+      predictionServices.predict_usage(userId, deviceId, appliance.name)
     );
     const barData2 = Array.isArray(pred?.monthly)
       ? pred.monthly.map((p) => ({
@@ -465,7 +470,7 @@ export const fetchDailyTotalConsumption = async (userId) => {
       });
     }
 
-    const pred = await predictionServices.predict_totals(userId);
+    const pred = await withTimeout(predictionServices.predict_totals(userId));
     const barData2 = Array.isArray(pred?.daily)
       ? pred.daily.map((p) => ({
         label: p.label,
@@ -542,7 +547,7 @@ export const fetchWeeklyTotalConsumption = async (userId) => {
       }
     }
 
-    const pred = await predictionServices.predict_totals(userId);
+    const pred = await withTimeout(predictionServices.predict_totals(userId));
     const barData2 = Array.isArray(pred?.weekly)
       ? pred.weekly.map((p) => ({
         label: p.label,
@@ -608,7 +613,7 @@ export const fetchMonthlyTotalConsumption = async (userId) => {
     };
   });
 
-  const pred = await predictionServices.predict_totals(userId);
+  const pred = await withTimeout(predictionServices.predict_totals(userId));
 
   const barData2 = Array.isArray(pred?.monthly)
     ? pred.monthly.map((p) => ({
