@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView, useWindowDimensions } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { getMonthName } from "../../utils/dateHelper";
 
@@ -8,7 +8,7 @@ const BAR_PREDICTED = "#f87171";
 // Per-category bar geometry: fixed widths keep bars identical in every
 // category; the chart scrolls horizontally when groups overflow.
 const BAR_GEOMETRY = {
-  Daily: { barWidth: 9, spacing: 6, pairWidth: 34 },
+  Daily: { barWidth: 12, spacing: 8, pairWidth: 46 },
   Weekly: { barWidth: 22, spacing: 12, pairWidth: 76 },
   Monthly: { barWidth: 34, spacing: 16, pairWidth: 120 },
 };
@@ -105,15 +105,22 @@ export default function EnergyPredictionChart({
         Energy Usage vs Predicted
       </Text>
 
-      {/* gifted-charts scrolls internally; nestedScrollEnabled lets the
-          horizontal swipe win inside the page's vertical scroll */}
+      {/* Single scroller (ours): gifted's inner scroll is disabled so the
+          two never fight; nestedScrollEnabled lets the horizontal swipe
+          win inside the page's vertical scroll */}
+      <ScrollView
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator
+      >
+        <View style={{ width: chartWidth }}>
       <BarChart
         data={barData}
         barWidth={barWidth}
         spacing={spacing}
         roundedTop
         width={chartWidth}
-        nestedScrollEnabled
+        disableScroll
         maxValue={maxValue}
         noOfSections={4}
         rulesType="dashed"
@@ -121,9 +128,11 @@ export default function EnergyPredictionChart({
         xAxisThickness={0}
         yAxisThickness={0}
         yAxisTextStyle={{ color: "#6b7280", fontSize: 10 }}
-        showValuesAsTopLabel={showTopLabels}
-        topLabelTextStyle={{ color: "#111827", fontSize: 10, fontWeight: "600" }}
-      />
+          showValuesAsTopLabel={showTopLabels}
+          topLabelTextStyle={{ color: "#111827", fontSize: 10, fontWeight: "600" }}
+        />
+        </View>
+      </ScrollView>
 
       <View className="flex-row justify-center mt-3 gap-x-6">
         <View className="flex-row items-center gap-x-2">
