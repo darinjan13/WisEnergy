@@ -8,9 +8,9 @@ const BAR_PREDICTED = "#f87171";
 // Per-category bar geometry: fixed widths keep bars identical in every
 // category; the chart scrolls horizontally when groups overflow.
 const BAR_GEOMETRY = {
-  Daily: { barWidth: 12, spacing: 8, pairWidth: 46 },
-  Weekly: { barWidth: 22, spacing: 12, pairWidth: 76 },
-  Monthly: { barWidth: 34, spacing: 16, pairWidth: 120 },
+  Daily: { barWidth: 16, spacing: 10, pairWidth: 60 },
+  Weekly: { barWidth: 30, spacing: 14, pairWidth: 100 },
+  Monthly: { barWidth: 44, spacing: 20, pairWidth: 150 },
 };
 
 export default function EnergyPredictionChart({
@@ -129,7 +129,7 @@ export default function EnergyPredictionChart({
         yAxisThickness={0}
         yAxisTextStyle={{ color: "#6b7280", fontSize: 10 }}
           showValuesAsTopLabel={showTopLabels}
-          topLabelTextStyle={{ color: "#111827", fontSize: 10, fontWeight: "600" }}
+          topLabelTextStyle={{ color: "#111827", fontSize: 11, fontWeight: "700" }}
         />
         </View>
       </ScrollView>
