@@ -155,26 +155,32 @@ export const fetchTodayTrend = async (userId) => {
    🔥 Fetch: Top Appliances (cached)
 --------------------------------------------------------- */
 export const fetchTopAppliances = async (userId, limit = 5) => {
-  const key = `@overall_top_appliances:${userId}`;
+  const month = new Date().toISOString().slice(0, 7);
+  const key = `@top30:${userId}:${month}`;
 
   const cached = await AsyncStorage.getItem(key);
   if (cached) return JSON.parse(cached).data;
 
-  const refSum = ref(db, `daily_summary/${userId}`);
-  const snapshot = await get(refSum);
-
-  if (!snapshot.exists()) return [];
-
   const totals = {};
-  snapshot.forEach((dev) => {
-    dev.forEach((app) => {
-      const name = app.key;
-      app.forEach((dateSnap) => {
-        const k = dateSnap.child("total_kWh").val() || 0;
-        totals[name] = (totals[name] || 0) + k;
-      });
-    });
-  });
+  const rosterSnap = await get(ref(db, `appliances/${userId}`));
+  if (rosterSnap.exists()) {
+    for (const [deviceId, apps] of Object.entries(rosterSnap.val())) {
+      for (const appName of Object.keys(apps || {})) {
+        await microtask();
+        const q = query(
+          ref(db, `daily_summary/${userId}/${deviceId}/${appName}`),
+          orderByKey(),
+          limitToLast(30)
+        );
+        const snap = await get(q);
+        let sum = 0;
+        snap.forEach((dateSnap) => {
+          sum += Number(dateSnap.child("total_kWh").val() || 0);
+        });
+        if (sum > 0) totals[appName] = (totals[appName] || 0) + sum;
+      }
+    }
+  }
 
   const arr = Object.entries(totals)
     .map(([name, kwh]) => ({
