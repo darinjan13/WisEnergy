@@ -67,6 +67,7 @@ export default function Reports() {
   const [selectedAppliance, setSelectedAppliance] = useState(null);
   const [resetting, setResetting] = useState(false);
   const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
+  const [zoneError, setZoneError] = useState({});
 
   const applianceIcon = (name = "") => {
     const n = String(name).toLowerCase();
@@ -116,13 +117,21 @@ export default function Reports() {
 
       const loadInitial = async () => {
         try {
-          await Promise.allSettled([
+          const [d, w, m, b, t] = await Promise.allSettled([
             fetchDailyTotals(uid),
             fetchWeeklyTotals(uid),
             fetchMonthlyTotals(uid),
             fetchAllBudget(uid),
             fetchTopAppliances(uid),
           ]);
+          if (!active) return;
+          setZoneError({
+            daily: d.status === "rejected" ? String(d.reason?.message || d.reason) : null,
+            weekly: w.status === "rejected" ? String(w.reason?.message || w.reason) : null,
+            monthly: m.status === "rejected" ? String(m.reason?.message || m.reason) : null,
+            budget: b.status === "rejected" ? String(b.reason?.message || b.reason) : null,
+            top: t.status === "rejected" ? String(t.reason?.message || t.reason) : null,
+          });
 
           if (!active) return;
 
@@ -300,14 +309,14 @@ export default function Reports() {
   // -----------------------------
   // E. LINE CHART DATA
   // -----------------------------
-  const lineData1 = allMonthlyTotalConsumption.map((d) => ({
-    ...d,
-    type: "consumption",
-  }));
-  const lineData2 = allBudget.map((d) => ({
-    ...d,
-    type: "budget",
-  }));
+  const lineData1 = useMemo(
+    () => allMonthlyTotalConsumption.map((d) => ({ ...d, type: "consumption" })),
+    [allMonthlyTotalConsumption]
+  );
+  const lineData2 = useMemo(
+    () => allBudget.map((d) => ({ ...d, type: "budget" })),
+    [allBudget]
+  );
 
   const chartMax = useMemo(() => {
     const max1 = lineData1.length
@@ -355,70 +364,6 @@ export default function Reports() {
         <Header />
         <Text className="text-xl font-bold text-green-800">Reports</Text>
         <Text className="text-sm text-gray-500 mb-4">Historical Usage & Insights</Text>
-
-        {/* Hero strip */}
-        <View className="flex-row gap-x-2.5 mb-5">
-          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
-            <Text className="text-[11px] text-gray-500 font-semibold uppercase">Today</Text>
-            <View className="my-1 flex-row items-baseline">
-              <Text className="text-xl font-extrabold text-green-800 leading-none">
-                {heroStats.today ?? "—"}
-              </Text>
-              <Text className="text-[11px] font-semibold text-gray-500 ml-0.5">kWh</Text>
-            </View>
-            {heroStats.todayDelta !== null && heroStats.todayDelta !== 0 && (
-              <View className={`self-start px-1.5 py-0.5 rounded-md ${heroStats.todayDelta < 0 ? "bg-green-50" : "bg-red-50"}`}>
-                <Text className={`text-[11px] font-semibold ${heroStats.todayDelta < 0 ? "text-green-700" : "text-red-600"}`}>
-                  {heroStats.todayDelta < 0 ? "↓" : "↑"} {Math.abs(heroStats.todayDelta)}
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
-            <Text className="text-[11px] text-gray-500 font-semibold uppercase">This week</Text>
-            <View className="my-1 flex-row items-baseline">
-              <Text className="text-xl font-extrabold text-green-800 leading-none">
-                {heroStats.week ?? "—"}
-              </Text>
-              <Text className="text-[11px] font-semibold text-gray-500 ml-0.5">kWh</Text>
-            </View>
-            {heroStats.weekDelta !== null && heroStats.weekDelta !== 0 && (
-              <View className={`self-start px-1.5 py-0.5 rounded-md ${heroStats.weekDelta < 0 ? "bg-green-50" : "bg-red-50"}`}>
-                <Text className={`text-[11px] font-semibold ${heroStats.weekDelta < 0 ? "text-green-700" : "text-red-600"}`}>
-                  {heroStats.weekDelta < 0 ? "↓" : "↑"} {Math.abs(heroStats.weekDelta)}
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
-            <Text className="text-[11px] text-gray-500 font-semibold uppercase">Top app.</Text>
-            <View className="my-1">
-              <Text className="text-base font-extrabold text-green-800 leading-none" numberOfLines={1}>
-                {heroStats.topName ?? "—"}
-              </Text>
-            </View>
-            <Text className="text-[11px] text-gray-500">
-              {heroStats.topShare !== null ? `${heroStats.topShare}% total` : "—"}
-            </Text>
-          </View>
-        </View>
-        {lastUpdatedAt && (
-          <Text className="text-[10px] text-gray-400 mb-4">
-            Updated {lastUpdatedAt.toLocaleTimeString()}
-          </Text>
-        )}
-
-        {/* Savings Over Time */}
-        <Text className="text-xl font-bold text-green-800 mb-4">
-          Savings Over Time
-        </Text>
-
-        <SavingsChart
-          lineData1={lineData1}
-          lineData2={lineData2}
-          chartMax={chartMax}
-          styles={styles}
-        />
 
         {/* Category Filters */}
         <View className="flex-row gap-x-2 mb-5 w-full">
@@ -498,6 +443,58 @@ export default function Reports() {
           )}
         </View>
 
+        {/* Hero strip */}
+        <View className="flex-row gap-x-2.5 mb-5">
+          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-[11px] text-gray-500 font-semibold uppercase">Today</Text>
+            <View className="my-1 flex-row items-baseline">
+              <Text className="text-xl font-extrabold text-green-800 leading-none">
+                {heroStats.today ?? "—"}
+              </Text>
+              <Text className="text-[11px] font-semibold text-gray-500 ml-0.5">kWh</Text>
+            </View>
+            {heroStats.todayDelta !== null && heroStats.todayDelta !== 0 && (
+              <View className={`self-start px-1.5 py-0.5 rounded-md ${heroStats.todayDelta < 0 ? "bg-green-50" : "bg-red-50"}`}>
+                <Text className={`text-[11px] font-semibold ${heroStats.todayDelta < 0 ? "text-green-700" : "text-red-600"}`}>
+                  {heroStats.todayDelta < 0 ? "↓" : "↑"} {Math.abs(heroStats.todayDelta)}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-[11px] text-gray-500 font-semibold uppercase">This week</Text>
+            <View className="my-1 flex-row items-baseline">
+              <Text className="text-xl font-extrabold text-green-800 leading-none">
+                {heroStats.week ?? "—"}
+              </Text>
+              <Text className="text-[11px] font-semibold text-gray-500 ml-0.5">kWh</Text>
+            </View>
+            {heroStats.weekDelta !== null && heroStats.weekDelta !== 0 && (
+              <View className={`self-start px-1.5 py-0.5 rounded-md ${heroStats.weekDelta < 0 ? "bg-green-50" : "bg-red-50"}`}>
+                <Text className={`text-[11px] font-semibold ${heroStats.weekDelta < 0 ? "text-green-700" : "text-red-600"}`}>
+                  {heroStats.weekDelta < 0 ? "↓" : "↑"} {Math.abs(heroStats.weekDelta)}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-[11px] text-gray-500 font-semibold uppercase">Top app.</Text>
+            <View className="my-1">
+              <Text className="text-base font-extrabold text-green-800 leading-none" numberOfLines={1}>
+                {heroStats.topName ?? "—"}
+              </Text>
+            </View>
+            <Text className="text-[11px] text-gray-500">
+              {heroStats.topShare !== null ? `${heroStats.topShare}% total` : "—"}
+            </Text>
+          </View>
+        </View>
+        {lastUpdatedAt && (
+          <Text className="text-[10px] text-gray-400 mb-4">
+            Updated {lastUpdatedAt.toLocaleTimeString()}
+          </Text>
+        )}
+
         {/* ------------------------- */}
         {/* ALL DEVICES VIEW */}
         {/* ------------------------- */}
@@ -512,6 +509,11 @@ export default function Reports() {
                 <View>
                   <Text className="text-base font-bold text-gray-800">{chartMeta.title}</Text>
                   <Text className="text-xs text-gray-500 mt-0.5">{chartMeta.month}</Text>
+                  {zoneError[reportCategory.toLowerCase()] && (
+                    <Text className="text-xs text-red-600 mt-1">
+                      Couldn't refresh — showing cached data.
+                    </Text>
+                  )}
                 </View>
                 {chartMeta.avg !== null && (
                   <View className="bg-gray-100 px-2.5 py-1.5 rounded-lg flex-row items-center">
@@ -665,6 +667,18 @@ export default function Reports() {
             </View>
           </AutoSkeletonView>
         )}
+
+        {/* Savings Over Time */}
+        <Text className="text-xl font-bold text-green-800 mb-4">
+          Savings Over Time
+        </Text>
+
+        <SavingsChart
+          lineData1={lineData1}
+          lineData2={lineData2}
+          chartMax={chartMax}
+          styles={styles}
+        />
       </ScrollView>
 
       {/* Modal */}
