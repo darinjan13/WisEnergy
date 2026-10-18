@@ -366,13 +366,18 @@ export default function Reports() {
           paddingBottom: insets.bottom + 150,
           paddingTop: insets.top,
         }}
+        stickyHeaderIndices={[3]}
       >
         <Header />
         <Text className="text-xl font-bold text-green-800">Reports</Text>
         <Text className="text-sm text-gray-500 mb-4">Historical Usage & Insights</Text>
 
-        {/* Category Filters */}
-        <View className="flex-row gap-x-2 mb-5 w-full">
+        {/* Category Filters (sticky: switcher stays reachable while
+            scrolled down at the chart) */}
+        <View
+          className="flex-row gap-x-2 pt-2 pb-3 bg-gray-100 w-full"
+          style={{ zIndex: 10 }}
+        >
           {category.map((label, index) => (
             <TouchableOpacity
               key={index}

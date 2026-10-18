@@ -8,10 +8,11 @@ const BAR_PREDICTED = "#f87171";
 // Per-category bar geometry: fixed widths keep bars identical in every
 // category; the chart scrolls horizontally when groups overflow.
 const BAR_GEOMETRY = {
-  Daily: { barWidth: 16, spacing: 10, pairWidth: 60 },
+  Daily: { barWidth: 26, spacing: 14, pairWidth: 108 },
   Weekly: { barWidth: 30, spacing: 14, pairWidth: 100 },
   Monthly: { barWidth: 44, spacing: 20, pairWidth: 150 },
 };
+const DAILY_WINDOW = 5;
 
 export default function EnergyPredictionChart({
   actualData = [],
@@ -34,7 +35,9 @@ export default function EnergyPredictionChart({
       const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
       return arr
         .filter((lbl) => lbl.split("-")[0] === currentMonth) // keeps only this month
-        .sort((a, b) => b.localeCompare(a)); // 01-01..01-31
+        .sort((a, b) => b.localeCompare(a)) // newest first
+        .slice(0, DAILY_WINDOW)
+        .reverse(); // oldest -> newest, left to right
     }
 
     return arr.sort((a, b) => {
