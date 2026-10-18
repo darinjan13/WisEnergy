@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
-import { ActivityIndicator } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { AutoSkeletonView } from "react-native-auto-skeleton";
@@ -337,27 +336,6 @@ export default function Reports() {
   // -----------------------------
   // F. UI START
   // -----------------------------
-  if (isLoading) {
-    return (
-      <ScrollView
-        className="h-full p-5"
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 40,
-          paddingTop: insets.top,
-        }}
-      >
-        <Header />
-        <Text className="text-xl font-bold text-green-800 mb-4">Reports</Text>
-        <View className="h-screen -mt-36 items-center justify-center">
-          <ActivityIndicator size="large" color="#166534" />
-          <Text className="text-gray-500 mt-4 text-base font-semibold">
-            Loading your reports data...
-          </Text>
-        </View>
-      </ScrollView>
-    );
-  }
-
   return (
     <View className="flex-1 bg-gray-100">
       <ScrollView
@@ -405,6 +383,7 @@ export default function Reports() {
           ))}
         </View>
 
+        <AutoSkeletonView isLoading={isLoading}>
         {/* Device Picker */}
         <View
           style={styles.cardShadow}
@@ -502,6 +481,7 @@ export default function Reports() {
             Updated {lastUpdatedAt.toLocaleTimeString()}
           </Text>
         )}
+        </AutoSkeletonView>
 
         {/* ------------------------- */}
         {/* ALL DEVICES VIEW */}
@@ -618,7 +598,7 @@ export default function Reports() {
             </Text>
             <View
               style={styles.cardShadow}
-              className="bg-white p-5 rounded-2xl mb-5 min-h-[320px] justify-center"
+              className="bg-white p-5 rounded-2xl mb-5"
             >
               {reports.length > 0 ? (
                 <FlatList

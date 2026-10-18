@@ -35,9 +35,8 @@ export default function EnergyPredictionChart({
       const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
       return arr
         .filter((lbl) => lbl.split("-")[0] === currentMonth) // keeps only this month
-        .sort((a, b) => b.localeCompare(a)) // newest first
-        .slice(0, DAILY_WINDOW)
-        .reverse(); // oldest -> newest, left to right
+        .sort((a, b) => b.localeCompare(a)) // newest (today) first, then descending
+        .slice(0, DAILY_WINDOW);
     }
 
     return arr.sort((a, b) => {
