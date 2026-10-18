@@ -350,7 +350,7 @@ export default function Reports() {
         <Text className="text-xl font-bold text-green-800 mb-4">Reports</Text>
         <View className="h-screen -mt-36 items-center justify-center">
           <ActivityIndicator size="large" color="#166534" />
-          <Text className="text-gray-500 mt-4 text-lg font-semibold">
+          <Text className="text-gray-500 mt-4 text-base font-semibold">
             Loading your reports data...
           </Text>
         </View>
@@ -375,7 +375,7 @@ export default function Reports() {
         {/* Category Filters (sticky: switcher stays reachable while
             scrolled down at the chart) */}
         <View
-          className="flex-row gap-x-2 pt-2 pb-3 bg-gray-100 w-full"
+          className="flex-row gap-x-2 pt-2 pb-3 -mx-5 px-5 bg-gray-100 border-b border-gray-200"
           style={{ zIndex: 10 }}
         >
           {category.map((label, index) => (
@@ -410,13 +410,10 @@ export default function Reports() {
           style={styles.cardShadow}
           className="bg-white p-4 rounded-2xl mb-5 w-full"
         >
-          <Text className="text-[11px] text-gray-500 font-semibold uppercase mb-2">
+          <Text className="text-xs text-gray-500 font-semibold uppercase mb-3">
             Select Device
           </Text>
           <View className="flex-row items-center justify-between">
-            <Text className="text-gray-800 font-semibold mr-4">
-              Select Device
-            </Text>
             <View className="flex-1 border rounded-xl overflow-hidden border-gray-300">
               <Picker
                 mode="dropdown"
@@ -455,53 +452,53 @@ export default function Reports() {
         </View>
 
         {/* Hero strip */}
-        <View className="flex-row gap-x-2.5 mb-5">
-          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
-            <Text className="text-[11px] text-gray-500 font-semibold uppercase">Today</Text>
+        <View className="flex-row gap-x-3 mb-5">
+          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-xs text-gray-500 font-semibold uppercase">Today</Text>
             <View className="my-1 flex-row items-baseline">
               <Text className="text-xl font-extrabold text-green-800 leading-none">
                 {heroStats.today ?? "—"}
               </Text>
-              <Text className="text-[11px] font-semibold text-gray-500 ml-0.5">kWh</Text>
+              <Text className="text-xs font-semibold text-gray-500 ml-0.5">kWh</Text>
             </View>
             {heroStats.todayDelta !== null && heroStats.todayDelta !== 0 && (
               <View className={`self-start px-1.5 py-0.5 rounded-md ${heroStats.todayDelta < 0 ? "bg-green-50" : "bg-red-50"}`}>
-                <Text className={`text-[11px] font-semibold ${heroStats.todayDelta < 0 ? "text-green-700" : "text-red-600"}`}>
+                <Text className={`text-xs font-semibold ${heroStats.todayDelta < 0 ? "text-green-700" : "text-red-600"}`}>
                   {heroStats.todayDelta < 0 ? "↓" : "↑"} {Math.abs(heroStats.todayDelta)}
                 </Text>
               </View>
             )}
           </View>
-          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
-            <Text className="text-[11px] text-gray-500 font-semibold uppercase">This week</Text>
+          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-xs text-gray-500 font-semibold uppercase">This week</Text>
             <View className="my-1 flex-row items-baseline">
               <Text className="text-xl font-extrabold text-green-800 leading-none">
                 {heroStats.week ?? "—"}
               </Text>
-              <Text className="text-[11px] font-semibold text-gray-500 ml-0.5">kWh</Text>
+              <Text className="text-xs font-semibold text-gray-500 ml-0.5">kWh</Text>
             </View>
             {heroStats.weekDelta !== null && heroStats.weekDelta !== 0 && (
               <View className={`self-start px-1.5 py-0.5 rounded-md ${heroStats.weekDelta < 0 ? "bg-green-50" : "bg-red-50"}`}>
-                <Text className={`text-[11px] font-semibold ${heroStats.weekDelta < 0 ? "text-green-700" : "text-red-600"}`}>
+                <Text className={`text-xs font-semibold ${heroStats.weekDelta < 0 ? "text-green-700" : "text-red-600"}`}>
                   {heroStats.weekDelta < 0 ? "↓" : "↑"} {Math.abs(heroStats.weekDelta)}
                 </Text>
               </View>
             )}
           </View>
-          <View style={styles.cardShadow} className="flex-1 bg-white p-3 rounded-2xl min-h-[104px] justify-between">
-            <Text className="text-[11px] text-gray-500 font-semibold uppercase">Top app.</Text>
+          <View style={styles.cardShadow} className="flex-1 bg-white p-4 rounded-2xl min-h-[104px] justify-between">
+            <Text className="text-xs text-gray-500 font-semibold uppercase">Top app.</Text>
             <View className="my-1">
               <Text className="text-base font-extrabold text-green-800 leading-none" numberOfLines={1}>
                 {heroStats.topName ?? "—"}
               </Text>
             </View>
-            <Text className="text-[11px] text-gray-500">
+            <Text className="text-xs text-gray-500">
               {heroStats.topShare !== null ? `${heroStats.topShare}% total` : "—"}
             </Text>
           </View>
         </View>
         {lastUpdatedAt && (
-          <Text className="text-[10px] text-gray-400 mb-4">
+          <Text className="text-xs text-gray-400 mb-4">
             Updated {lastUpdatedAt.toLocaleTimeString()}
           </Text>
         )}
@@ -513,7 +510,7 @@ export default function Reports() {
           <AutoSkeletonView isLoading={reportLoading}>
             <View
               style={styles.cardShadow}
-              className="bg-white p-5 rounded-2xl mb-6 min-h-[320px] justify-center"
+              className="bg-white p-5 rounded-2xl mb-5 min-h-[320px] justify-center"
             >
               {/* Overall Chart */}
               <View className="flex-row items-start justify-between mb-4">
@@ -528,7 +525,7 @@ export default function Reports() {
                 </View>
                 {chartMeta.avg !== null && (
                   <View className="bg-gray-100 px-2.5 py-1.5 rounded-lg flex-row items-center">
-                    <Text className="text-[11px] font-semibold text-green-800">
+                    <Text className="text-xs font-semibold text-green-800">
                       Avg: {chartMeta.avg.toFixed(1)} kWh{reportCategory === "Daily" ? "/day" : reportCategory === "Weekly" ? "/week" : "/mo"}
                     </Text>
                   </View>
@@ -547,7 +544,7 @@ export default function Reports() {
                   category={reportCategory}
                 />
               ) : (
-                <Text className="text-gray-500 text-center text-lg font-semibold">
+                <Text className="text-gray-500 text-center text-sm font-semibold">
                   No data yet…
                 </Text>
               )}
@@ -555,13 +552,13 @@ export default function Reports() {
               {/* Appliances List */}
               {allAppliancesForAllDevices.length === 0 ? (
                 <View className="mt-6 items-center">
-                  <Text className="text-gray-500 text-lg font-semibold">
+                  <Text className="text-gray-500 text-sm font-semibold">
                     No appliance usage data available.
                   </Text>
                 </View>
               ) : (
                 <View className="mt-6">
-                  <Text className="text-green-800 font-semibold mb-5 text-center text-lg">
+                  <Text className="text-green-800 font-semibold mb-4 text-center text-base">
                     {reportCategory} Consumption per Appliance
                   </Text>
 
@@ -597,9 +594,9 @@ export default function Reports() {
                               </View>
                               <View className="items-end ml-2">
                                 <Text className="text-sm font-extrabold text-green-800">
-                                  {powerUsed.toFixed(2)} <Text className="text-[11px] font-medium text-gray-500">kWh</Text>
+                                  {powerUsed.toFixed(2)} <Text className="text-xs font-medium text-gray-500">kWh</Text>
                                 </Text>
-                                <Text className="text-[11px] text-gray-500 mt-0.5">{share}% share</Text>
+                                <Text className="text-xs text-gray-500 mt-0.5">{share}% share</Text>
                               </View>
                             </View>
                           </TouchableOpacity>
@@ -616,12 +613,12 @@ export default function Reports() {
           /* SPECIFIC DEVICE VIEW     */
           /* ------------------------- */
           <AutoSkeletonView isLoading={reportLoading}>
-            <Text className="text-xl font-bold text-green-800 mb-4">
+            <Text className="text-base font-bold text-green-800 mb-4">
               Appliance Usage
             </Text>
             <View
               style={styles.cardShadow}
-              className="bg-white p-5 rounded-2xl mb-6 min-h-[320px] justify-center"
+              className="bg-white p-5 rounded-2xl mb-5 min-h-[320px] justify-center"
             >
               {reports.length > 0 ? (
                 <FlatList
@@ -659,9 +656,9 @@ export default function Reports() {
                           </View>
                           <View className="items-end ml-2">
                             <Text className="text-sm font-extrabold text-green-800">
-                              {powerUsed.toFixed(2)} <Text className="text-[11px] font-medium text-gray-500">kWh</Text>
+                              {powerUsed.toFixed(2)} <Text className="text-xs font-medium text-gray-500">kWh</Text>
                             </Text>
-                            <Text className="text-[11px] text-gray-500 mt-0.5">{share}% share</Text>
+                            <Text className="text-xs text-gray-500 mt-0.5">{share}% share</Text>
                           </View>
                         </View>
                       </TouchableOpacity>
@@ -670,7 +667,7 @@ export default function Reports() {
                 />
               ) : (
                 <View className="h-40 items-center justify-center">
-                  <Text className="text-gray-500 text-lg font-semibold">
+                  <Text className="text-gray-500 text-sm font-semibold">
                     No appliance usage data available.
                   </Text>
                 </View>
@@ -720,9 +717,9 @@ export default function Reports() {
 const styles = StyleSheet.create({
   cardShadow: {
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
   },
 });

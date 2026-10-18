@@ -84,8 +84,8 @@ export default function EnergyPredictionChart({
 
   if (barData.length === 0) {
     return (
-      <View className="bg-white p-5 rounded-2xl">
-        <Text className="text-gray-500 text-center text-lg font-semibold">
+      <View>
+        <Text className="text-gray-500 text-center text-sm font-semibold">
           No data yet…
         </Text>
       </View>
@@ -103,8 +103,8 @@ export default function EnergyPredictionChart({
   );
 
   return (
-    <View className="bg-white p-5 rounded-2xl">
-      <Text className="text-black text-center text-base font-semibold mb-2">
+    <View>
+      <Text className="text-black text-center text-sm font-semibold mb-3">
         Energy Usage vs Predicted
       </Text>
 
