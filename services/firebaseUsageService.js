@@ -206,6 +206,16 @@ export const fetchTopAppliances = async (userId, limit = 5) => {
   return arr;
 };
 
+/* Clear the top-appliances caches so a device reset is reflected
+   immediately instead of serving the pre-reset totals for up to an hour. */
+export const clearTopAppliancesCache = async (userId) => {
+  const month = new Date().toISOString().slice(0, 7);
+  try {
+    await AsyncStorage.removeItem(`@top30:${userId}:${month}`);
+    await AsyncStorage.removeItem(`@overall_top_appliances:${userId}`);
+  } catch {}
+};
+
 /* ---------------------------------------------------------
    🔥 Fetch All Latest KWH for one device
 --------------------------------------------------------- */

@@ -25,6 +25,7 @@ import ApplianceModal from "@/components/reports/ApplianceModal";
 
 import { auth } from "@/firebase/firebaseConfig";
 import { resetDeviceHistory } from "@/services/firebaseDevicesService";
+import { clearTopAppliancesCache } from "@/services/firebaseUsageService";
 
 import {
   useBudgetStore,
@@ -94,7 +95,21 @@ export default function Reports() {
       const uid = auth.currentUser?.uid;
       const { failed } = await resetDeviceHistory(uid, selectedDevice);
       if (failed.length === 0) {
-        setResetDialog({ kind: "result", success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed."] });
+        // Reflect the wipe immediately: the appliance list + heroes read
+        // from cached store slices, so invalidate and refetch them here.
+        const apps =
+          reportData.find((d) => d.device_id === selectedDevice)?.appliances ?? [];
+        await clearTopAppliancesCache(uid);
+        await Promise.allSettled([
+          fetchDailyReport(uid, selectedDevice, apps),
+          fetchWeeklyReport(uid, selectedDevice, apps),
+          fetchMonthlyReport(uid, selectedDevice, apps),
+          fetchDailyTotals(uid),
+          fetchWeeklyTotals(uid),
+          fetchMonthlyTotals(uid),
+          fetchTopAppliances(uid),
+        ]);
+        setResetDialog({ kind: "result", success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed.", "The list below has been refreshed."] });
       } else {
         setResetDialog({ kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] });
       }
