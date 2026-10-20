@@ -54,17 +54,22 @@ const SavingsChart = ({ lineData1, lineData2, chartMax, styles }) => {
                             }
 
                             // Compute savings (budget - actual)
-                            const savings = (budget - consumption).toFixed(2);
+                            const cNum = Number(consumption);
+                            const bNum = Number(budget);
+                            const comparable = Number.isFinite(cNum) && Number.isFinite(bNum);
+                            const diff = comparable ? bNum - cNum : null;
                             const status =
-                                savings >= 0
-                                    ? { label: "Under Budget", color: "text-green-600" }
-                                    : { label: "Over Budget", color: "text-red-600" };
+                                diff === null
+                                    ? { label: "Budget unavailable", color: "text-gray-500" }
+                                    : diff >= 0
+                                        ? { label: "Under Budget", color: "text-green-600" }
+                                        : { label: "Over Budget", color: "text-red-600" };
 
                             setSelectedAppliance({
                                 month,
                                 consumption,
                                 budget,
-                                savings: Math.abs(savings),
+                                savings: diff === null ? null : Math.abs(diff).toFixed(2),
                                 status,
                             });
                             setSavingsModal(true);

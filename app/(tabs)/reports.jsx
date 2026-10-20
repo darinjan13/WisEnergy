@@ -100,15 +100,19 @@ export default function Reports() {
         const apps =
           reportData.find((d) => d.device_id === selectedDevice)?.appliances ?? [];
         await clearTopAppliancesCache(uid);
-        await Promise.allSettled([
-          fetchDailyReport(uid, selectedDevice, apps),
-          fetchWeeklyReport(uid, selectedDevice, apps),
-          fetchMonthlyReport(uid, selectedDevice, apps),
-          fetchDailyTotals(uid),
-          fetchWeeklyTotals(uid),
-          fetchMonthlyTotals(uid),
-          fetchTopAppliances(uid),
-        ]);
+        // Sequential, not parallel: this screen has a history of heap kills,
+        // and seven concurrent histories + predictions is a needless spike.
+        for (const task of [
+          () => fetchDailyReport(uid, selectedDevice, apps),
+          () => fetchWeeklyReport(uid, selectedDevice, apps),
+          () => fetchMonthlyReport(uid, selectedDevice, apps),
+          () => fetchDailyTotals(uid),
+          () => fetchWeeklyTotals(uid),
+          () => fetchMonthlyTotals(uid),
+          () => fetchTopAppliances(uid),
+        ]) {
+          try { await task(); } catch {}
+        }
         setResetDialog({ kind: "result", success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed.", "The list below has been refreshed."] });
       } else {
         setResetDialog({ kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] });
