@@ -432,17 +432,6 @@ export default function Reports() {
               </Picker>
             </View>
           </View>
-          {selectedDevice !== "All Devices" && (
-            <TouchableOpacity
-              onPress={handleResetDeviceData}
-              disabled={resetting}
-              className="mb-4 px-3 py-2 rounded-lg border border-red-300 self-start bg-white"
-            >
-              <Text className="text-red-600 text-xs font-bold">
-                {resetting ? "Resetting…" : "Reset device data"}
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Hero strip */}
@@ -607,6 +596,7 @@ export default function Reports() {
           /* ------------------------- */
           /* SPECIFIC DEVICE VIEW     */
           /* ------------------------- */
+          <>
           <AutoSkeletonView isLoading={reportLoading}>
             <Text className="text-base font-bold text-green-800 mb-4">
               Appliance Usage
@@ -669,6 +659,35 @@ export default function Reports() {
               )}
             </View>
           </AutoSkeletonView>
+
+          <View className="p-4 rounded-2xl border border-red-200 bg-white mb-5">
+            <View className="flex-row items-center mb-1">
+              <MaterialCommunityIcons name="alert-outline" size={16} color="#B91C1C" />
+              <Text className="text-xs font-bold uppercase text-red-700 ml-2">
+                Danger zone
+              </Text>
+            </View>
+            <Text className="text-xs text-gray-500 mb-3">
+              Permanently deletes every reading, daily summary and kWh value for{" "}
+              {reportData.find((d) => d.device_id === selectedDevice)?.device_nickname || "this device"}. This cannot be undone.
+            </Text>
+            <TouchableOpacity
+              onPress={handleResetDeviceData}
+              disabled={resetting}
+              accessibilityRole="button"
+              accessibilityLabel="Reset device data"
+              accessibilityHint="Deletes all history for this device after confirmation"
+              accessibilityState={{ disabled: resetting, busy: resetting }}
+              style={{ opacity: resetting ? 0.6 : 1 }}
+              className="py-3 rounded-xl border border-red-300 bg-white flex-row items-center justify-center"
+            >
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color="#DC2626" />
+              <Text className="text-red-600 text-sm font-bold ml-2">
+                {resetting ? "Resetting…" : "Reset device data"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          </>
         )}
 
         {/* Savings Over Time */}
