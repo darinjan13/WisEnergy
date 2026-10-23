@@ -48,6 +48,12 @@ wisenergy-11737 is legacy (data migrated off it; do not write there).
 8. **Firestore audit:** backend inits Firestore client; contents never mapped/migrated.
 9. **Password:** user must reset `darinjan13@gmail.com` via email flow on capstone.
 10. **Fresh preview APK** (channel-pinned build) — install + restart twice for OTA chain.
+11. **Android Picker SIGABRT (fixed, re-verify):** `@react-native-picker/picker` 2.11.1
+    aborts on RN 0.81 + New Arch (`free(): Pointer tag ... truncated`,
+    `RNCAndroidDropdownPickerProps`, tid `hades`) whenever a Picker unmounts. Bumped to
+    **2.11.4** (upstream fix #648). Expo 54 pins the broken 2.11.1, so
+    `package.json > expo.install.exclude` guards it. Native change — needs a rebuild, never
+    an OTA. Re-verify after a long Reports/Daily-Weekly-Monthly session.
 
 ## Key facts (do not re-derive)
 - Device d8bc24124b00, owner uid `tVD45VkzSUhwDwpa3yRES71Wxar2`, room mode,
