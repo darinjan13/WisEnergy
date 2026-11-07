@@ -138,7 +138,8 @@ export default function ClearDeviceDataSheet({
         if (touchesToday && deviceId) {
           await setDevicePause(deviceId, 180);
           pauseSet = true;
-          await new Promise((r) => setTimeout(r, 3000));
+          // The firmware polls pause_until every 3s; wait past one cycle.
+          await new Promise((r) => setTimeout(r, 7000));
         }
         res = await clearDeviceData(uid, deviceId, {
           dates: useDays ? list : null,
