@@ -70,6 +70,7 @@ export default function ClearDeviceDataSheet({
 
   const scopeLabel = useMemo(() => {
     if (scope === "all") return "All history";
+    if (scope === "today") return "Today";
     if (scope === "7") return "Last 7 days";
     if (scope === "30") return "Last 30 days";
     return `${picked.length} selected day(s)`;
@@ -90,10 +91,12 @@ export default function ClearDeviceDataSheet({
       title: `Clear ${scopeLabel.toLowerCase()}?`,
       lines: [
         `Removes: ${includeLabels.join(", ")}.`,
-        scope === "days"
-          ? `Days: ${picked.join(", ")}`
+        scope === "days" || scope === "today"
+          ? `Days: ${(scope === "today" ? [todayIso] : picked).join(", ")}`
           : "The device keeps writing new readings immediately.",
-        scope === "all" ? "Cannot be undone." : "Today is never touched.",
+        scope === "today"
+          ? "Today is re-written while the device keeps reporting."
+          : "Cannot be undone.",
       ],
     });
   };
@@ -108,9 +111,10 @@ export default function ClearDeviceDataSheet({
         rollups: include.rollups,
         kwh: include.kwh,
       };
-      const useDays = scope === "7" || scope === "30" || scope === "days";
+      const useDays = scope !== "all";
       let list = null;
-      if (scope === "7") list = past.slice(-7);
+      if (scope === "today") list = [todayIso];
+      else if (scope === "7") list = past.slice(-7);
       else if (scope === "30") list = past.slice(-30);
       else if (scope === "days") list = picked;
 
@@ -187,6 +191,7 @@ export default function ClearDeviceDataSheet({
         key={key}
         onPress={() => {
           setScope(key);
+          if (key === "today") setPicked([todayIso]);
           if (key === "7") setPicked(past.slice(-7));
           if (key === "30") setPicked(past.slice(-30));
         }}
@@ -211,30 +216,32 @@ export default function ClearDeviceDataSheet({
               </TouchableOpacity>
             </View>
             <Text className="text-xs text-gray-500 mb-3">
-              {deviceLabel ? `For ${deviceLabel}. ` : ""}Pick a range, then what to remove. Today is
-              never touched — the device rewrites it within seconds.
+              {deviceLabel ? `For ${deviceLabel}. ` : ""}Pick a range, then what to remove. Clearing
+              today only sticks while the device is off — it re-writes today while reporting.
             </Text>
 
             <Text className="text-xs font-bold uppercase text-gray-400 mb-2">Range</Text>
             <View className="flex-row gap-x-2 mb-3">
               {seg("all", "All")}
-              {seg("7", "Last 7")}
-              {seg("30", "Last 30")}
-              {seg("days", "Pick days")}
+              {seg("today", "Today")}
+              {seg("7", "7d")}
+              {seg("30", "30d")}
+              {seg("days", "Pick")}
             </View>
 
             {scope === "days" && (
               loadingDates ? (
                 <Text className="text-xs text-gray-400 py-4 text-center">Loading days…</Text>
-              ) : past.length === 0 ? (
+              ) : dates.length === 0 ? (
                 <Text className="text-xs text-gray-400 py-4 text-center">
-                  No past readings found for this device.
+                  No readings found for this device yet.
                 </Text>
               ) : (
                 <ScrollView className="max-h-40 mb-3">
                   <View className="flex-row flex-wrap gap-2">
-                    {[...past].reverse().map((d) => {
+                    {[...dates].reverse().map((d) => {
                       const on = picked.includes(d);
+                      const isToday = d === todayIso;
                       return (
                         <TouchableOpacity
                           key={d}
@@ -249,6 +256,7 @@ export default function ClearDeviceDataSheet({
                             className={`text-xs font-semibold ${on ? "text-red-700" : "text-gray-700"}`}
                           >
                             {d.slice(5)}
+                            {isToday ? " (today)" : ""}
                           </Text>
                         </TouchableOpacity>
                       );
