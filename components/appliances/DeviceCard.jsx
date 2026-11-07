@@ -6,8 +6,8 @@ import { ref, onValue, off, update, set } from "firebase/database";
 import { timeAgo } from "@/utils/dateHelper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { approve_firmware } from "@/services/apiService";
-import { resetDeviceHistory } from "@/services/firebaseDevicesService";
 import ResultModal from "@/components/ui/ResultModal";
+import ClearDeviceDataSheet from "@/components/devices/ClearDeviceDataSheet";
 
 export default function DeviceCard({
     disabled,
@@ -30,7 +30,7 @@ export default function DeviceCard({
     const [snoozed, setSnoozed] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuAnchorY, setMenuAnchorY] = useState(120);
-    const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
+    const [clearOpen, setClearOpen] = useState(false);
     const [calCmdId, setCalCmdId] = useState(null);
     const [calDialog, setCalDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
     // Optimistic mode: reflect taps instantly, reconcile when store catches up.
@@ -125,15 +125,7 @@ export default function DeviceCard({
     };
     const onResetTap = () => {
         setMenuOpen(false);
-        setResetDialog({ kind: "confirm" });
-    };
-    const onResetConfirm = async () => {
-        const { failed } = await resetDeviceHistory(auth?.currentUser?.uid, deviceData.id);
-        setResetDialog(
-            failed.length === 0
-                ? { kind: "result", success: true, title: "Device history cleared", lines: ["All readings, summaries, and kWh for this device were removed."] }
-                : { kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] }
-        );
+        setClearOpen(true);
     };
     const onRecalTap = () => {
         setMenuOpen(false);
@@ -383,15 +375,11 @@ export default function DeviceCard({
 
                 </View>
             </View>
-            <ResultModal
-                visible={!!resetDialog}
-                mode={resetDialog?.kind === "confirm" ? "confirm" : "result"}
-                success={resetDialog?.success ?? true}
-                title={resetDialog?.kind === "confirm" ? "Reset device data?" : resetDialog?.title ?? ""}
-                lines={resetDialog?.kind === "confirm" ? ["Deletes ALL history for this device (readings, summaries, kWh).", "Cannot be undone."] : resetDialog?.lines ?? []}
-                confirmText="Reset"
-                onConfirm={onResetConfirm}
-                onClose={() => setResetDialog(null)}
+            <ClearDeviceDataSheet
+                visible={clearOpen}
+                deviceId={deviceData?.id}
+                deviceLabel={deviceData?.device_nickname}
+                onClose={() => setClearOpen(false)}
             />
             <ResultModal
                 visible={!!calDialog}

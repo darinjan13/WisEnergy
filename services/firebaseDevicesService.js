@@ -18,8 +18,27 @@ const shallowKeys = async (dbRootUrl, token, path) => {
     }
 };
 
-export const resetDeviceHistory = async (uid, deviceId) => {
+/* One flexible wipe for a single device.
+   - `dates: null`  -> the whole history; `dates: ["YYYY-MM-DD", ...]` -> only those days.
+   - `include` selects which stores are touched:
+       usage   raw readings          (default on)
+       daily   daily summaries       (default on)
+       rollups weekly + monthly      (default on)
+       kwh     latest_kwh counters   (default OFF - it is a live counter, not history)
+   Deleting subtrees directly (whole-history case) means no appliance name can be
+   missed, which the old per-name enumeration silently did. Returns
+   { failed, deleted, names }. */
+export const clearDeviceData = async (uid, deviceId, { dates = null, include = {} } = {}) => {
     const failed = [];
+    const want = {
+        usage: include.usage !== false,
+        daily: include.daily !== false,
+        rollups: include.rollups !== false,
+        kwh: include.kwh === true,
+    };
+    const picked = dates === null ? null : [...new Set(dates)].filter(Boolean);
+    if (picked && picked.length === 0) return { failed, deleted: 0, names: [] };
+
     const rm = async (path) => {
         try {
             await remove(ref(db, path));
@@ -27,31 +46,71 @@ export const resetDeviceHistory = async (uid, deviceId) => {
             failed.push(`${path} (${e?.code || e?.message || "denied"})`);
         }
     };
-    // Delete the subtrees directly. The old version discovered appliance names
-    // from appliances/ and daily_summary/ and deleted per-date children, so any
-    // name that existed only under usage/ was silently skipped and survived a
-    // "full" reset. A single remove() per subtree cannot miss anything.
-    await rm(`usage/${uid}/${deviceId}`);
-    await rm(`daily_summary/${uid}/${deviceId}`);
-    await rm(`weekly_summary/${uid}/${deviceId}`);
-    await rm(`monthly_summary/${uid}/${deviceId}`);
-    // Preserve the appliance registry (nickname/added_at/is_active) —
-    // zero only the energy counters.
+
+    let names = [];
     try {
-        const snap = await get(ref(db, `appliances/${uid}/${deviceId}`));
-        const apps = snap.exists() ? snap.val() : {};
-        for (const name of Object.keys(apps)) {
-            try {
-                await update(ref(db, `appliances/${uid}/${deviceId}/${name}`), { latest_kwh: 0 });
-            } catch (e) {
-                failed.push(`appliances/${uid}/${deviceId}/${name}/latest_kwh (${e?.code || e?.message || "denied"})`);
+        const dbRoot = ref(db).toString().replace(/\/$/, "");
+        const token = await auth.currentUser.getIdToken();
+        const usageNames = await shallowKeys(dbRoot, token, `usage/${uid}/${deviceId}`);
+        const summaryNames = await shallowKeys(dbRoot, token, `daily_summary/${uid}/${deviceId}`);
+        names = [...new Set([...usageNames, ...summaryNames])];
+    } catch (e) {
+        return { failed: [`(auth/db url: ${e?.code || e?.message})`], deleted: 0, names: [] };
+    }
+
+    let deleted = 0;
+
+    if (picked === null) {
+        if (want.usage) await rm(`usage/${uid}/${deviceId}`);
+        if (want.daily) await rm(`daily_summary/${uid}/${deviceId}`);
+        if (want.rollups) {
+            await rm(`weekly_summary/${uid}/${deviceId}`);
+            await rm(`monthly_summary/${uid}/${deviceId}`);
+        }
+        deleted = 1;
+    } else {
+        const months = new Set(picked.map((d) => `${d.slice(0, 4)}/${d.slice(5, 7)}`));
+        for (const name of names) {
+            for (const date of picked) {
+                if (want.usage) await rm(`usage/${uid}/${deviceId}/${name}/${date}`);
+                if (want.daily) await rm(`daily_summary/${uid}/${deviceId}/${name}/${date}`);
+                deleted += 1;
+            }
+            if (want.rollups) {
+                for (const ym of months) {
+                    const [year, month] = ym.split("/");
+                    await rm(`weekly_summary/${uid}/${deviceId}/${name}/${year}/${month}`);
+                    await rm(`monthly_summary/${uid}/${deviceId}/${name}/${year}/${month}`);
+                }
             }
         }
-    } catch (e) {
-        failed.push(`appliances/${uid}/${deviceId} (list: ${e?.code || e?.message})`);
     }
-    return { failed };
+
+    if (want.kwh) {
+        try {
+            const snap = await get(ref(db, `appliances/${uid}/${deviceId}`));
+            const apps = snap.exists() ? snap.val() : {};
+            for (const name of Object.keys(apps)) {
+                try {
+                    await update(ref(db, `appliances/${uid}/${deviceId}/${name}`), { latest_kwh: 0 });
+                } catch (e) {
+                    failed.push(`appliances/${uid}/${deviceId}/${name}/latest_kwh (${e?.code || e?.message || "denied"})`);
+                }
+            }
+        } catch (e) {
+            failed.push(`appliances/${uid}/${deviceId} (list: ${e?.code || e?.message})`);
+        }
+    }
+
+    return { failed, deleted, names };
 };
+
+/* Full wipe of one device's history (account/device-level wipes reuse this). */
+export const resetDeviceHistory = (uid, deviceId) =>
+    clearDeviceData(uid, deviceId, {
+        dates: null,
+        include: { usage: true, daily: true, rollups: true, kwh: true },
+    });
 
 /* List the dates that actually hold raw readings for one device.
    Appliance names are read from `usage/` itself — the authoritative source —
@@ -71,68 +130,6 @@ export const listUsageDates = async (uid, deviceId) => {
     } catch (e) {
         return { dates: [], names: [], error: e?.code || e?.message || "failed" };
     }
-};
-
-/* Delete selected days only: raw readings + that day's daily summary, plus the
-   week/month summary buckets those days fall into (otherwise they keep
-   reporting the deleted readings; the backend regenerates them).
-   Appliance names come from usage/, so nothing is missed.
-   Registry, latest_kwh and user-level totals are left untouched. */
-export const clearDeviceData = async (uid, deviceId, { dates = [] } = {}) => {
-    const failed = [];
-    const picked = [...new Set(dates)].filter(Boolean);
-    if (picked.length === 0) return { failed, deleted: 0, names: [] };
-
-    const rm = async (path) => {
-        try {
-            await remove(ref(db, path));
-        } catch (e) {
-            failed.push(`${path} (${e?.code || e?.message || "denied"})`);
-        }
-    };
-
-    let names = [];
-    try {
-        const dbRoot = ref(db).toString().replace(/\/$/, "");
-        const token = await auth.currentUser.getIdToken();
-        // Union both sources: usage-only names must not be missed (the old bug),
-        // and summary-only names still need their daily node removed.
-        const usageNames = await shallowKeys(dbRoot, token, `usage/${uid}/${deviceId}`);
-        const summaryNames = await shallowKeys(dbRoot, token, `daily_summary/${uid}/${deviceId}`);
-        names = [...new Set([...usageNames, ...summaryNames])];
-    } catch (e) {
-        return { failed: [`(auth/db url: ${e?.code || e?.message})`], deleted: 0, names: [] };
-    }
-
-    const months = new Set(picked.map((d) => `${d.slice(0, 4)}/${d.slice(5, 7)}`));
-    let deleted = 0;
-
-    for (const name of names) {
-        for (const date of picked) {
-            await rm(`usage/${uid}/${deviceId}/${name}/${date}`);
-            await rm(`daily_summary/${uid}/${deviceId}/${name}/${date}`);
-            deleted += 1;
-        }
-        for (const ym of months) {
-            const [year, month] = ym.split("/");
-            await rm(`weekly_summary/${uid}/${deviceId}/${name}/${year}/${month}`);
-            await rm(`monthly_summary/${uid}/${deviceId}/${name}/${year}/${month}`);
-        }
-    }
-
-    return { failed, deleted, names };
-};
-
-/* Clear ONLY the raw readings node for a device. Summaries, kWh counters and
-   the appliance registry are deliberately left alone. */
-export const clearUsageNode = async (uid, deviceId) => {
-    const failed = [];
-    try {
-        await remove(ref(db, `usage/${uid}/${deviceId}`));
-    } catch (e) {
-        failed.push(`usage/${uid}/${deviceId} (${e?.code || e?.message || "denied"})`);
-    }
-    return { failed };
 };
 
 /* Delete every owned device's readings + summaries + kWh (chunked),

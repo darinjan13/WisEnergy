@@ -5,8 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Modal,
-  Alert,
   FlatList,
   useColorScheme,
 } from "react-native";
@@ -17,19 +15,13 @@ import { Picker } from "@react-native-picker/picker";
 import { AutoSkeletonView } from "react-native-auto-skeleton";
 
 import Header from "@/components/ui/Header";
-import ResultModal from "@/components/ui/ResultModal";
 import SavingsChart from "@/components/reports/SavingsChart";
 import CustomProgressBar from "@/components/reports/CustomProgressBar";
 import EnergyPredictionChart from "@/components/reports/EnergyPredictionChart";
 import ApplianceModal from "@/components/reports/ApplianceModal";
+import ClearDeviceDataSheet from "@/components/devices/ClearDeviceDataSheet";
 
 import { auth } from "@/firebase/firebaseConfig";
-import {
-  resetDeviceHistory,
-  listUsageDates,
-  clearDeviceData,
-  clearUsageNode,
-} from "@/services/firebaseDevicesService";
 import { clearTopAppliancesCache } from "@/services/firebaseUsageService";
 
 import {
@@ -70,14 +62,7 @@ export default function Reports() {
   const [reportLoading, setReportLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAppliance, setSelectedAppliance] = useState(null);
-  const [resetting, setResetting] = useState(false);
-  const [resetDialog, setResetDialog] = useState(null); // {kind:'confirm'} | {kind:'result',...}
-  const [clearSheet, setClearSheet] = useState(false);
-  const [usageDates, setUsageDates] = useState([]);
-  const [datesLoading, setDatesLoading] = useState(false);
-  const [pickedDates, setPickedDates] = useState([]);
-  const [pendingClear, setPendingClear] = useState(null); // {type:'all'|'days'|'usage', dates:[]}
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const [clearOpen, setClearOpen] = useState(false);
   const [zoneError, setZoneError] = useState({});
   // Rapid category/device switches obsolete in-flight rounds; only the
   // latest round may write state (prevents fetch + chart pile-ups).
@@ -116,110 +101,7 @@ export default function Reports() {
     }
   };
 
-  const openClearSheet = async () => {
-    if (selectedDevice === "All Devices") return;
-    setPickedDates([]);
-    setClearSheet(true);
-    setDatesLoading(true);
-    try {
-      const { dates } = await listUsageDates(auth.currentUser?.uid, selectedDevice);
-      setUsageDates(dates);
-    } catch {
-      setUsageDates([]);
-    } finally {
-      setDatesLoading(false);
-    }
-  };
 
-  const toggleDate = (d) =>
-    setPickedDates((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d]));
-
-  // Presets skip today on purpose: the device rewrites today within seconds.
-  const pickPreset = (n) => {
-    const past = usageDates.filter((d) => d < todayIso);
-    setPickedDates(n === 0 ? past : past.slice(-n));
-  };
-
-  const proceedClear = (type, dates = []) => {
-    setClearSheet(false);
-    setPendingClear({ type, dates });
-    setResetDialog({ kind: "confirm" });
-  };
-
-  const handleResetConfirm = async () => {
-    const action = pendingClear;
-    try {
-      setResetting(true);
-      const uid = auth.currentUser?.uid;
-      let failed = [];
-      let title = "";
-      let lines = [];
-      if (!action || action.type === "all") {
-        ({ failed } = await resetDeviceHistory(uid, selectedDevice));
-        title = "Device history cleared";
-        lines = ["All readings, summaries and kWh for this device were removed."];
-      } else if (action.type === "usage") {
-        ({ failed } = await clearUsageNode(uid, selectedDevice));
-        title = "Raw readings cleared";
-        lines = ["The usage/ node was emptied. Summaries and kWh counters were kept."];
-      } else {
-        const r = await clearDeviceData(uid, selectedDevice, { dates: action.dates });
-        failed = r.failed;
-        title = `Cleared ${r.deleted} day(s)`;
-        lines = [
-          "Readings and daily summaries were removed for the selected days.",
-          "Overlapping week/month summary buckets were reset too.",
-        ];
-      }
-      if (failed.length === 0) {
-        await refreshAfterClear();
-        setResetDialog({ kind: "result", success: true, title, lines: [...lines, "The list below has been refreshed."] });
-      } else {
-        setResetDialog({ kind: "result", success: false, title: "Partially cleared", lines: ["These refused to delete:", ...failed] });
-      }
-    } catch (e) {
-      console.error("Clear device data failed", e);
-      setResetDialog({ kind: "result", success: false, title: "Clear failed", lines: [e?.code || e?.message || "Unknown error"] });
-    } finally {
-      setResetting(false);
-    }
-  };
-
-  const confirmInfo = useMemo(() => {
-    const a = pendingClear;
-    if (!a || a.type === "all") {
-      return {
-        title: "Clear all device data?",
-        lines: [
-          "Deletes ALL history for this device (readings, summaries, kWh).",
-          "Totals may keep residue.",
-          "Cannot be undone.",
-        ],
-        confirm: "Clear all",
-      };
-    }
-    if (a.type === "usage") {
-      return {
-        title: "Clear raw readings only?",
-        lines: [
-          "Deletes only the raw usage/ node for this device.",
-          "Daily/weekly/monthly summaries and kWh counters are kept.",
-          "Cannot be undone.",
-        ],
-        confirm: "Clear readings",
-      };
-    }
-    return {
-      title: `Clear ${a.dates.length} day(s)?`,
-      lines: [
-        `Days: ${a.dates.join(", ")}`,
-        "Also resets the week/month summary buckets those days fall in.",
-        "The device rewrites today's data within seconds.",
-        "Cannot be undone.",
-      ],
-      confirm: "Clear days",
-    };
-  }, [pendingClear]);
 
   const category = ["Monthly", "Weekly", "Daily"];
 
@@ -768,42 +650,19 @@ export default function Reports() {
               </Text>
             </View>
             <Text className="text-xs text-gray-500 mb-3">
-              Remove history for{" "}
-              {reportData.find((d) => d.device_id === selectedDevice)?.device_nickname || "this device"} — pick
-              specific days, clear everything, or drop only the raw readings. Cannot be undone.
+              Reset history for{" "}
+              {reportData.find((d) => d.device_id === selectedDevice)?.device_nickname || "this device"} — choose
+              a range and exactly what to remove. Cannot be undone.
             </Text>
             <TouchableOpacity
-              onPress={openClearSheet}
-              disabled={resetting}
+              onPress={() => setClearOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel="Clear device data"
-              accessibilityHint="Choose which days to clear, or clear everything"
-              accessibilityState={{ disabled: resetting, busy: resetting }}
-              style={{ opacity: resetting ? 0.6 : 1 }}
+              accessibilityLabel="Reset device data"
+              accessibilityHint="Opens options for range and what to remove"
               className="py-3 rounded-xl border border-red-300 bg-white flex-row items-center justify-center"
             >
-              <MaterialCommunityIcons name="calendar-remove-outline" size={18} color="#DC2626" />
-              <Text className="text-red-600 text-sm font-bold ml-2">
-                {resetting ? "Working…" : "Clear data…"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setPendingClear({ type: "usage", dates: [] });
-                setResetDialog({ kind: "confirm" });
-              }}
-              disabled={resetting}
-              accessibilityRole="button"
-              accessibilityLabel="Clear raw readings only"
-              accessibilityHint="Deletes only the raw usage node, keeping summaries and kWh"
-              accessibilityState={{ disabled: resetting }}
-              style={{ opacity: resetting ? 0.6 : 1 }}
-              className="py-3 mt-2 rounded-xl border border-amber-300 bg-white flex-row items-center justify-center"
-            >
-              <MaterialCommunityIcons name="database-remove-outline" size={18} color="#B45309" />
-              <Text className="text-amber-700 text-sm font-bold ml-2">
-                Clear raw readings only
-              </Text>
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color="#DC2626" />
+              <Text className="text-red-600 text-sm font-bold ml-2">Reset device data…</Text>
             </TouchableOpacity>
           </View>
           </>
@@ -833,128 +692,14 @@ export default function Reports() {
         applianceData={selectedAppliance}
         reportCategory={reportCategory}
       />
-      <Modal
-        visible={clearSheet}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setClearSheet(false)}
-      >
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="bg-white rounded-t-3xl p-5">
-            <View className="flex-row items-center justify-between mb-1">
-              <Text className="text-base font-bold text-gray-800">Clear device data</Text>
-              <TouchableOpacity
-                onPress={() => setClearSheet(false)}
-                accessibilityRole="button"
-                accessibilityLabel="Close"
-              >
-                <MaterialCommunityIcons name="close" size={20} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <Text className="text-xs text-gray-500 mb-3">
-              Choose what to remove for{" "}
-              {reportData.find((d) => d.device_id === selectedDevice)?.device_nickname || "this device"}.
-              Today is excluded — the device rewrites it within seconds.
-            </Text>
-
-            <View className="flex-row gap-x-2 mb-3">
-              {[
-                { label: "Last 7 days", n: 7 },
-                { label: "Last 30 days", n: 30 },
-                { label: "All days", n: 0 },
-              ].map((p) => (
-                <TouchableOpacity
-                  key={p.label}
-                  onPress={() => pickPreset(p.n)}
-                  className="flex-1 py-2 rounded-lg bg-gray-100 items-center"
-                >
-                  <Text className="text-xs font-semibold text-gray-700">{p.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {datesLoading ? (
-              <Text className="text-xs text-gray-400 py-6 text-center">Loading days…</Text>
-            ) : usageDates.length === 0 ? (
-              <Text className="text-xs text-gray-400 py-6 text-center">
-                No raw readings found for this device.
-              </Text>
-            ) : (
-              <ScrollView className="max-h-56">
-                <View className="flex-row flex-wrap gap-2">
-                  {[...usageDates].reverse().map((d) => {
-                    const isToday = d === todayIso;
-                    const on = pickedDates.includes(d);
-                    return (
-                      <TouchableOpacity
-                        key={d}
-                        disabled={isToday}
-                        onPress={() => toggleDate(d)}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: on, disabled: isToday }}
-                        className={`px-2.5 py-1.5 rounded-lg border ${
-                          isToday
-                            ? "bg-gray-50 border-gray-200"
-                            : on
-                            ? "bg-red-50 border-red-400"
-                            : "bg-white border-gray-300"
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-semibold ${
-                            isToday ? "text-gray-300" : on ? "text-red-700" : "text-gray-700"
-                          }`}
-                        >
-                          {d.slice(5)}
-                          {isToday ? " (today)" : ""}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-            )}
-
-            <View className="flex-row gap-x-2 mt-4">
-              <TouchableOpacity
-                onPress={() => setClearSheet(false)}
-                className="flex-1 py-3 rounded-xl border border-gray-300 items-center"
-              >
-                <Text className="text-sm font-bold text-gray-600">Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                disabled={pickedDates.length === 0}
-                onPress={() => proceedClear("days", pickedDates)}
-                style={{ opacity: pickedDates.length === 0 ? 0.5 : 1 }}
-                className="flex-1 py-3 rounded-xl bg-red-600 items-center"
-              >
-                <Text className="text-sm font-bold text-white">
-                  {pickedDates.length ? `Delete ${pickedDates.length}` : "Select days"}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => proceedClear("all")}
-                className="flex-1 py-3 rounded-xl border border-red-300 items-center"
-              >
-                <Text className="text-sm font-bold text-red-600">Everything</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <ResultModal
-        visible={!!resetDialog}
-        mode={resetDialog?.kind === "confirm" ? "confirm" : "result"}
-        success={resetDialog?.success ?? true}
-        title={resetDialog?.kind === "confirm" ? confirmInfo.title : resetDialog?.title ?? ""}
-        lines={resetDialog?.kind === "confirm" ? confirmInfo.lines : resetDialog?.lines ?? []}
-        confirmText={confirmInfo.confirm}
-        onConfirm={handleResetConfirm}
-        onClose={() => {
-          setResetDialog(null);
-          setPendingClear(null);
-        }}
+      <ClearDeviceDataSheet
+        visible={clearOpen}
+        deviceId={selectedDevice}
+        deviceLabel={
+          reportData.find((d) => d.device_id === selectedDevice)?.device_nickname || "this device"
+        }
+        onClose={() => setClearOpen(false)}
+        onDone={refreshAfterClear}
       />
     </View>
   );
