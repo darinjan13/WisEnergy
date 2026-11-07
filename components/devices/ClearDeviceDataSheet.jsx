@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import ResultModal from "@/components/ui/ResultModal";
 import { auth } from "@/firebase/firebaseConfig";
-import { clearDeviceData, listUsageDates } from "@/services/firebaseDevicesService";
+import { clearDeviceData, listUsageDates, setDevicePause } from "@/services/firebaseDevicesService";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -95,7 +95,7 @@ export default function ClearDeviceDataSheet({
           ? `Days: ${(scope === "today" ? [todayIso] : picked).join(", ")}`
           : "The device keeps writing new readings immediately.",
         scope === "today"
-          ? "Today is re-written while the device keeps reporting."
+          ? "The device is paused for a few seconds so this clear sticks."
           : "Cannot be undone.",
       ],
     });
@@ -128,10 +128,29 @@ export default function ClearDeviceDataSheet({
         return;
       }
 
-      const res = await clearDeviceData(uid, deviceId, {
-        dates: useDays ? list : null,
-        include: includeMap,
-      });
+      // Clearing today would otherwise race the device's 1 Hz writer: it would
+      // re-create today's nodes while we delete them. Pause first, let the
+      // stream land, clear, then resume.
+      const touchesToday = useDays ? list.includes(todayIso) : true;
+      let pauseSet = false;
+      let res;
+      try {
+        if (touchesToday && deviceId) {
+          await setDevicePause(deviceId, 180);
+          pauseSet = true;
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+        res = await clearDeviceData(uid, deviceId, {
+          dates: useDays ? list : null,
+          include: includeMap,
+        });
+      } finally {
+        if (pauseSet) {
+          try {
+            await setDevicePause(deviceId, 0);
+          } catch {}
+        }
+      }
 
       if (res.failed.length === 0) {
         setDialog({
@@ -217,7 +236,7 @@ export default function ClearDeviceDataSheet({
             </View>
             <Text className="text-xs text-gray-500 mb-3">
               {deviceLabel ? `For ${deviceLabel}. ` : ""}Pick a range, then what to remove. Clearing
-              today only sticks while the device is off — it re-writes today while reporting.
+              today briefly pauses the device so the delete can't be overwritten.
             </Text>
 
             <Text className="text-xs font-bold uppercase text-gray-400 mb-2">Range</Text>

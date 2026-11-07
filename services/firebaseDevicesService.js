@@ -1,4 +1,4 @@
-import { get, off, onValue, ref, remove, update } from 'firebase/database';
+import { get, off, onValue, ref, remove, set, update } from 'firebase/database';
 import { auth, db } from '../firebase/firebaseConfig';
 
 /* Delete one device's full history (readings + summaries + kWh).
@@ -111,6 +111,16 @@ export const resetDeviceHistory = (uid, deviceId) =>
         dates: null,
         include: { usage: true, daily: true, rollups: true, kwh: true },
     });
+
+/* Pause the device's data writes for `seconds` (0 clears it). The firmware
+   skips its 1 Hz usage/live writes while paused, so clearing today cannot race
+   the writer; presence and telemetry keep running, so the device stays visible
+   and its own no-write watchdog stays satisfied. */
+export const setDevicePause = async (deviceId, seconds = 0) => {
+    const until = seconds > 0 ? Math.floor(Date.now() / 1000) + seconds : 0;
+    await set(ref(db, `devices/${deviceId}/pause_until`), until);
+    return until;
+};
 
 /* List the dates that actually hold raw readings for one device.
    Appliance names are read from `usage/` itself — the authoritative source —
