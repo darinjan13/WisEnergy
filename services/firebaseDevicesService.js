@@ -125,8 +125,14 @@ export const setDevicePause = async (deviceId, seconds = 0) => {
 /* Firmware consent + status live under devices/<id>/fw_update. The device
    reports availability and waits; it only flashes a version the app approves.
    fw state/progress/error come back on devices/<id>/fw. */
+// Approving also bumps check_request: the device only *uses* the approval while
+// running a check, so without this the tap would appear to do nothing until its
+// next 6-hourly poll.
 export const approveFirmwareUpdate = (deviceId, version) =>
-    set(ref(db, `devices/${deviceId}/fw_update/approved_version`), String(version));
+    update(ref(db, `devices/${deviceId}/fw_update`), {
+        approved_version: String(version),
+        check_request: Date.now(),
+    });
 
 /* Ask the device to re-check the public manifest right away instead of
    waiting for its 6-hour poll. */
