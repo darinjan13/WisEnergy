@@ -4,7 +4,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { auth } from "@/firebase/firebaseConfig";
+import { auth, db } from "@/firebase/firebaseConfig";
+import { ref, update } from "firebase/database";
 import { api } from "@/services/apiService.js"; // 👈 your axios instance file
 
 export default function PremiumPlans() {
