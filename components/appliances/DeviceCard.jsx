@@ -6,6 +6,7 @@ import { ref, onValue, off, update, set } from "firebase/database";
 import { timeAgo } from "@/utils/dateHelper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchLatestFirmware } from "@/services/firmwareManifest";
+import { approveFirmwareUpdate, requestFirmwareCheck } from "@/services/firebaseDevicesService";
 import ResultModal from "@/components/ui/ResultModal";
 import ClearDeviceDataSheet from "@/components/devices/ClearDeviceDataSheet";
 
@@ -26,6 +27,7 @@ export default function DeviceCard({
     const [lastSeen, setLastSeen] = useState(null);
     const [live, setLive] = useState(null);
     const [latestFw, setLatestFw] = useState(null);
+    const [fwBusy, setFwBusy] = useState(false);
     const [snoozed, setSnoozed] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuAnchorY, setMenuAnchorY] = useState(120);
@@ -112,6 +114,26 @@ export default function DeviceCard({
         return 0;
     };
     const updateReady = latestFw?.version && cmpVer(running, latestFw.version) < 0 && !snoozed;
+    const fwActive = fwState === "downloading" || fwState === "updating";
+    const showFwBanner = !isUnpaired && (fwActive || updateReady);
+    // The device only flashes a version the app approves. It polls this path
+    // every 10s, so keep the button busy for a moment after sending.
+    const onUpdateTap = async () => {
+        if (fwBusy || !latestFw?.version) return;
+        setFwBusy(true);
+        try {
+            await approveFirmwareUpdate(deviceData.id, latestFw.version);
+        } catch (e) {
+            alert(e?.message || "Could not send the update request.");
+        }
+        setTimeout(() => setFwBusy(false), 12000);
+    };
+    const onCheckTap = async () => {
+        setMenuOpen(false);
+        try {
+            await requestFirmwareCheck(deviceData.id);
+        } catch {}
+    };
     const onLaterTap = () => {
         AsyncStorage.setItem(`@fw_snooze:${deviceData.id}`, String(Date.now() + 24 * 3600 * 1000));
         setSnoozed(true);
@@ -226,29 +248,45 @@ export default function DeviceCard({
                     )}
 
                     {/* FIRMWARE UPDATE banner */}
-                    {!isUnpaired && updateReady && (
+                    {showFwBanner && (
                         <View className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
                             <Text className="text-xs font-bold text-amber-800">
-                                Update {running} → {latestFw.version} available
+                                {fwActive
+                                    ? `Updating ${running} → ${latestFw.version}`
+                                    : `Firmware ${running} → ${latestFw.version} available`}
                             </Text>
-                            {fwState === "downloading" || fwState === "updating" ? (
+                            {fwActive ? (
                                 <Text className="text-[11px] text-amber-700 mt-1">
-                                    {fwState === "downloading" ? `Downloading… ${fwProgress}%` : "Installing…"}
+                                    {fwState === "downloading"
+                                        ? `Downloading… ${fwProgress}%`
+                                        : "Installing… the device will restart."}
                                 </Text>
                             ) : fwState === "error" ? (
                                 <Text className="text-[11px] text-red-600 mt-1">
-                                    Last attempt failed — it retries at the next check.
+                                    Last attempt failed. Press Update to try again.
                                 </Text>
                             ) : (
                                 <Text className="text-[11px] text-amber-700 mt-1">
-                                    The device installs this by itself — no action needed.
+                                    The device only updates when you press Update.
                                 </Text>
                             )}
-                            <View className="flex-row gap-x-2 mt-2">
-                                <TouchableOpacity onPress={onLaterTap} className="px-3 py-2 rounded-lg bg-gray-200">
-                                    <Text className="text-gray-700 text-xs font-bold">Hide for a day</Text>
-                                </TouchableOpacity>
-                            </View>
+                            {!fwActive && (
+                                <View className="flex-row gap-x-2 mt-2">
+                                    <TouchableOpacity
+                                        onPress={onUpdateTap}
+                                        disabled={fwBusy}
+                                        style={{ opacity: fwBusy ? 0.6 : 1 }}
+                                        className="px-3 py-2 rounded-lg bg-amber-600"
+                                    >
+                                        <Text className="text-white text-xs font-bold">
+                                            {fwBusy ? "Sent…" : "Update"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={onLaterTap} className="px-3 py-2 rounded-lg bg-gray-200">
+                                        <Text className="text-gray-700 text-xs font-bold">Later</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
                     )}
                 </TouchableOpacity>
@@ -292,6 +330,14 @@ export default function DeviceCard({
                                 onPress={() => { setMenuOpen(false); !isDisabled && deleteDevice(); }}
                             >
                                 <Text className="text-sm text-red-600">Delete</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                testID="menu-fw-check-button"
+                                className="px-3 py-2 rounded-lg"
+                                disabled={isDisabled}
+                                onPress={onCheckTap}
+                            >
+                                <Text className="text-sm text-gray-800">Check for firmware updates</Text>
                             </TouchableOpacity>
                             <View className="h-px bg-gray-200 my-1" />
                             <Text className="px-3 pt-1 text-[10px] font-bold text-gray-500">MONITORS</Text>

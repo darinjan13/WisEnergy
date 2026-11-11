@@ -122,6 +122,17 @@ export const setDevicePause = async (deviceId, seconds = 0) => {
     return until;
 };
 
+/* Firmware consent + status live under devices/<id>/fw_update. The device
+   reports availability and waits; it only flashes a version the app approves.
+   fw state/progress/error come back on devices/<id>/fw. */
+export const approveFirmwareUpdate = (deviceId, version) =>
+    set(ref(db, `devices/${deviceId}/fw_update/approved_version`), String(version));
+
+/* Ask the device to re-check the public manifest right away instead of
+   waiting for its 6-hour poll. */
+export const requestFirmwareCheck = (deviceId) =>
+    set(ref(db, `devices/${deviceId}/fw_update/check_request`), Date.now());
+
 /* List the dates that actually hold raw readings for one device.
    Appliance names are read from `usage/` itself — the authoritative source —
    so a renamed or unregistered appliance can never be missed.
